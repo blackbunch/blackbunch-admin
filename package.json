@@ -1,7 +1,6 @@
 {
   "name": "blackbunch-admin",
   "version": "1.0.0",
-  "description": "Black Bunch Studio Admin Backend",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
