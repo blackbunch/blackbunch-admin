@@ -1,7 +1,11 @@
 const express = require('express');
+const cors = require('cors'); // [추가됨] 보안 정책 해결을 위한 부품 가져오기
 const { Pool } = require('pg');
 
 const app = express();
+// [추가됨] 모든 도메인(내 컴퓨터 포함)에서 우리 서버에 접속 허용
+app.use(cors()); 
+
 const port = process.env.PORT || 3000;
 
 const pool = new Pool({
