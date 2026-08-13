@@ -1,10 +1,10 @@
 const express = require('express');
-const cors = require('cors'); // [추가됨] 보안 정책 해결을 위한 부품 가져오기
+const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
-// [추가됨] 모든 도메인(내 컴퓨터 포함)에서 우리 서버에 접속 허용
-app.use(cors()); 
+app.use(cors());
+app.use(express.json()); // 웹에서 보낸 데이터를 읽기 위한 설정
 
 const port = process.env.PORT || 3000;
 
@@ -13,15 +13,36 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// 1. 서버 상태 확인
 app.get('/', async (req, res) => {
+  res.send('Black Bunch Studio Server Running!');
+});
+
+// 2. DB에서 수강생 목록 가져오기 API
+app.get('/api/students', async (req, res) => {
   try {
     const client = await pool.connect();
-    // 한국 시간(Asia/Seoul)으로 조회하도록 변경
-    const result = await client.query("SELECT NOW() AT TIME ZONE 'Asia/Seoul' AS now");
+    const result = await client.query('SELECT * FROM students ORDER BY id DESC');
     client.release();
-    res.send(`Black Bunch Studio Server Running! DB Time: ${result.rows[0].now}`);
+    res.json(result.rows);
   } catch (err) {
-    res.status(500).send(`Server Running, but DB Connection Error: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. DB에 신규 수강생 저장하기 API
+app.post('/api/students', async (req, res) => {
+  const { name, phone, course, coach } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO students (name, phone, course, coach) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, phone, course, coach]
+    );
+    client.release();
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
