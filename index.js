@@ -62,22 +62,11 @@ app.post('/api/students', async (req, res) => {
   }
 });
 
-// 4. 레슨 일정 목록 조회 API (권한별 구분)
+// 4. 레슨 일정 목록 조회 API (모든 계정이 전체 일정 조회)
 app.get('/api/schedules', async (req, res) => {
-  const { coach_name, role } = req.query;
   try {
     const client = await pool.connect();
-    let query = 'SELECT * FROM schedules';
-    let params = [];
-
-    // 코치 계정은 본인 수업만 조회
-    if (role === 'coach' && coach_name) {
-      query += ' WHERE coach_name = $1';
-      params.push(coach_name);
-    }
-
-    query += ' ORDER BY start_time ASC';
-    const result = await client.query(query, params);
+    const result = await client.query('SELECT * FROM schedules ORDER BY start_time ASC');
     client.release();
     res.json(result.rows);
   } catch (err) {
