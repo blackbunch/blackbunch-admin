@@ -12,7 +12,8 @@ const pool = new Pool({
 app.get('/', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
+    // 한국 시간(Asia/Seoul)으로 조회하도록 변경
+    const result = await client.query("SELECT NOW() AT TIME ZONE 'Asia/Seoul' AS now");
     client.release();
     res.send(`Black Bunch Studio Server Running! DB Time: ${result.rows[0].now}`);
   } catch (err) {
