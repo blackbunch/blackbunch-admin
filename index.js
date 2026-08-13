@@ -48,7 +48,7 @@ app.get('/api/schedules', async (req, res) => {
   }
 });
 
-// 3. 레슨 일정 추가 API (방 중복 예약 방지 기능 추가)
+// 3. 레슨 일정 추가 API (방 및 코치 중복 예약 방지 기능)
 app.post('/api/schedules', async (req, res) => {
   const { student_name, coach_name, subject, room_name, lesson_type, start_time, end_time } = req.body;
   const client = await pool.connect();
@@ -57,8 +57,8 @@ app.post('/api/schedules', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 💡 방 번호 시간 중복 체크 (시간대가 겹치고 방 번호가 같은 일정이 있는지 점검)
-    const overlapCheck = await client.query(
+    // 💡 1) 방 번호 시간 중복 체크
+    const roomOverlap = await client.query(
       `SELECT id FROM schedules 
        WHERE room_name = $1 
        AND start_time < $2 
@@ -66,12 +66,26 @@ app.post('/api/schedules', async (req, res) => {
       [room_name, end_time, start_time]
     );
 
-    if (overlapCheck.rows.length > 0) {
+    if (roomOverlap.rows.length > 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 예약되어 있습니다.` });
     }
 
-    // 정규 레슨일 경우 수강생 잔여 횟수 체크
+    // 💡 2) 담당 코치 시간 중복 체크
+    const coachOverlap = await client.query(
+      `SELECT id FROM schedules 
+       WHERE coach_name = $1 
+       AND start_time < $2 
+       AND end_time > $3`,
+      [coach_name, end_time, start_time]
+    );
+
+    if (coachOverlap.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `${coach_name}은 해당 시간대에 이미 다른 레슨이 있습니다.` });
+    }
+
+    // 정규 레슨일 경우 수강생 잔여 횟수 체크 및 차감
     if (type === '정규') {
       const studentRes = await client.query('SELECT remaining_lessons FROM students WHERE name = $1', [student_name]);
       if (studentRes.rows.length > 0 && studentRes.rows[0].remaining_lessons <= 0) {
@@ -103,14 +117,14 @@ app.post('/api/schedules', async (req, res) => {
   }
 });
 
-// 4. 레슨 일정 수정 API (수정 시 방 중복 예약 방지 기능 추가)
+// 4. 레슨 일정 수정 API (수정 시 방 및 코치 중복 예약 방지)
 app.put('/api/schedules/:id', async (req, res) => {
   const { id } = req.params;
   const { student_name, coach_name, subject, room_name, start_time, end_time } = req.body;
 
   try {
-    // 💡 자기 자신(현재 수정 중인 일정)을 제외하고 동일 방 중복 체크
-    const overlapCheck = await pool.query(
+    // 💡 1) 방 중복 체크 (자기 자신 제외)
+    const roomOverlap = await pool.query(
       `SELECT id FROM schedules 
        WHERE room_name = $1 
        AND start_time < $2 
@@ -119,8 +133,22 @@ app.put('/api/schedules/:id', async (req, res) => {
       [room_name, end_time, start_time, id]
     );
 
-    if (overlapCheck.rows.length > 0) {
+    if (roomOverlap.rows.length > 0) {
       return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 예약되어 있습니다.` });
+    }
+
+    // 💡 2) 코치 중복 체크 (자기 자신 제외)
+    const coachOverlap = await pool.query(
+      `SELECT id FROM schedules 
+       WHERE coach_name = $1 
+       AND start_time < $2 
+       AND end_time > $3 
+       AND id != $4`,
+      [coach_name, end_time, start_time, id]
+    );
+
+    if (coachOverlap.rows.length > 0) {
+      return res.status(400).json({ error: `${coach_name}은 해당 시간대에 이미 다른 레슨이 있습니다.` });
     }
 
     const result = await pool.query(
