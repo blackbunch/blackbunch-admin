@@ -43,7 +43,6 @@ app.get('/api/schedules', async (req, res) => {
     const lessons = await pool.query('SELECT *, \'lesson\' as schedule_type FROM schedules ORDER BY start_time ASC');
     const practiceRooms = await pool.query('SELECT *, \'practice\' as schedule_type FROM practice_room_schedules ORDER BY start_time ASC');
     
-    // 두 일정을 합쳐서 반환
     res.json([...lessons.rows, ...practiceRooms.rows]);
   } catch (err) {
     console.error('Fetch Schedules Error:', err);
@@ -60,21 +59,15 @@ app.post('/api/schedules', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1) 레슨 테이블 방 중복 체크
+    // 레슨 방 중복 체크
     const roomOverlap = await client.query(
       `SELECT id FROM schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3`,
       [room_name, end_time, start_time]
     );
 
-    // 2) 연습실 예약 테이블 방 중복 체크
-    const practiceRoomOverlap = await client.query(
-      `SELECT id FROM practice_room_schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3`,
-      [room_name, end_time, start_time]
-    );
-
-    if (roomOverlap.rows.length > 0 || practiceRoomOverlap.rows.length > 0) {
+    if (roomOverlap.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 레슨 또는 연습실 예약이 있습니다.` });
+      return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 다른 레슨이 존재합니다.` });
     }
 
     // 코치 중복 체크
@@ -126,21 +119,15 @@ app.post('/api/practice-rooms', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 레슨 일정 중복 체크
-    const lessonOverlap = await client.query(
-      `SELECT id FROM schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3`,
-      [room_name, end_time, start_time]
-    );
-
-    // 연습실 일정 중복 체크
+    // 연습실 방 중복 체크
     const practiceOverlap = await client.query(
       `SELECT id FROM practice_room_schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3`,
       [room_name, end_time, start_time]
     );
 
-    if (lessonOverlap.rows.length > 0 || practiceOverlap.rows.length > 0) {
+    if (practiceOverlap.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 수업 또는 연습실 예약이 존재합니다.` });
+      return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 예약이 존재합니다.` });
     }
 
     const result = await client.query(
@@ -293,7 +280,7 @@ app.put('/api/students/:id/charge', async (req, res) => {
   }
 });
 
-// 11. 특정 수강생의 레슨 & 연습실 히스토리 조회 API
+// 11. 특정 수강생 히스토리 조회 API
 app.get('/api/students/:name/history', async (req, res) => {
   const { name } = req.params;
   try {
