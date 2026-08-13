@@ -48,44 +48,36 @@ app.get('/api/schedules', async (req, res) => {
   }
 });
 
-// 3. 레슨 일정 추가 API (방 및 코치 중복 예약 방지 기능)
+// 3. 레슨 일정 추가 API
 app.post('/api/schedules', async (req, res) => {
-  const { student_name, coach_name, subject, room_name, lesson_type, start_time, end_time } = req.body;
+  const { student_name, coach_name, subject, room_name, lesson_type, start_time, end_time, memo } = req.body;
   const client = await pool.connect();
   const type = lesson_type || '정규';
 
   try {
     await client.query('BEGIN');
 
-    // 💡 1) 방 번호 시간 중복 체크
+    // 1) 방 중복 체크
     const roomOverlap = await client.query(
-      `SELECT id FROM schedules 
-       WHERE room_name = $1 
-       AND start_time < $2 
-       AND end_time > $3`,
+      `SELECT id FROM schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3`,
       [room_name, end_time, start_time]
     );
-
     if (roomOverlap.rows.length > 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 예약되어 있습니다.` });
     }
 
-    // 💡 2) 담당 코치 시간 중복 체크
+    // 2) 코치 중복 체크
     const coachOverlap = await client.query(
-      `SELECT id FROM schedules 
-       WHERE coach_name = $1 
-       AND start_time < $2 
-       AND end_time > $3`,
+      `SELECT id FROM schedules WHERE coach_name = $1 AND start_time < $2 AND end_time > $3`,
       [coach_name, end_time, start_time]
     );
-
     if (coachOverlap.rows.length > 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: `${coach_name}은 해당 시간대에 이미 다른 레슨이 있습니다.` });
     }
 
-    // 정규 레슨일 경우 수강생 잔여 횟수 체크 및 차감
+    // 정규 레슨 횟수 차감
     if (type === '정규') {
       const studentRes = await client.query('SELECT remaining_lessons FROM students WHERE name = $1', [student_name]);
       if (studentRes.rows.length > 0 && studentRes.rows[0].remaining_lessons <= 0) {
@@ -99,11 +91,10 @@ app.post('/api/schedules', async (req, res) => {
       );
     }
 
-    // 일정 추가
     const scheduleRes = await client.query(
-      `INSERT INTO schedules (student_name, coach_name, subject, room_name, start_time, end_time) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [student_name, coach_name, type === '보강' ? `[보강] ${subject}` : subject, room_name, start_time, end_time]
+      `INSERT INTO schedules (student_name, coach_name, subject, room_name, start_time, end_time, status, memo) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [student_name, coach_name, type === '보강' ? `[보강] ${subject}` : subject, room_name, start_time, end_time, '예약', memo || '']
     );
 
     await client.query('COMMIT');
@@ -117,45 +108,33 @@ app.post('/api/schedules', async (req, res) => {
   }
 });
 
-// 4. 레슨 일정 수정 API (수정 시 방 및 코치 중복 예약 방지)
+// 4. 레슨 일정 수정 API (출석 상태 & 메모 반영)
 app.put('/api/schedules/:id', async (req, res) => {
   const { id } = req.params;
-  const { student_name, coach_name, subject, room_name, start_time, end_time } = req.body;
+  const { student_name, coach_name, subject, room_name, start_time, end_time, status, memo } = req.body;
 
   try {
-    // 💡 1) 방 중복 체크 (자기 자신 제외)
     const roomOverlap = await pool.query(
-      `SELECT id FROM schedules 
-       WHERE room_name = $1 
-       AND start_time < $2 
-       AND end_time > $3 
-       AND id != $4`,
+      `SELECT id FROM schedules WHERE room_name = $1 AND start_time < $2 AND end_time > $3 AND id != $4`,
       [room_name, end_time, start_time, id]
     );
-
     if (roomOverlap.rows.length > 0) {
       return res.status(400).json({ error: `${room_name}은 해당 시간대에 이미 예약되어 있습니다.` });
     }
 
-    // 💡 2) 코치 중복 체크 (자기 자신 제외)
     const coachOverlap = await pool.query(
-      `SELECT id FROM schedules 
-       WHERE coach_name = $1 
-       AND start_time < $2 
-       AND end_time > $3 
-       AND id != $4`,
+      `SELECT id FROM schedules WHERE coach_name = $1 AND start_time < $2 AND end_time > $3 AND id != $4`,
       [coach_name, end_time, start_time, id]
     );
-
     if (coachOverlap.rows.length > 0) {
       return res.status(400).json({ error: `${coach_name}은 해당 시간대에 이미 다른 레슨이 있습니다.` });
     }
 
     const result = await pool.query(
       `UPDATE schedules 
-       SET student_name = $1, coach_name = $2, subject = $3, room_name = $4, start_time = $5, end_time = $6 
-       WHERE id = $7 RETURNING *`,
-      [student_name, coach_name, subject, room_name, start_time, end_time, id]
+       SET student_name = $1, coach_name = $2, subject = $3, room_name = $4, start_time = $5, end_time = $6, status = $7, memo = $8 
+       WHERE id = $9 RETURNING *`,
+      [student_name, coach_name, subject, room_name, start_time, end_time, status || '예약', memo || '', id]
     );
 
     if (result.rows.length === 0) {
@@ -177,7 +156,6 @@ app.delete('/api/schedules/:id', async (req, res) => {
     await client.query('BEGIN');
 
     const scheduleRes = await client.query('SELECT student_name, subject FROM schedules WHERE id = $1', [id]);
-    
     if (scheduleRes.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: '해당 일정을 찾을 수 없습니다.' });
@@ -196,7 +174,7 @@ app.delete('/api/schedules/:id', async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: isMakeup ? '보강 일정이 삭제되었습니다.' : '일정이 삭제되고 정규 수강 횟수가 복구되었습니다.' });
+    res.json({ message: '일정이 삭제되었습니다.' });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Delete Schedule Error:', err);
@@ -229,6 +207,39 @@ app.post('/api/students', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Add Student Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8. 수강생 횟수 충전 API
+app.put('/api/students/:id/charge', async (req, res) => {
+  const { id } = req.params;
+  const { add_lessons } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE students 
+       SET total_lessons = total_lessons + $1, remaining_lessons = remaining_lessons + $1 
+       WHERE id = $2 RETURNING *`,
+      [parseInt(add_lessons) || 0, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Charge Student Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 9. 특정 수강생의 레슨 히스토리 조회 API
+app.get('/api/students/:name/history', async (req, res) => {
+  const { name } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM schedules WHERE student_name = $1 ORDER BY start_time DESC',
+      [name]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Fetch Student History Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
