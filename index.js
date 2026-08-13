@@ -5,17 +5,14 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// CORS 및 JSON 파싱 설정 (외부 요청 허용)
 app.use(cors());
 app.use(express.json());
 
-// Supabase DB 연결
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-// 기본 경로 확인용 API
 app.get('/', (req, res) => {
   res.send('Server running');
 });
@@ -67,7 +64,43 @@ app.post('/api/schedules', async (req, res) => {
   }
 });
 
-// 4. 수강생 목록 조회 API
+// 4. 레슨 일정 수정 API [신규 추가]
+app.put('/api/schedules/:id', async (req, res) => {
+  const { id } = req.params;
+  const { student_name, coach_name, subject, room_name, start_time, end_time } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE schedules 
+       SET student_name = $1, coach_name = $2, subject = $3, room_name = $4, start_time = $5, end_time = $6 
+       WHERE id = $7 RETURNING *`,
+      [student_name, coach_name, subject, room_name, start_time, end_time, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '해당 일정을 찾을 수 없습니다.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Update Schedule Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. 레슨 일정 삭제 API [신규 추가]
+app.delete('/api/schedules/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM schedules WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '해당 일정을 찾을 수 없습니다.' });
+    }
+    res.json({ message: '일정이 성공적으로 삭제되었습니다.', deleted: result.rows[0] });
+  } catch (err) {
+    console.error('Delete Schedule Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. 수강생 목록 조회 API
 app.get('/api/students', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM students ORDER BY name ASC');
@@ -78,7 +111,7 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// 5. 신규 수강생 등록 API
+// 7. 신규 수강생 등록 API
 app.post('/api/students', async (req, res) => {
   const { name, phone, subject, total_lessons } = req.body;
   try {
