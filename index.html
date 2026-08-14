@@ -144,6 +144,14 @@
       background-color: #2563eb;
     }
 
+    .btn-danger {
+      background-color: var(--danger-color);
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+
     .btn-sm {
       padding: 6px 12px;
       font-size: 0.85rem;
@@ -241,6 +249,7 @@
     .fc .fc-button-primary { background-color: #27272a; border-color: var(--border-color); }
     .fc .fc-button-primary:hover { background-color: #3f3f46; }
     .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: var(--accent-color); border-color: var(--accent-color); }
+    .fc-event { cursor: pointer; }
 
     /* 모달 팝업 스타일 */
     .modal-overlay {
@@ -354,7 +363,7 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h2>📅 레슨 및 연습실 예약 일정</h2>
-          <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModal()">+ 일정 등록</button>
+          <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModalForAdd()">+ 일정 등록</button>
         </div>
         
         <!-- 상세 필터 바 (지점, 과목, 룸 선택) -->
@@ -396,11 +405,13 @@
 
   </div>
 
-  <!-- 일정 등록/수정 모달 -->
+  <!-- 일정 등록/수정/삭제 모달 -->
   <div id="scheduleModal" class="modal-overlay hidden">
     <div class="modal-content">
-      <h3 style="margin-bottom:16px;">레슨 / 연습실 일정 등록</h3>
+      <h3 id="modalTitle" style="margin-bottom:16px;">레슨 / 연습실 일정 등록</h3>
       <form id="scheduleForm">
+        <input type="hidden" id="modalScheduleId">
+        
         <div class="form-group">
           <label>지점</label>
           <select id="modalBranch" class="form-control" required></select>
@@ -439,7 +450,8 @@
         </div>
         
         <div style="display:flex; gap:8px; margin-top:20px;">
-          <button type="submit" class="btn">저장하기</button>
+          <button type="submit" id="btnSave" class="btn">저장하기</button>
+          <button type="button" id="btnDeleteSchedule" class="btn btn-danger hidden" onclick="deleteSchedule()">삭제</button>
           <button type="button" class="btn btn-sm" style="width:30%; background:#3f3f46;" onclick="closeModal()">취소</button>
         </div>
       </form>
@@ -453,9 +465,9 @@
 
     // 기본 일정 샘플 데이터
     let schedules = JSON.parse(localStorage.getItem('schedules')) || [
-      { id: '1', title: '[미사/스타일/1번 방] 김수강 - 연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' },
-      { id: '2', title: '[위례/보컬 메이킹/2번 방] 이수강 - 승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00', branch: '위례', subject: '보컬 메이킹', room: '2번 방' },
-      { id: '3', title: '[다산/2:1 그룹/연습실] 박그룹, 최그룹', start: new Date().toISOString().split('T')[0] + 'T18:00', branch: '다산', subject: '2:1 그룹', room: '연습실' }
+      { id: '1', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' },
+      { id: '2', title: '[위례/보컬 메이킹/2번 방] 이수강 (승진 코치)', student: '이수강', coach: '승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00', branch: '위례', subject: '보컬 메이킹', room: '2번 방' },
+      { id: '3', title: '[다산/2:1 그룹/연습실] 박그룹, 최그룹 (지은 코치)', student: '박그룹, 최그룹', coach: '지은 코치', start: new Date().toISOString().split('T')[0] + 'T18:00', branch: '다산', subject: '2:1 그룹', room: '연습실' }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -557,7 +569,11 @@
           right: 'dayGridMonth,timeGridWeek'
         },
         locale: 'ko',
-        events: getFilteredEvents()
+        events: getFilteredEvents(),
+        // 일정 클릭 시 수정/삭제 모달 오픈
+        eventClick: function(info) {
+          openModalForEdit(info.event.id);
+        }
       });
 
       calendar.render();
@@ -583,7 +599,30 @@
       }
     }
 
-    function openModal() {
+    // 신규 등록 모달열기
+    function openModalForAdd() {
+      document.getElementById('modalTitle').textContent = '레슨 / 연습실 일정 등록';
+      document.getElementById('scheduleForm').reset();
+      document.getElementById('modalScheduleId').value = '';
+      document.getElementById('btnDeleteSchedule').classList.add('hidden');
+      document.getElementById('scheduleModal').classList.remove('hidden');
+    }
+
+    // 기존 일정 수정/삭제 모달열기
+    function openModalForEdit(id) {
+      const target = schedules.find(s => s.id === id);
+      if (!target) return;
+
+      document.getElementById('modalTitle').textContent = '일정 수정 / 삭제';
+      document.getElementById('modalScheduleId').value = target.id;
+      document.getElementById('modalBranch').value = target.branch;
+      document.getElementById('modalSubject').value = target.subject;
+      document.getElementById('modalRoom').value = target.room;
+      document.getElementById('modalStudent').value = target.student || '';
+      document.getElementById('modalCoach').value = target.coach || '';
+      document.getElementById('modalStart').value = target.start;
+
+      document.getElementById('btnDeleteSchedule').classList.remove('hidden');
       document.getElementById('scheduleModal').classList.remove('hidden');
     }
 
@@ -591,10 +630,11 @@
       document.getElementById('scheduleModal').classList.add('hidden');
     }
 
-    // 일정 추가 및 방 중복 예약 방지 검증 (Duplicate Check)
+    // 일정 저장 (신규 등록 및 수정)
     document.getElementById('scheduleForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
+      const id = document.getElementById('modalScheduleId').value;
       const branch = document.getElementById('modalBranch').value;
       const subject = document.getElementById('modalSubject').value;
       const room = document.getElementById('modalRoom').value;
@@ -602,9 +642,10 @@
       const coach = document.getElementById('modalCoach').value.trim();
       const start = document.getElementById('modalStart').value;
 
-      // 1. 방 중복 예약 검증: 같은 지점 + 같은 방 + 같은 시작 시간 여부 확인
+      // 방 중복 예약 검증 (자기 자신 수정 시 제외)
       const isDuplicate = schedules.some(schedule => {
-        return schedule.branch === branch && 
+        return schedule.id !== id && 
+               schedule.branch === branch && 
                schedule.room === room && 
                schedule.start === start;
       });
@@ -616,23 +657,47 @@
 
       const title = `[${branch}/${subject}/${room}] ${student} (${coach})`;
 
-      const newSchedule = {
-        id: String(Date.now()),
-        title,
-        start,
-        branch,
-        subject,
-        room
-      };
+      if (id) {
+        // 기존 일정 수정
+        const index = schedules.findIndex(s => s.id === id);
+        if (index !== -1) {
+          schedules[index] = { id, title, student, coach, start, branch, subject, room };
+          alert('✏️ 일정이 변경되었습니다.');
+        }
+      } else {
+        // 신규 일정 추가
+        const newSchedule = {
+          id: String(Date.now()),
+          title,
+          student,
+          coach,
+          start,
+          branch,
+          subject,
+          room
+        };
+        schedules.push(newSchedule);
+        alert('✅ 일정이 등록되었습니다.');
+      }
 
-      schedules.push(newSchedule);
       localStorage.setItem('schedules', JSON.stringify(schedules));
-
-      alert('✅ 일정이 성공적으로 등록되었습니다.');
       closeModal();
-      this.reset();
       applyFilters();
     });
+
+    // 일정 삭제 기능
+    function deleteSchedule() {
+      const id = document.getElementById('modalScheduleId').value;
+      if (!id) return;
+
+      if (confirm('해당 일정을 정말 삭제하시겠습니까?')) {
+        schedules = schedules.filter(s => s.id !== id);
+        localStorage.setItem('schedules', JSON.stringify(schedules));
+        alert('🗑️ 일정이 삭제되었습니다.');
+        closeModal();
+        applyFilters();
+      }
+    }
 
     function toggleSelectAll(selectAllCheckbox) {
       document.querySelectorAll('.branch-item').forEach(cb => {
