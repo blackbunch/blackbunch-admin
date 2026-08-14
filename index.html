@@ -458,7 +458,7 @@
 
     let schedules = JSON.parse(localStorage.getItem('schedules')) || [
       { id: '1', title: '[다산/스타일/1번 방] 장재혁 (승진 코치)', student: '장재혁', coach: '승진', start: '2026-08-14T20:00', branch: '다산', subject: '스타일', room: '1번 방' },
-      { id: '2', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' }
+      { id: '2', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우', start: '2026-08-14T14:00', branch: '미사', subject: '스타일', room: '1번 방' }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -556,6 +556,8 @@
           right: 'dayGridMonth,timeGridWeek'
         },
         locale: 'ko',
+        slotMinTime: '10:00:00', // 시작 시간: 10시
+        slotMaxTime: '24:00:00', // 종료 시간: 24시(자정)
         events: getFilteredEvents(),
         eventClick: function(info) {
           openModalForEdit(info.event.id);
@@ -598,7 +600,7 @@
       document.getElementById('scheduleModal').classList.remove('hidden');
     }
 
-    // 기존 일정 수정 모달 (기존 데이터 완벽 불러오기)
+    // 기존 일정 수정 모달 (기존 데이터 유지)
     function openModalForEdit(id) {
       const target = schedules.find(s => s.id === id);
       if (!target) return;
