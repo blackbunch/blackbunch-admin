@@ -219,7 +219,6 @@
       margin: 80px auto 0;
     }
 
-    /* 필터 바 스타일 */
     .filter-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -231,7 +230,6 @@
       border: 1px solid var(--border-color);
     }
 
-    /* FullCalendar 어두운 테마 커스텀 */
     #calendar {
       margin-top: 16px;
       background: #121215;
@@ -251,7 +249,6 @@
     .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: var(--accent-color); border-color: var(--accent-color); }
     .fc-event { cursor: pointer; }
 
-    /* 모달 팝업 스타일 */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -358,7 +355,7 @@
       </div>
     </div>
 
-    <!-- 4. 캘린더 대시보드 (어드민 & 코치 공통) -->
+    <!-- 4. 캘린더 대시보드 -->
     <div id="calendarView" class="hidden">
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -366,12 +363,11 @@
           <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModalForAdd()">+ 일정 등록</button>
         </div>
         
-        <!-- 상세 필터 바 (지점, 과목, 룸 선택) -->
+        <!-- 상세 필터 바 -->
         <div class="filter-grid">
           <div>
             <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">지점 선택</label>
             <select id="filterBranch" class="form-control" onchange="applyFilters()">
-              <!-- 동적 생성 -->
             </select>
           </div>
           <div>
@@ -408,14 +404,11 @@
   <!-- 일정 등록/수정/삭제 모달 -->
   <div id="scheduleModal" class="modal-overlay hidden">
     <div class="modal-content">
-      <h3 id="modalTitle" style="margin-bottom:16px;">레슨 / 연습실 일정 등록</h3>
+      <h3 id="modalTitle" style="margin-bottom:16px;">일정 수정 / 삭제</h3>
       <form id="scheduleForm">
         <input type="hidden" id="modalScheduleId">
+        <input type="hidden" id="modalBranch">
         
-        <div class="form-group">
-          <label>지점</label>
-          <select id="modalBranch" class="form-control" required></select>
-        </div>
         <div class="form-group">
           <label>과목</label>
           <select id="modalSubject" class="form-control" required>
@@ -438,11 +431,11 @@
         </div>
         <div class="form-group">
           <label>수강생 이름</label>
-          <input type="text" id="modalStudent" class="form-control" placeholder="예: 김보컬" required>
+          <input type="text" id="modalStudent" class="form-control" placeholder="예: 장재혁" required>
         </div>
         <div class="form-group">
           <label>담당 코치</label>
-          <input type="text" id="modalCoach" class="form-control" placeholder="예: 연우 코치" required>
+          <input type="text" id="modalCoach" class="form-control" placeholder="예: 승진" required>
         </div>
         <div class="form-group">
           <label>일시 (시작 시간)</label>
@@ -463,11 +456,9 @@
     let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
     let calendar = null;
 
-    // 기본 일정 샘플 데이터
     let schedules = JSON.parse(localStorage.getItem('schedules')) || [
-      { id: '1', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' },
-      { id: '2', title: '[위례/보컬 메이킹/2번 방] 이수강 (승진 코치)', student: '이수강', coach: '승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00', branch: '위례', subject: '보컬 메이킹', room: '2번 방' },
-      { id: '3', title: '[다산/2:1 그룹/연습실] 박그룹, 최그룹 (지은 코치)', student: '박그룹, 최그룹', coach: '지은 코치', start: new Date().toISOString().split('T')[0] + 'T18:00', branch: '다산', subject: '2:1 그룹', room: '연습실' }
+      { id: '1', title: '[다산/스타일/1번 방] 장재혁 (승진 코치)', student: '장재혁', coach: '승진', start: '2026-08-14T20:00', branch: '다산', subject: '스타일', room: '1번 방' },
+      { id: '2', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -478,7 +469,6 @@
       }
     });
 
-    // 로그인
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const id = document.getElementById('loginId').value.trim();
@@ -540,9 +530,7 @@
 
     function setupBranchFilter(user) {
       const filterSelect = document.getElementById('filterBranch');
-      const modalSelect = document.getElementById('modalBranch');
       filterSelect.innerHTML = '';
-      modalSelect.innerHTML = '';
 
       let availableBranches = [];
       if (user.role === 'admin' || user.branches.includes('ALL')) {
@@ -554,7 +542,6 @@
 
       availableBranches.forEach(b => {
         filterSelect.innerHTML += `<option value="${b}">${b}점</option>`;
-        modalSelect.innerHTML += `<option value="${b}">${b}점</option>`;
       });
     }
 
@@ -570,7 +557,6 @@
         },
         locale: 'ko',
         events: getFilteredEvents(),
-        // 일정 클릭 시 수정/삭제 모달 오픈
         eventClick: function(info) {
           openModalForEdit(info.event.id);
         }
@@ -599,16 +585,20 @@
       }
     }
 
-    // 신규 등록 모달열기
+    // 신규 일정 등록 모달
     function openModalForAdd() {
       document.getElementById('modalTitle').textContent = '레슨 / 연습실 일정 등록';
       document.getElementById('scheduleForm').reset();
       document.getElementById('modalScheduleId').value = '';
+
+      const currentBranch = document.getElementById('filterBranch').value;
+      document.getElementById('modalBranch').value = (currentBranch === 'ALL') ? '미사' : currentBranch;
+
       document.getElementById('btnDeleteSchedule').classList.add('hidden');
       document.getElementById('scheduleModal').classList.remove('hidden');
     }
 
-    // 기존 일정 수정/삭제 모달열기
+    // 기존 일정 수정 모달 (기존 데이터 완벽 불러오기)
     function openModalForEdit(id) {
       const target = schedules.find(s => s.id === id);
       if (!target) return;
@@ -630,7 +620,7 @@
       document.getElementById('scheduleModal').classList.add('hidden');
     }
 
-    // 일정 저장 (신규 등록 및 수정)
+    // 저장 (신규/수정)
     document.getElementById('scheduleForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -642,7 +632,7 @@
       const coach = document.getElementById('modalCoach').value.trim();
       const start = document.getElementById('modalStart').value;
 
-      // 방 중복 예약 검증 (자기 자신 수정 시 제외)
+      // 중복 체크 (수정 시 본인 제외)
       const isDuplicate = schedules.some(schedule => {
         return schedule.id !== id && 
                schedule.branch === branch && 
@@ -651,21 +641,19 @@
       });
 
       if (isDuplicate) {
-        alert(`❌ 중복 예약 오류!\n[${branch}점 - ${room}] 해당 시간에 이미 다른 예약이 존재합니다.\n다른 시간이나 방을 선택해주세요.`);
+        alert(`❌ 중복 예약 오류!\n[${branch}점 - ${room}] 해당 시간에 이미 다른 예약이 존재합니다.`);
         return;
       }
 
       const title = `[${branch}/${subject}/${room}] ${student} (${coach})`;
 
       if (id) {
-        // 기존 일정 수정
         const index = schedules.findIndex(s => s.id === id);
         if (index !== -1) {
           schedules[index] = { id, title, student, coach, start, branch, subject, room };
           alert('✏️ 일정이 변경되었습니다.');
         }
       } else {
-        // 신규 일정 추가
         const newSchedule = {
           id: String(Date.now()),
           title,
@@ -685,7 +673,7 @@
       applyFilters();
     });
 
-    // 일정 삭제 기능
+    // 일정 삭제
     function deleteSchedule() {
       const id = document.getElementById('modalScheduleId').value;
       if (!id) return;
