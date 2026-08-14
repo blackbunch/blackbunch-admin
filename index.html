@@ -39,11 +39,11 @@
       <form id="loginForm">
         <div class="form-group">
           <label>아이디</label>
-          <input type="text" id="username" class="form-control" required>
+          <input type="text" id="username" class="form-control" placeholder="아이디 입력" required>
         </div>
         <div class="form-group">
           <label>비밀번호</label>
-          <input type="password" id="password" class="form-control" required>
+          <input type="password" id="password" class="form-control" placeholder="비밀번호 입력" required>
         </div>
         <button type="submit" class="btn" style="width: 100%;">로그인</button>
       </form>
@@ -65,18 +65,16 @@
 
 <script>
 // --------------------------------------------------
-// Supabase 프로젝트 주소 및 API Key 설정 (단 1회만 선언)
+// Supabase 프로젝트 주소 및 API Key 설정
 // --------------------------------------------------
 const SUPABASE_URL = 'https://tnqptimvhfckipdtujrn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6oY8ES_Cz6BzemiBkDBC_wl_g_GQP';
 
-// 라이브러리 객체(window.supabase)와 변수명 충돌을 방지하기 위해 supabaseClient로 선언
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let coachList = [];
 let schedules = [];
 let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
-let calendar = null;
 
 window.addEventListener('DOMContentLoaded', async () => {
   if (currentUser) {
@@ -110,33 +108,49 @@ async function fetchSchedules() {
   }
 }
 
-// 로그인 (Supabase coaches 테이블의 username, password 필드 참조)
+// 로그인 기능 (개선 버전)
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const usernameInput = document.getElementById('username').value;
-  const passwordInput = document.getElementById('password').value;
+  
+  // 입력값에서 앞뒤 공백 제거 및 문자열 변환
+  const usernameInput = String(document.getElementById('username').value).trim();
+  const passwordInput = String(document.getElementById('password').value).trim();
 
   try {
+    // 1. 해당 username을 가진 코치 조회
     const { data, error } = await supabaseClient
       .from('coaches')
       .select('*')
-      .eq('username', usernameInput)
-      .eq('password', passwordInput)
-      .single();
+      .eq('username', usernameInput);
 
-    if (error || !data) {
-      alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+    if (error) {
+      alert(`DB 조회 오류: ${error.message}`);
       return;
     }
 
-    currentUser = data;
+    if (!data || data.length === 0) {
+      alert(`'${usernameInput}' 아이디가 존재하지 않습니다.`);
+      return;
+    }
+
+    const user = data[0];
+
+    // 2. 비밀번호 확인
+    if (String(user.password).trim() !== passwordInput) {
+      alert('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    // 3. 로그인 성공 처리
+    currentUser = user;
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
     showMainView(currentUser);
     await fetchCoaches();
     await fetchSchedules();
+
   } catch (err) {
-    console.error('로그인 오류:', err);
-    alert('로그인 처리 중 오류가 발생했습니다.');
+    console.error('로그인 예외 오류:', err);
+    alert(`오류 발생: ${err.message || '로그인 처리 중 문제가 생겼습니다.'}`);
   }
 });
 
