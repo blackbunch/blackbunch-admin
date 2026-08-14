@@ -3,829 +3,363 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>블랙번치 스튜디오 - 통합 관리 시스템</title>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <title>블랙번치 스튜디오 - 어드민 코치 관리</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-    body { background-color: #f4f6f8; color: #333; }
-    
-    #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: #111; }
-    .login-box { background: #fff; padding: 30px; border-radius: 12px; width: 320px; text-align: center; }
-    .login-box h2 { margin-bottom: 20px; font-size: 20px; }
-    .login-box input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; }
-    .login-box button { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    :root {
+      --bg-color: #0f0f11;
+      --card-bg: #1a1a1e;
+      --accent-color: #3b82f6;
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+      --border-color: #2e2e38;
+      --danger-color: #ef4444;
+    }
 
-    #main-screen { display: none; padding: 25px; max-width: 1400px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .user-info { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-    .logout-btn { padding: 6px 12px; background: #ddd; border: none; border-radius: 4px; cursor: pointer; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
-    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
 
-    .form-group { margin-bottom: 10px; }
-    label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 600; }
-    input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
-    textarea { height: 60px; resize: none; }
-    .btn { width: 100%; background-color: #111; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 5px; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
 
-    .filter-bar { background: #fff; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); flex-wrap: wrap; }
-    .filter-bar select { width: 160px; }
-    .branch-select-highlight { border: 2px solid #111; font-weight: bold; background: #f0f0f0; }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
 
-    .student-list, .user-list { max-height: 180px; overflow-y: auto; margin-top: 10px; }
-    .student-item, .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
-    .student-item span { cursor: pointer; font-weight: 600; color: #2196F3; }
-    .sm-btn { padding: 3px 8px; background: #2E7D32; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; }
-    .del-btn { padding: 3px 8px; background: #E53935; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
 
-    #calendar { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .fc-event { cursor: pointer; border: none; padding: 2px 4px; border-radius: 4px; }
+    .card h2 {
+      font-size: 1.15rem;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
 
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-    .modal { background: #fff; border-radius: 12px; padding: 25px; width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 15px; }
-    .btn-edit { background: #2196F3; color: white; flex: 1; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-delete { background: #E53935; color: white; flex: 1; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .form-group {
+      margin-bottom: 16px;
+    }
 
-    .history-item { padding: 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 8px; font-size: 12px; }
-    .history-item .date { font-weight: bold; margin-bottom: 4px; }
-    .badge-admin { background: #111; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
-    .badge-coach { background: #2196F3; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-sub);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: #121215;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    /* 다중 지점 선택 체크박스 스타일 */
+    .branch-checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      background-color: #121215;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-color);
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #2563eb;
+    }
+
+    /* 코치 목록 테이블 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    th {
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-right: 4px;
+      margin-bottom: 2px;
+    }
+
+    .btn-delete {
+      background-color: transparent;
+      color: var(--danger-color);
+      border: 1px solid var(--danger-color);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-delete:hover {
+      background-color: var(--danger-color);
+      color: #fff;
+    }
   </style>
 </head>
 <body>
 
-  <div id="login-screen">
-    <div class="login-box">
-      <h2>🎤 블랙번치 스튜디오</h2>
-      <input type="text" id="loginId" placeholder="아이디">
-      <input type="password" id="loginPw" placeholder="비밀번호">
-      <button onclick="handleLogin()">로그인</button>
-    </div>
-  </div>
+  <div class="container">
+    <h1>어드민 - 코치 계정 및 지점 권한 관리</h1>
 
-  <div id="main-screen">
-    <header>
-      <h1>🎤 블랙번치 스튜디오 통합 관리 System</h1>
-      <div class="user-info">
-        <span id="welcome-text"></span>
-        <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
-      </div>
-    </header>
+    <!-- 계정 생성 카드 -->
+    <div class="card">
+      <h2>신규 코치 계정 등록</h2>
+      <form id="coachForm">
+        <div class="form-group">
+          <label for="coachId">아이디</label>
+          <input type="text" id="coachId" class="form-control" placeholder="아이디 입력" required>
+        </div>
 
-    <!-- 통합 필터바 -->
-    <div class="filter-bar">
-      <label>🏢 지점 선택:</label>
-      <select id="filterBranch" class="branch-select-highlight" onchange="applyFilters()">
-        <option value="ALL">전체 지점 보기</option>
-        <option value="위례점">위례점</option>
-        <option value="미사점">미사점</option>
-        <option value="다산점">다산점</option>
-      </select>
+        <div class="form-group">
+          <label for="coachPassword">비밀번호</label>
+          <input type="password" id="coachPassword" class="form-control" placeholder="비밀번호 입력" required>
+        </div>
 
-      <label>🔍 필터 보기:</label>
-      <select id="filterCoach" onchange="applyFilters()">
-        <option value="ALL">모든 구분 보기</option>
-        <option value="연우 코치님">연우 코치님만 보기</option>
-        <option value="민준 코치님">민준 코치님만 보기</option>
-        <option value="지은 코치님">지은 코치님만 보기</option>
-        <option value="PRACTICE_ONLY">🎹 연습실 예약만 보기</option>
-      </select>
-      
-      <select id="filterRoom" onchange="applyFilters()">
-        <option value="ALL">모든 방 보기</option>
-        <optgroup label="레슨 전용 방 (지점 공통)">
-          <option value="레슨 1번 방">레슨 1번 방</option>
-          <option value="레슨 2번 방">레슨 2번 방</option>
-          <option value="레슨 3번 방">레슨 3번 방</option>
-          <option value="레슨 4번 방">레슨 4번 방</option>
-        </optgroup>
-        <optgroup label="연습실 전용 방 (지점 공통)">
-          <option value="연습실 A">연습실 A</option>
-        </optgroup>
-      </select>
+        <div class="form-group">
+          <label for="coachName">코치 이름</label>
+          <input type="text" id="coachName" class="form-control" placeholder="예: 연우 코치" required>
+        </div>
+
+        <!-- 담당 지점 다중 선택 -->
+        <div class="form-group">
+          <label>담당 지점 (다중 선택 가능)</label>
+          <div class="branch-checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" name="branch" value="ALL" id="branchAll" onchange="toggleSelectAll(this)">
+              <strong>전체 지점 (ALL)</strong>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="branch" value="미사" class="branch-item"> 미사점
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="branch" value="위례" class="branch-item"> 위례점
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="branch" value="다산" class="branch-item"> 다산점
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="branch" value="운정" class="branch-item"> 운정점
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn">코치 계정 생성</button>
+      </form>
     </div>
 
-    <div class="layout">
-      <div class="sidebar">
-        
-        <!-- [어드민 전용] 코치 및 계정 권한 관리 카드 -->
-        <div class="card" id="adminUserManageCard" style="display:none; border: 2px solid #111;">
-          <div class="card-title">👑 [어드민] 코치 계정 & 지점 권한 관리</div>
-          <div class="form-group"><input type="text" id="newUserId" placeholder="코치 아이디"></div>
-          <div class="form-group"><input type="password" id="newUserPw" placeholder="비밀번호"></div>
-          <div class="form-group"><input type="text" id="newUserName" placeholder="코치 이름 (예: 연우 코치님)"></div>
-          <div class="form-group">
-            <label>접속 허용 지점 설정</label>
-            <select id="newUserBranch">
-              <option value="ALL">전체 지점 관리 권한</option>
-              <option value="위례점">위례점만 접속 가능</option>
-              <option value="미사점">미사점만 접속 가능</option>
-              <option value="다산점">다산점만 접속 가능</option>
-            </select>
-          </div>
-          <button class="btn" style="background:#111;" onclick="registerCoachUser()">코치 계정 생성/등록</button>
-          <div class="user-list" id="userListContainer"></div>
-        </div>
-
-        <!-- 수강생 DB 관리 -->
-        <div class="card">
-          <div class="card-title">👤 수강생 목록 & 충전</div>
-          <div class="form-group">
-            <label>등록 지점</label>
-            <select id="newStudentBranch">
-              <option value="위례점">위례점</option>
-              <option value="미사점">미사점</option>
-              <option value="다산점">다산점</option>
-            </select>
-          </div>
-          <div class="form-group"><input type="text" id="newStudentName" placeholder="이름 (예: 홍길동)"></div>
-          <div class="form-group"><input type="text" id="newStudentPhone" placeholder="연락처 (010-0000-0000)"></div>
-          <div class="form-group"><input type="number" id="newStudentLessons" value="4" placeholder="등록 횟수"></div>
-          <button class="btn" style="background:#2E7D32;" onclick="registerStudent()">신규 수강생 DB 등록</button>
-          
-          <div class="student-list" id="studentListContainer"></div>
-        </div>
-
-        <!-- 연습실 전용 예약 카드 -->
-        <div class="card" style="border: 2px solid #7B1FA2;">
-          <div class="card-title" style="color: #7B1FA2;">🎹 연습실 대여 예약</div>
-          <div class="form-group">
-            <label>지점 선택</label>
-            <select id="practiceBranchSelect">
-              <option value="위례점">위례점</option>
-              <option value="미사점">미사점</option>
-              <option value="다산점">다산점</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>수강생 선택</label>
-            <select id="practiceStudentSelect"><option value="">수강생 선택...</option></select>
-          </div>
-          <div class="form-group">
-            <label>연습실 지정</label>
-            <select id="practiceRoomSelect">
-              <option value="연습실 A">연습실 A</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>날짜 및 시간</label>
-            <input type="datetime-local" id="practiceTime">
-          </div>
-          <button class="btn" style="background:#7B1FA2;" onclick="addPracticeRoomDB()">연습실 예약 등록</button>
-        </div>
-
-        <!-- 레슨 일정 예약 카드 -->
-        <div class="card">
-          <div class="card-title">📅 레슨 일정 예약</div>
-          <div class="form-group">
-            <label>지점 선택</label>
-            <select id="lessonBranchSelect">
-              <option value="위례점">위례점</option>
-              <option value="미사점">미사점</option>
-              <option value="다산점">다산점</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>수강생 선택</label>
-            <select id="studentSelect"><option value="">수강생 선택...</option></select>
-          </div>
-          <div class="form-group">
-            <label>레슨 구분</label>
-            <select id="lessonTypeSelect">
-              <option value="정규">정규 레슨 (잔여 횟수 -1 차감)</option>
-              <option value="보강">보강 레슨 (횟수 차감 없음)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>담당 코치</label>
-            <select id="coachSelect">
-              <option value="연우 코치님">연우 코치님</option>
-              <option value="민준 코치님">민준 코치님</option>
-              <option value="지은 코치님">지은 코치님</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>과목</label>
-            <select id="subjectSelect">
-              <option value="보컬 메이킹">보컬 메이킹</option>
-              <option value="스타일">스타일</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>레슨 방 지정</label>
-            <select id="roomSelect">
-              <option value="레슨 1번 방">레슨 1번 방</option>
-              <option value="레슨 2번 방">레슨 2번 방</option>
-              <option value="레슨 3번 방">레슨 3번 방</option>
-              <option value="레슨 4번 방">레슨 4번 방</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>날짜 및 시간</label>
-            <input type="datetime-local" id="lessonTime">
-          </div>
-          <button class="btn" onclick="addLessonDB()">레슨 일정 등록</button>
-        </div>
-
-      </div>
-
-      <div id="calendar"></div>
-    </div>
-  </div>
-
-  <!-- 일정 상세 / 수정 모달 -->
-  <div class="modal-overlay" id="eventModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modalTitle">📌 일정 상세</h3>
-        <button class="close-btn" onclick="closeModal('eventModal')">&times;</button>
-      </div>
-      <input type="hidden" id="modalEventId">
-      <input type="hidden" id="modalType">
-      
-      <div class="form-group">
-        <label>지점</label>
-        <input type="text" id="modalBranch" readonly style="background:#eee;">
-      </div>
-      <div class="form-group">
-        <label>수강생 이름</label>
-        <input type="text" id="modalStudentName" readonly style="background:#eee;">
-      </div>
-
-      <div id="lessonOnlyFields">
-        <div class="form-group">
-          <label>출석 상태</label>
-          <select id="modalStatus">
-            <option value="예약">예약 완료</option>
-            <option value="출석">출석 완료 ✅</option>
-            <option value="결석">결석 ❌</option>
-            <option value="취소">레슨 취소 ⚠️</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>담당 코치</label>
-          <input type="text" id="modalCoach" readonly style="background:#eee;">
-        </div>
-        <div class="form-group">
-          <label>과목 / 레슨구분</label>
-          <input type="text" id="modalSubject">
-        </div>
-        <div class="form-group">
-          <label>레슨 피드백 / 진도 메모</label>
-          <textarea id="modalMemo" placeholder="오늘 진행한 발성 연습이나 진도 피드백을 기록하세요."></textarea>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>사용 방</label>
-        <input type="text" id="modalRoom" readonly style="background:#eee;">
-      </div>
-      <div class="form-group">
-        <label>날짜 및 시간</label>
-        <input type="datetime-local" id="modalTime">
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn-edit" id="btnEditSchedule" onclick="updateSchedule()">수정 저장</button>
-        <button class="btn-delete" onclick="deleteSchedule()">일정 취소/삭제</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 수강생 히스토리 모달 -->
-  <div class="modal-overlay" id="historyModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="historyTitle">📜 수강생 레슨/연습실 히스토리</h3>
-        <button class="close-btn" onclick="closeModal('historyModal')">&times;</button>
-      </div>
-      <div id="historyList"></div>
+    <!-- 코치 목록 카드 -->
+    <div class="card">
+      <h2>등록된 코치 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>아이디</th>
+            <th>담당 지점</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="coachTableBody">
+          <!-- JS로 동적 생성 -->
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    const SERVER_URL = 'https://blackbunch-admin.onrender.com';
-    let currentUser = null;
-    let calendar = null;
-    let rawSchedules = [];
+    // 임시 저장소 (LocalStorage 활용)
+    let coachList = JSON.parse(localStorage.getItem('coachList')) || [];
 
-    const coachColors = {
-      '연우 코치님': '#4A90E2',
-      '민준 코치님': '#2E7D32',
-      '지은 코치님': '#E65100'
-    };
+    // 전체 지점 체크 박스 토글 로직
+    function toggleSelectAll(selectAllCheckbox) {
+      const branchCheckboxes = document.querySelectorAll('.branch-item');
+      branchCheckboxes.forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+      });
+    }
 
-    async function handleLogin() {
-      const username = document.getElementById('loginId').value;
-      const password = document.getElementById('loginPw').value;
+    // 개별 체크박스 변경 시 전체지점 체크박스 상태 업데이트
+    document.querySelectorAll('.branch-item').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const branchCheckboxes = document.querySelectorAll('.branch-item');
+        const checkedBoxes = document.querySelectorAll('.branch-item:checked');
+        const selectAllCheckbox = document.getElementById('branchAll');
 
-      try {
-        const res = await fetch(`${SERVER_URL}/api/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          currentUser = data.user;
-          document.getElementById('login-screen').style.display = 'none';
-          document.getElementById('main-screen').style.display = 'block';
-
-          const roleBadge = currentUser.role === 'admin' ? '<span class="badge-admin">원장님(어드민)</span>' : '<span class="badge-coach">코치</span>';
-          const branchBadge = currentUser.allowed_branch === 'ALL' ? '[전체 지점]' : `[${currentUser.allowed_branch}]`;
-          document.getElementById('welcome-text').innerHTML = `${roleBadge} <strong>${currentUser.name}</strong> ${branchBadge}`;
-
-          // 지점 권한 제어
-          setupBranchAccess();
-
-          // 어드민 전용 메뉴 보이기
-          if (currentUser.role === 'admin') {
-            document.getElementById('adminUserManageCard').style.display = 'block';
-            loadUserList();
-          }
-
-          initCalendar();
-          loadStudents();
+        if (branchCheckboxes.length === checkedBoxes.length) {
+          selectAllCheckbox.checked = true;
         } else {
-          alert(data.message);
-        }
-      } catch (err) {
-        alert('로그인 오류: ' + err.message);
-      }
-    }
-
-    function setupBranchAccess() {
-      const filterBranch = document.getElementById('filterBranch');
-      const newStudentBranch = document.getElementById('newStudentBranch');
-      const practiceBranchSelect = document.getElementById('practiceBranchSelect');
-      const lessonBranchSelect = document.getElementById('lessonBranchSelect');
-
-      if (currentUser.allowed_branch !== 'ALL') {
-        const branch = currentUser.allowed_branch;
-        
-        filterBranch.innerHTML = `<option value="${branch}">${branch}</option>`;
-        newStudentBranch.innerHTML = `<option value="${branch}">${branch}</option>`;
-        practiceBranchSelect.innerHTML = `<option value="${branch}">${branch}</option>`;
-        lessonBranchSelect.innerHTML = `<option value="${branch}">${branch}</option>`;
-
-        filterBranch.disabled = true;
-      }
-    }
-
-    function handleLogout() {
-      location.reload();
-    }
-
-    function initCalendar() {
-      const calendarEl = document.getElementById('calendar');
-      calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-        locale: 'ko',
-        slotMinTime: '10:00:00',
-        slotMaxTime: '24:00:00',
-        allDaySlot: false,
-        events: fetchSchedules,
-        eventClick: function(info) {
-          openModal(info.event);
+          selectAllCheckbox.checked = false;
         }
       });
-      calendar.render();
-    }
+    });
 
-    async function fetchSchedules(fetchInfo, successCallback, failureCallback) {
-      try {
-        const res = await fetch(`${SERVER_URL}/api/schedules`);
-        if (res.ok) {
-          rawSchedules = await res.json();
-          renderFilteredEvents(successCallback);
-        }
-      } catch (err) {
-        failureCallback(err);
-      }
-    }
+    // 폼 제출 (계정 생성)
+    document.getElementById('coachForm').addEventListener('submit', function(e) {
+      e.preventDefault();
 
-    function renderFilteredEvents(callback) {
-      const selectedBranch = document.getElementById('filterBranch').value;
-      const selectedCoach = document.getElementById('filterCoach').value;
-      const selectedRoom = document.getElementById('filterRoom').value;
+      const id = document.getElementById('coachId').value.trim();
+      const password = document.getElementById('coachPassword').value.trim();
+      const name = document.getElementById('coachName').value.trim();
 
-      const filtered = rawSchedules.filter(s => {
-        if (currentUser.allowed_branch !== 'ALL' && (s.branch_name || '위례점') !== currentUser.allowed_branch) {
-          return false;
-        }
+      // 선택된 지점 배열 추출
+      const selectedBranches = [];
+      const isAllChecked = document.getElementById('branchAll').checked;
 
-        const branchMatch = (selectedBranch === 'ALL' || (s.branch_name || '위례점') === selectedBranch);
-
-        let coachMatch = true;
-        if (selectedCoach === 'PRACTICE_ONLY') {
-          coachMatch = (s.schedule_type === 'practice');
-        } else if (selectedCoach !== 'ALL') {
-          coachMatch = (s.coach_name === selectedCoach);
-        }
-
-        const roomMatch = (selectedRoom === 'ALL' || s.room_name === selectedRoom);
-        return branchMatch && coachMatch && roomMatch;
-      });
-
-      const events = filtered.map(s => {
-        const branchTag = `[${s.branch_name || '위례점'}]`;
-        if (s.schedule_type === 'practice') {
-          return {
-            id: s.id,
-            title: `🎹${branchTag}[${s.room_name}] ${s.student_name}`,
-            start: s.start_time,
-            end: s.end_time,
-            backgroundColor: '#7B1FA2',
-            extendedProps: { ...s }
-          };
-        } else {
-          let statusBadge = s.status === '출석' ? '✅' : (s.status === '결석' ? '❌' : '');
-          return {
-            id: s.id,
-            title: `${statusBadge}${branchTag}[${s.room_name || '레슨방'}] ${s.student_name} (${s.coach_name})`,
-            start: s.start_time,
-            end: s.end_time,
-            backgroundColor: coachColors[s.coach_name] || '#333',
-            extendedProps: { ...s }
-          };
-        }
-      });
-
-      if (callback) callback(events);
-      else calendar.refetchEvents();
-    }
-
-    function applyFilters() {
-      calendar.refetchEvents();
-    }
-
-    async function registerCoachUser() {
-      const username = document.getElementById('newUserId').value;
-      const password = document.getElementById('newUserPw').value;
-      const name = document.getElementById('newUserName').value;
-      const branch = document.getElementById('newUserBranch').value;
-
-      if (!username || !password || !name) return alert('아이디, 비밀번호, 코치 이름을 모두 입력하세요.');
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, name, allowed_branch: branch, role: 'coach' })
-        });
-        if (res.ok) {
-          alert(`코치 계정이 생성되었습니다. (${name} / 권한: ${branch})`);
-          document.getElementById('newUserId').value = '';
-          document.getElementById('newUserPw').value = '';
-          document.getElementById('newUserName').value = '';
-          loadUserList();
-        } else {
-          const err = await res.json();
-          alert('생성 실패: ' + err.error);
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
-
-    async function loadUserList() {
-      try {
-        const res = await fetch(`${SERVER_URL}/api/users`);
-        if (res.ok) {
-          const users = await res.json();
-          const container = document.getElementById('userListContainer');
-          container.innerHTML = '';
-
-          users.forEach(u => {
-            const branchText = u.allowed_branch === 'ALL' ? '전체지점' : u.allowed_branch;
-            container.innerHTML += `
-              <div class="user-item">
-                <div><strong>${u.name}</strong> (${u.username}) <br><small style="color:#666;">권한: ${branchText}</small></div>
-                ${u.role !== 'admin' ? `<button class="del-btn" onclick="deleteUser('${u.id}')">삭제</button>` : ''}
-              </div>
-            `;
-          });
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function deleteUser(id) {
-      if (!confirm('해당 코치 계정을 삭제하시겠습니까?')) return;
-      try {
-        const res = await fetch(`${SERVER_URL}/api/users/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          alert('계정이 삭제되었습니다.');
-          loadUserList();
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
-
-    async function loadStudents() {
-      try {
-        const res = await fetch(`${SERVER_URL}/api/students`);
-        if (res.ok) {
-          let students = await res.json();
-
-          if (currentUser.allowed_branch !== 'ALL') {
-            students = students.filter(s => (s.branch_name || '위례점') === currentUser.allowed_branch);
-          }
-
-          const select = document.getElementById('studentSelect');
-          const practiceSelect = document.getElementById('practiceStudentSelect');
-          const container = document.getElementById('studentListContainer');
-
-          select.innerHTML = '<option value="">수강생 선택...</option>';
-          practiceSelect.innerHTML = '<option value="">수강생 선택...</option>';
-          container.innerHTML = '';
-
-          students.forEach(s => {
-            const branchTag = `[${s.branch_name || '위례점'}]`;
-            select.innerHTML += `<option value="${s.name}">${branchTag} ${s.name} (잔여:${s.remaining_lessons}회)</option>`;
-            practiceSelect.innerHTML += `<option value="${s.name}">${branchTag} ${s.name}</option>`;
-            container.innerHTML += `
-              <div class="student-item">
-                <span onclick="openHistoryModal('${s.name}')">${branchTag} ${s.name} (${s.remaining_lessons}/${s.total_lessons}회)</span>
-                <button class="sm-btn" onclick="chargeStudent('${s.id}', '${s.name}')">+충전</button>
-              </div>
-            `;
-          });
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function chargeStudent(id, name) {
-      const count = prompt(`${name} 수강생에게 추가 충전할 레슨 횟수를 입력하세요 (예: 4):`, '4');
-      if (!count || isNaN(count)) return;
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/students/${id}/charge`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ add_lessons: count })
-        });
-        if (res.ok) {
-          alert(`${name} 수강생의 레슨 횟수가 ${count}회 충전되었습니다.`);
-          loadStudents();
-        }
-      } catch (err) {
-        alert('충전 에러: ' + err.message);
-      }
-    }
-
-    async function openHistoryModal(studentName) {
-      document.getElementById('historyTitle').innerText = `📜 ${studentName} 수강생 레슨/연습실 이력`;
-      const container = document.getElementById('historyList');
-      container.innerHTML = '로딩 중...';
-      document.getElementById('historyModal').style.display = 'flex';
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/students/${studentName}/history`);
-        if (res.ok) {
-          const history = await res.json();
-          if (history.length === 0) {
-            container.innerHTML = '<p style="font-size:13px; color:#888;">진행된 이력이 없습니다.</p>';
-            return;
-          }
-          container.innerHTML = '';
-          history.forEach(h => {
-            const dateStr = new Date(h.start_time).toLocaleString('ko-KR');
-            const branchTag = `[${h.branch_name || '위례점'}]`;
-            if (h.schedule_type === 'practice') {
-              container.innerHTML += `
-                <div class="history-item" style="border-left: 4px solid #7B1FA2;">
-                  <div class="date">${dateStr} ${branchTag} [${h.room_name}] - 🎹 연습실 사용</div>
-                </div>
-              `;
-            } else {
-              container.innerHTML += `
-                <div class="history-item">
-                  <div class="date">${dateStr} ${branchTag} [${h.room_name || '방미지정'}] - ${h.subject}</div>
-                  <div>담당: ${h.coach_name} | 상태: <strong>${h.status || '예약'}</strong></div>
-                  ${h.memo ? `<div style="color:#555; margin-top:4px;">📝 ${h.memo}</div>` : ''}
-                </div>
-              `;
-            }
-          });
-        }
-      } catch (err) {
-        container.innerHTML = '이력 조회 실패';
-      }
-    }
-
-    async function registerStudent() {
-      const branch = document.getElementById('newStudentBranch').value;
-      const name = document.getElementById('newStudentName').value;
-      const phone = document.getElementById('newStudentPhone').value;
-      const total = document.getElementById('newStudentLessons').value;
-
-      if (!name) return alert('수강생 이름을 입력하세요.');
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/students`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ branch_name: branch, name, phone, subject: '보컬', total_lessons: total })
-        });
-        if (res.ok) {
-          alert(`[${branch}] 수강생이 DB에 등록되었습니다.`);
-          document.getElementById('newStudentName').value = '';
-          document.getElementById('newStudentPhone').value = '';
-          loadStudents();
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
-
-    async function addLessonDB() {
-      const branch = document.getElementById('lessonBranchSelect').value;
-      const studentName = document.getElementById('studentSelect').value;
-      const lessonType = document.getElementById('lessonTypeSelect').value;
-      const coach = document.getElementById('coachSelect').value;
-      const subject = document.getElementById('subjectSelect').value;
-      const room = document.getElementById('roomSelect').value;
-      const time = document.getElementById('lessonTime').value;
-
-      if (!studentName || !time) return alert('수강생과 시간을 선택해 주세요.');
-
-      const startDate = new Date(time);
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/schedules`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            branch_name: branch,
-            student_name: studentName,
-            coach_name: coach,
-            subject: subject,
-            room_name: room,
-            lesson_type: lessonType,
-            start_time: startDate.toISOString(),
-            end_time: endDate.toISOString()
-          })
-        });
-
-        if (res.ok) {
-          alert(`[${branch}] 레슨 일정이 등록되었습니다.`);
-          calendar.refetchEvents();
-          loadStudents();
-        } else {
-          const errData = await res.json();
-          alert('등록 실패: ' + errData.error);
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
-
-    async function addPracticeRoomDB() {
-      const branch = document.getElementById('practiceBranchSelect').value;
-      const studentName = document.getElementById('practiceStudentSelect').value;
-      const room = document.getElementById('practiceRoomSelect').value;
-      const time = document.getElementById('practiceTime').value;
-
-      if (!studentName || !time) return alert('수강생과 시간을 선택해 주세요.');
-
-      const startDate = new Date(time);
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/practice-rooms`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            branch_name: branch,
-            student_name: studentName,
-            room_name: room,
-            start_time: startDate.toISOString(),
-            end_time: endDate.toISOString()
-          })
-        });
-
-        if (res.ok) {
-          alert(`[${branch}] 연습실 예약이 완료되었습니다.`);
-          calendar.refetchEvents();
-        } else {
-          const errData = await res.json();
-          alert('예약 실패: ' + errData.error);
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
-
-    function openModal(event) {
-      const props = event.extendedProps;
-      document.getElementById('modalEventId').value = event.id;
-      document.getElementById('modalType').value = props.schedule_type;
-      document.getElementById('modalBranch').value = props.branch_name || '위례점';
-      document.getElementById('modalStudentName').value = props.student_name;
-      document.getElementById('modalRoom').value = props.room_name;
-
-      const date = new Date(event.start);
-      const tzOffset = date.getTimezoneOffset() * 60000;
-      document.getElementById('modalTime').value = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
-
-      if (props.schedule_type === 'practice') {
-        document.getElementById('modalTitle').innerText = '🎹 연습실 예약 상세';
-        document.getElementById('lessonOnlyFields').style.display = 'none';
-        document.getElementById('btnEditSchedule').style.display = 'none';
+      if (isAllChecked) {
+        selectedBranches.push('ALL');
       } else {
-        document.getElementById('modalTitle').innerText = '📌 레슨 상세 및 출석/메모';
-        document.getElementById('lessonOnlyFields').style.display = 'block';
-        document.getElementById('btnEditSchedule').style.display = 'inline-block';
-
-        document.getElementById('modalCoach').value = props.coach_name;
-        document.getElementById('modalSubject').value = props.subject;
-        document.getElementById('modalStatus').value = props.status || '예약';
-        document.getElementById('modalMemo').value = props.memo || '';
-      }
-
-      document.getElementById('eventModal').style.display = 'flex';
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    async function updateSchedule() {
-      const id = document.getElementById('modalEventId').value;
-      const branch = document.getElementById('modalBranch').value;
-      const studentName = document.getElementById('modalStudentName').value;
-      const coach = document.getElementById('modalCoach').value;
-      const subject = document.getElementById('modalSubject').value;
-      const room = document.getElementById('modalRoom').value;
-      const time = document.getElementById('modalTime').value;
-      const status = document.getElementById('modalStatus').value;
-      const memo = document.getElementById('modalMemo').value;
-
-      const startDate = new Date(time);
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-
-      try {
-        const res = await fetch(`${SERVER_URL}/api/schedules/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            branch_name: branch,
-            coach_name: coach,
-            subject: subject,
-            room_name: room,
-            start_time: startDate.toISOString(),
-            end_time: endDate.toISOString(),
-            status: status,
-            memo: memo
-          })
+        document.querySelectorAll('.branch-item:checked').forEach(cb => {
+          selectedBranches.push(cb.value);
         });
+      }
 
-        if (res.ok) {
-          alert('레슨 정보가 수정되었습니다.');
-          closeModal('eventModal');
-          calendar.refetchEvents();
+      if (selectedBranches.length === 0) {
+        alert('최소 하나 이상의 지점을 선택해 주세요.');
+        return;
+      }
+
+      // 아이디 중복 확인
+      if (coachList.some(coach => coach.id === id)) {
+        alert('이미 존재하는 아이디입니다.');
+        return;
+      }
+
+      // 코치 데이터 객체 생성
+      const newCoach = {
+        id,
+        password,
+        name,
+        branches: selectedBranches // 다중 지점 배열로 저장 (예: ["미사", "위례"])
+      };
+
+      coachList.push(newCoach);
+      localStorage.setItem('coachList', JSON.stringify(coachList));
+
+      alert(`${name} 코치 계정이 생성되었습니다.`);
+      this.reset();
+      renderCoachList();
+    });
+
+    // 코치 목록 랜더링
+    function renderCoachList() {
+      const tbody = document.getElementById('coachTableBody');
+      tbody.innerHTML = '';
+
+      if (coachList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-sub);">등록된 코치가 없습니다.</td></tr>';
+        return;
+      }
+
+      coachList.forEach((coach, index) => {
+        const tr = document.createElement('tr');
+        
+        // 지점 뱃지 생성
+        let branchBadges = '';
+        if (coach.branches.includes('ALL')) {
+          branchBadges = '<span class="badge" style="background:#2563eb; color:#fff;">전체 지점</span>';
         } else {
-          const errData = await res.json();
-          alert('수정 실패: ' + errData.error);
+          branchBadges = coach.branches.map(b => `<span class="badge">${b}점</span>`).join('');
         }
-      } catch (err) {
-        alert('에러: ' + err.message);
+
+        tr.innerHTML = `
+          <td><strong>${coach.name}</strong></td>
+          <td>${coach.id}</td>
+          <td>${branchBadges}</td>
+          <td><button class="btn-delete" onclick="deleteCoach(${index})">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 코치 삭제
+    function deleteCoach(index) {
+      if (confirm(`${coachList[index].name} 코치 계정을 삭제하시겠습니까?`)) {
+        coachList.splice(index, 1);
+        localStorage.setItem('coachList', JSON.stringify(coachList));
+        renderCoachList();
       }
     }
 
-    async function deleteSchedule() {
-      const id = document.getElementById('modalEventId').value;
-      const type = document.getElementById('modalType').value;
-
-      if (!confirm('해당 일정을 삭제/취소하시겠습니까?')) return;
-
-      const endpoint = type === 'practice' ? `${SERVER_URL}/api/practice-rooms/${id}` : `${SERVER_URL}/api/schedules/${id}`;
-
-      try {
-        const res = await fetch(endpoint, { method: 'DELETE' });
-        if (res.ok) {
-          alert('일정이 삭제되었습니다.');
-          closeModal('eventModal');
-          calendar.refetchEvents();
-          loadStudents();
-        }
-      } catch (err) {
-        alert('에러: ' + err.message);
-      }
-    }
+    // 초기 실행
+    renderCoachList();
   </script>
 </body>
 </html>
