@@ -65,9 +65,9 @@
 
 <script>
 // --------------------------------------------------
-// Supabase 프로젝트 주소 및 API Key 설정
+// Supabase 프로젝트 주소 및 API Key 설정 (수정 완료)
 // --------------------------------------------------
-const SUPABASE_URL = 'https://tnqptimvhfckipdtujrn.supabase.co';
+const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6oY8ES_Cz6BzemiBkDBC_wl_g_GQP';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -108,16 +108,15 @@ async function fetchSchedules() {
   }
 }
 
-// 로그인 기능 (개선 버전)
+// 로그인 기능
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  // 입력값에서 앞뒤 공백 제거 및 문자열 변환
   const usernameInput = String(document.getElementById('username').value).trim();
   const passwordInput = String(document.getElementById('password').value).trim();
 
   try {
-    // 1. 해당 username을 가진 코치 조회
+    // 1. username 검색
     const { data, error } = await supabaseClient
       .from('coaches')
       .select('*')
