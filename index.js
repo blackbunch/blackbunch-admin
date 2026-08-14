@@ -6,7 +6,6 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Supabase 클라이언트 설정 (환경변수 또는 직주입)
 const SUPABASE_URL = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'YOUR_SUPABASE_ANON_KEY';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -14,28 +13,25 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 app.use(cors());
 app.use(express.json());
 
-// 1. HTML 등 정적 파일 제공 설정 (index.html 연동 핵심)
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. 로그인 API
+// 로그인 API
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  
-  // 관리자 계정 정보 (필요시 수정을 권장합니다)
   if (username === 'blackbunch' && password === '1234') {
     return res.json({
       success: true,
-      user: { name: '블랙번치 관리자', role: 'admin' }
+      user: { name: '블랙번치 통합관리자', role: 'admin' }
     });
   }
   return res.status(401).json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
 });
 
-// 3. 수강생 관리 API
+// 수강생 API
 app.get('/api/students', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -52,12 +48,13 @@ app.get('/api/students', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    const { name, phone, subject, total_lessons } = req.body;
+    const { branch_name, name, phone, subject, total_lessons } = req.body;
     const count = parseInt(total_lessons) || 4;
 
     const { data, error } = await supabase
       .from('students')
       .insert([{
+        branch_name: branch_name || '위례점',
         name,
         phone,
         subject: subject || '보컬',
@@ -119,7 +116,7 @@ app.get('/api/students/:name/history', async (req, res) => {
   }
 });
 
-// 4. 레슨 & 연습실 일정 조회 API
+// 일정 조회
 app.get('/api/schedules', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -134,29 +131,31 @@ app.get('/api/schedules', async (req, res) => {
   }
 });
 
-// 5. 레슨 일정 등록 (방 & 코치 시간 중복 검사)
+// 레슨 일정 등록 (같은 지점 내 시간 중복 체크)
 app.post('/api/schedules', async (req, res) => {
   try {
-    const { student_name, coach_name, subject, room_name, lesson_type, start_time, end_time } = req.body;
+    const { branch_name, student_name, coach_name, subject, room_name, lesson_type, start_time, end_time } = req.body;
+    const targetBranch = branch_name || '위례점';
 
-    // 방/코치 시간 중복 확인
+    // 해당 지점 내 방/코치 중복 검사
     const { data: overlap, error: checkErr } = await supabase
       .from('schedules')
       .select('*')
+      .eq('branch_name', targetBranch)
       .or(`room_name.eq.${room_name},coach_name.eq.${coach_name}`)
       .lt('start_time', end_time)
       .gt('end_time', start_time);
 
     if (checkErr) throw checkErr;
     if (overlap && overlap.length > 0) {
-      return res.status(400).json({ error: '해당 시간대에 지정된 방 또는 코치님의 다른 일정이 이미 존재합니다.' });
+      return res.status(400).json({ error: `[${targetBranch}] 해당 시간대에 지정된 방 또는 코치님의 일정이 이미 존재합니다.` });
     }
 
-    // 일정 추가
     const { data, error } = await supabase
       .from('schedules')
       .insert([{
         schedule_type: 'lesson',
+        branch_name: targetBranch,
         student_name,
         coach_name,
         subject,
@@ -170,7 +169,6 @@ app.post('/api/schedules', async (req, res) => {
 
     if (error) throw error;
 
-    // 정규 레슨일 경우 차감
     if (lesson_type === '정규') {
       const { data: student } = await supabase
         .from('students')
@@ -192,28 +190,30 @@ app.post('/api/schedules', async (req, res) => {
   }
 });
 
-// 6. 연습실 대여 등록 (연습실 중복 검사)
+// 연습실 예약 등록 (같은 지점 내 연습실 중복 체크)
 app.post('/api/practice-rooms', async (req, res) => {
   try {
-    const { student_name, room_name, start_time, end_time } = req.body;
+    const { branch_name, student_name, room_name, start_time, end_time } = req.body;
+    const targetBranch = branch_name || '위례점';
 
-    // 연습실 방 중복 확인
     const { data: overlap, error: checkErr } = await supabase
       .from('schedules')
       .select('*')
+      .eq('branch_name', targetBranch)
       .eq('room_name', room_name)
       .lt('start_time', end_time)
       .gt('end_time', start_time);
 
     if (checkErr) throw checkErr;
     if (overlap && overlap.length > 0) {
-      return res.status(400).json({ error: '해당 시간에 이미 대여된 연습실입니다.' });
+      return res.status(400).json({ error: `[${targetBranch}] 해당 시간에 이미 대여된 연습실입니다.` });
     }
 
     const { data, error } = await supabase
       .from('schedules')
       .insert([{
         schedule_type: 'practice',
+        branch_name: targetBranch,
         student_name,
         room_name,
         start_time,
@@ -229,15 +229,16 @@ app.post('/api/practice-rooms', async (req, res) => {
   }
 });
 
-// 7. 일정 수정 API (출석 상태 / 메모 / 시간 등)
+// 일정 수정 API
 app.put('/api/schedules/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { coach_name, subject, room_name, start_time, end_time, status, memo } = req.body;
+    const { branch_name, coach_name, subject, room_name, start_time, end_time, status, memo } = req.body;
 
     const { data, error } = await supabase
       .from('schedules')
       .update({
+        branch_name,
         coach_name,
         subject,
         room_name,
@@ -256,7 +257,7 @@ app.put('/api/schedules/:id', async (req, res) => {
   }
 });
 
-// 8. 일정 삭제/취소 API
+// 일정 삭제 API
 app.delete('/api/schedules/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -310,5 +311,5 @@ app.delete('/api/practice-rooms/:id', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 블랙번치 어드민 서버 실행 중: port ${PORT}`);
+  console.log(`🚀 블랙번치 어드민 통합 서버 실행 중: port ${PORT}`);
 });
