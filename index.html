@@ -357,7 +357,7 @@
           <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModal()">+ 일정 등록</button>
         </div>
         
-        <!-- 상세 필터 바 (지점, 과목, 룸/연습실) -->
+        <!-- 상세 필터 바 (지점, 과목, 룸 선택) -->
         <div class="filter-grid">
           <div>
             <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">지점 선택</label>
@@ -377,15 +377,14 @@
             </select>
           </div>
           <div>
-            <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">레슨 룸 / 연습실 번호</label>
+            <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">방 목록 필터</label>
             <select id="filterRoom" class="form-control" onchange="applyFilters()">
-              <option value="ALL">전체 룸/연습실</option>
-              <option value="A룸 (보컬 1)">A룸 (보컬 1)</option>
-              <option value="B룸 (보컬 2)">B룸 (보컬 2)</option>
-              <option value="C룸 (그룹룸)">C룸 (그룹룸)</option>
-              <option value="연습실 1">연습실 1</option>
-              <option value="연습실 2">연습실 2</option>
-              <option value="연습실 3">연습실 3</option>
+              <option value="ALL">전체 방</option>
+              <option value="1번 방">1번 방</option>
+              <option value="2번 방">2번 방</option>
+              <option value="3번 방">3번 방</option>
+              <option value="4번 방">4번 방</option>
+              <option value="연습실">연습실</option>
             </select>
           </div>
         </div>
@@ -417,14 +416,13 @@
           </select>
         </div>
         <div class="form-group">
-          <label>레슨 룸 / 연습실 선택</label>
+          <label>방 선택</label>
           <select id="modalRoom" class="form-control" required>
-            <option value="A룸 (보컬 1)">A룸 (보컬 1)</option>
-            <option value="B룸 (보컬 2)">B룸 (보컬 2)</option>
-            <option value="C룸 (그룹룸)">C룸 (그룹룸)</option>
-            <option value="연습실 1">연습실 1</option>
-            <option value="연습실 2">연습실 2</option>
-            <option value="연습실 3">연습실 3</option>
+            <option value="1번 방">1번 방</option>
+            <option value="2번 방">2번 방</option>
+            <option value="3번 방">3번 방</option>
+            <option value="4번 방">4번 방</option>
+            <option value="연습실">연습실</option>
           </select>
         </div>
         <div class="form-group">
@@ -455,9 +453,9 @@
 
     // 기본 일정 샘플 데이터
     let schedules = JSON.parse(localStorage.getItem('schedules')) || [
-      { id: '1', title: '[미사/스타일/A룸] 김수강 - 연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00:00', branch: '미사', subject: '스타일', room: 'A룸 (보컬 1)' },
-      { id: '2', title: '[위례/보컬 메이킹/B룸] 이수강 - 승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00:00', branch: '위례', subject: '보컬 메이킹', room: 'B룸 (보컬 2)' },
-      { id: '3', title: '[다산/2:1 그룹/C룸] 박그룹, 최그룹', start: new Date().toISOString().split('T')[0] + 'T18:00:00', branch: '다산', subject: '2:1 그룹', room: 'C룸 (그룹룸)' }
+      { id: '1', title: '[미사/스타일/1번 방] 김수강 - 연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00', branch: '미사', subject: '스타일', room: '1번 방' },
+      { id: '2', title: '[위례/보컬 메이킹/2번 방] 이수강 - 승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00', branch: '위례', subject: '보컬 메이킹', room: '2번 방' },
+      { id: '3', title: '[다산/2:1 그룹/연습실] 박그룹, 최그룹', start: new Date().toISOString().split('T')[0] + 'T18:00', branch: '다산', subject: '2:1 그룹', room: '연습실' }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -512,7 +510,6 @@
       document.getElementById('appHeader').classList.remove('hidden');
       document.getElementById('userInfoText').textContent = `${user.name} 님`;
 
-      // 지점 목록 구성
       setupBranchFilter(user);
 
       if (user.role === 'admin') {
@@ -529,7 +526,6 @@
       initCalendar();
     }
 
-    // 지점 필터 옵션 구성
     function setupBranchFilter(user) {
       const filterSelect = document.getElementById('filterBranch');
       const modalSelect = document.getElementById('modalBranch');
@@ -550,7 +546,6 @@
       });
     }
 
-    // FullCalendar 초기화 및 필터링
     function initCalendar() {
       const calendarEl = document.getElementById('calendar');
       
@@ -588,7 +583,6 @@
       }
     }
 
-    // 일정 추가 모달 컨트롤
     function openModal() {
       document.getElementById('scheduleModal').classList.remove('hidden');
     }
@@ -597,6 +591,7 @@
       document.getElementById('scheduleModal').classList.add('hidden');
     }
 
+    // 일정 추가 및 방 중복 예약 방지 검증 (Duplicate Check)
     document.getElementById('scheduleForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -606,6 +601,18 @@
       const student = document.getElementById('modalStudent').value.trim();
       const coach = document.getElementById('modalCoach').value.trim();
       const start = document.getElementById('modalStart').value;
+
+      // 1. 방 중복 예약 검증: 같은 지점 + 같은 방 + 같은 시작 시간 여부 확인
+      const isDuplicate = schedules.some(schedule => {
+        return schedule.branch === branch && 
+               schedule.room === room && 
+               schedule.start === start;
+      });
+
+      if (isDuplicate) {
+        alert(`❌ 중복 예약 오류!\n[${branch}점 - ${room}] 해당 시간에 이미 다른 예약이 존재합니다.\n다른 시간이나 방을 선택해주세요.`);
+        return;
+      }
 
       const title = `[${branch}/${subject}/${room}] ${student} (${coach})`;
 
@@ -621,13 +628,12 @@
       schedules.push(newSchedule);
       localStorage.setItem('schedules', JSON.stringify(schedules));
 
-      alert('일정이 등록되었습니다.');
+      alert('✅ 일정이 성공적으로 등록되었습니다.');
       closeModal();
       this.reset();
       applyFilters();
     });
 
-    // 어드민 코치 계정 관리 기능
     function toggleSelectAll(selectAllCheckbox) {
       document.querySelectorAll('.branch-item').forEach(cb => {
         cb.checked = selectAllCheckbox.checked;
