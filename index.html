@@ -403,10 +403,10 @@
 
   <script>
     // ----------------------------------------------------
-    // Project Settings > API에서 확인한 주소 및 키 세팅
+    // Supabase 프로젝트 주소 및 API Key 설정
     // ----------------------------------------------------
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+    const SUPABASE_URL = 'https://tnqptimvhfckipdtujrn.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_6oV8ES_Cz6BzemiBkDBCLA_wl_g_GQP';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let coachList = [];
@@ -520,7 +520,7 @@
           right: 'dayGridMonth,timeGridWeek'
         },
         locale: 'ko',
-        slotMinTime: '10:00:00', // 10시~24시 적용
+        slotMinTime: '10:00:00',
         slotMaxTime: '24:00:00',
         events: getFilteredEvents(),
         eventClick: function(info) {
