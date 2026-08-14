@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>블랙번치 스튜디오 - 관리 시스템</title>
+  <title>블랙번치 스튜디오 - 통합 관리 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
@@ -30,8 +30,9 @@
     textarea { height: 60px; resize: none; }
     .btn { width: 100%; background-color: #111; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 5px; }
 
-    .filter-bar { background: #fff; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-    .filter-bar select { width: 180px; }
+    .filter-bar { background: #fff; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); flex-wrap: wrap; }
+    .filter-bar select { width: 160px; }
+    .branch-select-highlight { border: 2px solid #111; font-weight: bold; background: #f0f0f0; }
 
     .student-list { max-height: 180px; overflow-y: auto; margin-top: 10px; }
     .student-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px; }
@@ -66,15 +67,23 @@
 
   <div id="main-screen">
     <header>
-      <h1>🎤 블랙번치 스튜디오 레슨 및 연습실 System</h1>
+      <h1>🎤 블랙번치 스튜디오 통합 관리 System</h1>
       <div class="user-info">
         <span id="welcome-text"></span>
         <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
       </div>
     </header>
 
-    <!-- 필터바 -->
+    <!-- 통합 필터바 -->
     <div class="filter-bar">
+      <label>🏢 **지점 선택:**</label>
+      <select id="filterBranch" class="branch-select-highlight" onchange="applyFilters()">
+        <option value="ALL">전체 지점 보기</option>
+        <option value="위례점" selected>위례점</option>
+        <option value="미사점">미사점</option>
+        <option value="다산점">다산점</option>
+      </select>
+
       <label>🔍 필터 보기:</label>
       <select id="filterCoach" onchange="applyFilters()">
         <option value="ALL">모든 구분 보기</option>
@@ -83,6 +92,7 @@
         <option value="지은 코치님">지은 코치님만 보기</option>
         <option value="PRACTICE_ONLY">🎹 연습실 예약만 보기</option>
       </select>
+      
       <select id="filterRoom" onchange="applyFilters()">
         <option value="ALL">모든 방 보기</option>
         <optgroup label="레슨 전용 방">
@@ -103,6 +113,14 @@
         <!-- 수강생 DB 관리 -->
         <div class="card">
           <div class="card-title">👤 수강생 목록 & 충전</div>
+          <div class="form-group">
+            <label>등록 지점</label>
+            <select id="newStudentBranch">
+              <option value="위례점">위례점</option>
+              <option value="미사점">미사점</option>
+              <option value="다산점">다산점</option>
+            </select>
+          </div>
           <div class="form-group"><input type="text" id="newStudentName" placeholder="이름 (예: 홍길동)"></div>
           <div class="form-group"><input type="text" id="newStudentPhone" placeholder="연락처 (010-0000-0000)"></div>
           <div class="form-group"><input type="number" id="newStudentLessons" value="4" placeholder="등록 횟수"></div>
@@ -114,6 +132,14 @@
         <!-- 연습실 전용 예약 카드 -->
         <div class="card" style="border: 2px solid #7B1FA2;">
           <div class="card-title" style="color: #7B1FA2;">🎹 연습실 대여 예약</div>
+          <div class="form-group">
+            <label>지점 선택</label>
+            <select id="practiceBranchSelect">
+              <option value="위례점">위례점</option>
+              <option value="미사점">미사점</option>
+              <option value="다산점">다산점</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>수강생 선택</label>
             <select id="practiceStudentSelect"><option value="">수강생 선택...</option></select>
@@ -134,6 +160,14 @@
         <!-- 레슨 일정 예약 카드 -->
         <div class="card">
           <div class="card-title">📅 레슨 일정 예약</div>
+          <div class="form-group">
+            <label>지점 선택</label>
+            <select id="lessonBranchSelect">
+              <option value="위례점">위례점</option>
+              <option value="미사점">미사점</option>
+              <option value="다산점">다산점</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>수강생 선택</label>
             <select id="studentSelect"><option value="">수강생 선택...</option></select>
@@ -192,6 +226,10 @@
       <input type="hidden" id="modalEventId">
       <input type="hidden" id="modalType">
       
+      <div class="form-group">
+        <label>지점</label>
+        <input type="text" id="modalBranch" readonly style="background:#eee;">
+      </div>
       <div class="form-group">
         <label>수강생 이름</label>
         <input type="text" id="modalStudentName" readonly style="background:#eee;">
@@ -327,10 +365,13 @@
     }
 
     function renderFilteredEvents(callback) {
+      const selectedBranch = document.getElementById('filterBranch').value;
       const selectedCoach = document.getElementById('filterCoach').value;
       const selectedRoom = document.getElementById('filterRoom').value;
 
       const filtered = rawSchedules.filter(s => {
+        const branchMatch = (selectedBranch === 'ALL' || (s.branch_name || '위례점') === selectedBranch);
+
         let coachMatch = true;
         if (selectedCoach === 'PRACTICE_ONLY') {
           coachMatch = (s.schedule_type === 'practice');
@@ -339,14 +380,15 @@
         }
 
         const roomMatch = (selectedRoom === 'ALL' || s.room_name === selectedRoom);
-        return coachMatch && roomMatch;
+        return branchMatch && coachMatch && roomMatch;
       });
 
       const events = filtered.map(s => {
+        const branchTag = `[${s.branch_name || '위례점'}]`;
         if (s.schedule_type === 'practice') {
           return {
             id: s.id,
-            title: `🎹[${s.room_name}] ${s.student_name}`,
+            title: `🎹${branchTag}[${s.room_name}] ${s.student_name}`,
             start: s.start_time,
             end: s.end_time,
             backgroundColor: '#7B1FA2',
@@ -356,7 +398,7 @@
           let statusBadge = s.status === '출석' ? '✅' : (s.status === '결석' ? '❌' : '');
           return {
             id: s.id,
-            title: `${statusBadge}[${s.room_name || '레슨방'}] [${s.subject}] ${s.student_name} (${s.coach_name})`,
+            title: `${statusBadge}${branchTag}[${s.room_name || '레슨방'}] ${s.student_name} (${s.coach_name})`,
             start: s.start_time,
             end: s.end_time,
             backgroundColor: coachColors[s.coach_name] || '#333',
@@ -387,11 +429,12 @@
           container.innerHTML = '';
 
           students.forEach(s => {
-            select.innerHTML += `<option value="${s.name}">${s.name} - 잔여:${s.remaining_lessons}회</option>`;
-            practiceSelect.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+            const branchTag = `[${s.branch_name || '위례점'}]`;
+            select.innerHTML += `<option value="${s.name}">${branchTag} ${s.name} (잔여:${s.remaining_lessons}회)</option>`;
+            practiceSelect.innerHTML += `<option value="${s.name}">${branchTag} ${s.name}</option>`;
             container.innerHTML += `
               <div class="student-item">
-                <span onclick="openHistoryModal('${s.name}')">${s.name} (${s.remaining_lessons}/${s.total_lessons}회)</span>
+                <span onclick="openHistoryModal('${s.name}')">${branchTag} ${s.name} (${s.remaining_lessons}/${s.total_lessons}회)</span>
                 <button class="sm-btn" onclick="chargeStudent('${s.id}', '${s.name}')">+충전</button>
               </div>
             `;
@@ -438,16 +481,17 @@
           container.innerHTML = '';
           history.forEach(h => {
             const dateStr = new Date(h.start_time).toLocaleString('ko-KR');
+            const branchTag = `[${h.branch_name || '위례점'}]`;
             if (h.type === 'practice') {
               container.innerHTML += `
                 <div class="history-item" style="border-left: 4px solid #7B1FA2;">
-                  <div class="date">${dateStr} [${h.room_name}] - 🎹 연습실 자율 사용</div>
+                  <div class="date">${dateStr} ${branchTag} [${h.room_name}] - 🎹 연습실 사용</div>
                 </div>
               `;
             } else {
               container.innerHTML += `
                 <div class="history-item">
-                  <div class="date">${dateStr} [${h.room_name || '방미지정'}] - ${h.subject}</div>
+                  <div class="date">${dateStr} ${branchTag} [${h.room_name || '방미지정'}] - ${h.subject}</div>
                   <div>담당: ${h.coach_name} | 상태: <strong>${h.status || '예약'}</strong></div>
                   ${h.memo ? `<div style="color:#555; margin-top:4px;">📝 ${h.memo}</div>` : ''}
                 </div>
@@ -461,6 +505,7 @@
     }
 
     async function registerStudent() {
+      const branch = document.getElementById('newStudentBranch').value;
       const name = document.getElementById('newStudentName').value;
       const phone = document.getElementById('newStudentPhone').value;
       const total = document.getElementById('newStudentLessons').value;
@@ -471,10 +516,10 @@
         const res = await fetch(`${SERVER_URL}/api/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, subject: '보컬', total_lessons: total })
+          body: JSON.stringify({ branch_name: branch, name, phone, subject: '보컬', total_lessons: total })
         });
         if (res.ok) {
-          alert('수강생이 DB에 등록되었습니다.');
+          alert(`[${branch}] 수강생이 DB에 등록되었습니다.`);
           document.getElementById('newStudentName').value = '';
           document.getElementById('newStudentPhone').value = '';
           loadStudents();
@@ -485,6 +530,7 @@
     }
 
     async function addLessonDB() {
+      const branch = document.getElementById('lessonBranchSelect').value;
       const studentName = document.getElementById('studentSelect').value;
       const lessonType = document.getElementById('lessonTypeSelect').value;
       const coach = document.getElementById('coachSelect').value;
@@ -502,6 +548,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            branch_name: branch,
             student_name: studentName,
             coach_name: coach,
             subject: subject,
@@ -513,7 +560,7 @@
         });
 
         if (res.ok) {
-          alert('레슨 일정이 등록되었습니다.');
+          alert(`[${branch}] 레슨 일정이 등록되었습니다.`);
           calendar.refetchEvents();
           loadStudents();
         } else {
@@ -526,6 +573,7 @@
     }
 
     async function addPracticeRoomDB() {
+      const branch = document.getElementById('practiceBranchSelect').value;
       const studentName = document.getElementById('practiceStudentSelect').value;
       const room = document.getElementById('practiceRoomSelect').value;
       const time = document.getElementById('practiceTime').value;
@@ -540,6 +588,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            branch_name: branch,
             student_name: studentName,
             room_name: room,
             start_time: startDate.toISOString(),
@@ -548,7 +597,7 @@
         });
 
         if (res.ok) {
-          alert('연습실 예약이 완료되었습니다.');
+          alert(`[${branch}] 연습실 예약이 완료되었습니다.`);
           calendar.refetchEvents();
         } else {
           const errData = await res.json();
@@ -563,6 +612,7 @@
       const props = event.extendedProps;
       document.getElementById('modalEventId').value = event.id;
       document.getElementById('modalType').value = props.schedule_type;
+      document.getElementById('modalBranch').value = props.branch_name || '위례점';
       document.getElementById('modalStudentName').value = props.student_name;
       document.getElementById('modalRoom').value = props.room_name;
 
@@ -594,6 +644,7 @@
 
     async function updateSchedule() {
       const id = document.getElementById('modalEventId').value;
+      const branch = document.getElementById('modalBranch').value;
       const studentName = document.getElementById('modalStudentName').value;
       const coach = document.getElementById('modalCoach').value;
       const subject = document.getElementById('modalSubject').value;
@@ -610,6 +661,7 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            branch_name: branch,
             student_name: studentName,
             coach_name: coach,
             subject: subject,
