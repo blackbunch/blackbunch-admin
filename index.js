@@ -19,16 +19,86 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 로그인 API
-app.post('/api/login', (req, res) => {
+// 로그인 API (Supabase users 테이블 조회)
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  if (username === 'blackbunch' && password === '1234') {
+
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+    }
+
     return res.json({
       success: true,
-      user: { name: '블랙번치 통합관리자', role: 'admin' }
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        allowed_branch: user.allowed_branch
+      }
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  return res.status(401).json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+});
+
+// 코치 계정 관리 API (어드민용)
+app.get('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, name, role, allowed_branch, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { username, password, name, allowed_branch, role } = req.body;
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        username,
+        password,
+        name,
+        allowed_branch: allowed_branch || 'ALL',
+        role: role || 'coach'
+      }])
+      .select();
+
+    if (error) throw error;
+    res.json({ success: true, user: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 수강생 API
@@ -131,13 +201,12 @@ app.get('/api/schedules', async (req, res) => {
   }
 });
 
-// 레슨 일정 등록 (같은 지점 내 시간 중복 체크)
+// 레슨 일정 등록
 app.post('/api/schedules', async (req, res) => {
   try {
     const { branch_name, student_name, coach_name, subject, room_name, lesson_type, start_time, end_time } = req.body;
     const targetBranch = branch_name || '위례점';
 
-    // 해당 지점 내 방/코치 중복 검사
     const { data: overlap, error: checkErr } = await supabase
       .from('schedules')
       .select('*')
@@ -190,7 +259,7 @@ app.post('/api/schedules', async (req, res) => {
   }
 });
 
-// 연습실 예약 등록 (같은 지점 내 연습실 중복 체크)
+// 연습실 예약 등록
 app.post('/api/practice-rooms', async (req, res) => {
   try {
     const { branch_name, student_name, room_name, start_time, end_time } = req.body;
