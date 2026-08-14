@@ -7,6 +7,8 @@
   
   <!-- FullCalendar CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     :root {
@@ -19,11 +21,7 @@
       --danger-color: #ef4444;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -33,10 +31,7 @@
       line-height: 1.5;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+    .container { max-width: 1100px; margin: 0 auto; }
 
     .top-bar {
       display: flex;
@@ -47,17 +42,9 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    .top-bar h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
+    .top-bar h1 { font-size: 1.3rem; font-weight: 700; }
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.9rem;
-    }
+    .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
 
     .card {
       background-color: var(--card-bg);
@@ -67,15 +54,9 @@
       margin-bottom: 24px;
     }
 
-    .card h2 {
-      font-size: 1.15rem;
-      margin-bottom: 16px;
-      color: var(--text-main);
-    }
+    .card h2 { font-size: 1.15rem; margin-bottom: 16px; color: var(--text-main); }
 
-    .form-group {
-      margin-bottom: 16px;
-    }
+    .form-group { margin-bottom: 16px; }
 
     .form-group label {
       display: block;
@@ -95,10 +76,7 @@
       font-size: 0.95rem;
     }
 
-    .form-control:focus {
-      outline: none;
-      border-color: var(--accent-color);
-    }
+    .form-control:focus { outline: none; border-color: var(--accent-color); }
 
     .branch-checkbox-group {
       display: flex;
@@ -140,17 +118,9 @@
       transition: background-color 0.2s;
     }
 
-    .btn:hover {
-      background-color: #2563eb;
-    }
-
-    .btn-danger {
-      background-color: var(--danger-color);
-    }
-
-    .btn-danger:hover {
-      background-color: #dc2626;
-    }
+    .btn:hover { background-color: #2563eb; }
+    .btn-danger { background-color: var(--danger-color); }
+    .btn-danger:hover { background-color: #dc2626; }
 
     .btn-sm {
       padding: 6px 12px;
@@ -163,15 +133,9 @@
       cursor: pointer;
     }
 
-    .btn-sm:hover {
-      background-color: #3f3f46;
-    }
+    .btn-sm:hover { background-color: #3f3f46; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 
     th, td {
       padding: 12px;
@@ -180,10 +144,7 @@
       font-size: 0.9rem;
     }
 
-    th {
-      color: var(--text-sub);
-      font-weight: 600;
-    }
+    th { color: var(--text-sub); font-weight: 600; }
 
     .badge {
       display: inline-block;
@@ -205,19 +166,11 @@
       cursor: pointer;
     }
 
-    .btn-delete:hover {
-      background-color: var(--danger-color);
-      color: #fff;
-    }
+    .btn-delete:hover { background-color: var(--danger-color); color: #fff; }
 
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
-    .login-container {
-      max-width: 400px;
-      margin: 80px auto 0;
-    }
+    .login-container { max-width: 400px; margin: 80px auto 0; }
 
     .filter-grid {
       display: grid;
@@ -237,6 +190,7 @@
       border-radius: 8px;
       border: 1px solid var(--border-color);
     }
+
     .fc {
       --fc-border-color: #2e2e38;
       --fc-page-bg-color: #121215;
@@ -258,6 +212,7 @@
       align-items: center;
       z-index: 1000;
     }
+
     .modal-content {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -287,9 +242,6 @@
           </div>
           <button type="submit" class="btn">로그인</button>
         </form>
-        <p style="font-size: 0.8rem; color: var(--text-sub); text-align: center; margin-top: 16px;">
-          * 어드민 계정: admin / admin1234
-        </p>
       </div>
     </div>
 
@@ -308,7 +260,7 @@
         <h2>신규 코치 계정 등록</h2>
         <form id="coachForm">
           <div class="form-group">
-            <label for="coachId">아이디</label>
+            <label for="coachId">아이디 (username)</label>
             <input type="text" id="coachId" class="form-control" placeholder="아이디 입력" required>
           </div>
 
@@ -319,7 +271,7 @@
 
           <div class="form-group">
             <label for="coachName">코치 이름</label>
-            <input type="text" id="coachName" class="form-control" placeholder="예: 연우 코치" required>
+            <input type="text" id="coachName" class="form-control" placeholder="예: 연우 코치님" required>
           </div>
 
           <div class="form-group">
@@ -346,6 +298,7 @@
             <tr>
               <th>이름</th>
               <th>아이디</th>
+              <th>역할</th>
               <th>담당 지점</th>
               <th>관리</th>
             </tr>
@@ -363,12 +316,10 @@
           <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModalForAdd()">+ 일정 등록</button>
         </div>
         
-        <!-- 상세 필터 바 -->
         <div class="filter-grid">
           <div>
             <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">지점 선택</label>
-            <select id="filterBranch" class="form-control" onchange="applyFilters()">
-            </select>
+            <select id="filterBranch" class="form-control" onchange="applyFilters()"></select>
           </div>
           <div>
             <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">과목 필터</label>
@@ -394,7 +345,6 @@
           </div>
         </div>
 
-        <!-- 캘린더 화면 -->
         <div id="calendar"></div>
       </div>
     </div>
@@ -452,16 +402,22 @@
   </div>
 
   <script>
-    let coachList = JSON.parse(localStorage.getItem('coachList')) || [];
+    // ----------------------------------------------------
+    // Project Settings > API에서 확인한 주소 및 키 세팅
+    // ----------------------------------------------------
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let coachList = [];
+    let schedules = [];
     let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
     let calendar = null;
 
-    let schedules = JSON.parse(localStorage.getItem('schedules')) || [
-      { id: '1', title: '[다산/스타일/1번 방] 장재혁 (승진 코치)', student: '장재혁', coach: '승진', start: '2026-08-14T20:00', branch: '다산', subject: '스타일', room: '1번 방' },
-      { id: '2', title: '[미사/스타일/1번 방] 김수강 (연우 코치)', student: '김수강', coach: '연우', start: '2026-08-14T14:00', branch: '미사', subject: '스타일', room: '1번 방' }
-    ];
+    window.addEventListener('DOMContentLoaded', async () => {
+      await fetchCoaches();
+      await fetchSchedules();
 
-    window.addEventListener('DOMContentLoaded', () => {
       if (currentUser) {
         showMainView(currentUser);
       } else {
@@ -469,29 +425,37 @@
       }
     });
 
+    async function fetchCoaches() {
+      const { data, error } = await supabase.from('coaches').select('*');
+      if (!error && data) coachList = data;
+    }
+
+    async function fetchSchedules() {
+      const { data, error } = await supabase.from('schedules').select('*');
+      if (!error && data) schedules = data;
+    }
+
+    // 로그인 (Supabase coaches 테이블의 username, password 필드 참조)
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const id = document.getElementById('loginId').value.trim();
-      const pw = document.getElementById('loginPassword').value.trim();
+      const inputUsername = document.getElementById('loginId').value.trim();
+      const inputPassword = document.getElementById('loginPassword').value.trim();
 
-      if (id === 'admin' && pw === 'admin1234') {
-        const adminUser = { role: 'admin', name: '어드민(원장님)', id: 'admin' };
-        sessionStorage.setItem('currentUser', JSON.stringify(adminUser));
-        showMainView(adminUser);
+      const user = coachList.find(c => c.username === inputUsername && c.password === inputPassword);
+
+      if (user) {
+        const loggedUser = {
+          role: user.role || (user.username === 'admin' ? 'admin' : 'coach'),
+          name: user.name,
+          username: user.username,
+          branches: user.branches || ['ALL']
+        };
+        sessionStorage.setItem('currentUser', JSON.stringify(loggedUser));
+        showMainView(loggedUser);
         this.reset();
-        return;
+      } else {
+        alert('아이디 또는 비밀번호가 일치하지 않습니다.');
       }
-
-      const coach = coachList.find(c => c.id === id && c.password === pw);
-      if (coach) {
-        const coachUser = { role: 'coach', name: coach.name, id: coach.id, branches: coach.branches };
-        sessionStorage.setItem('currentUser', JSON.stringify(coachUser));
-        showMainView(coachUser);
-        this.reset();
-        return;
-      }
-
-      alert('아이디 또는 비밀번호가 불일치합니다.');
     });
 
     function logout() {
@@ -520,7 +484,7 @@
         document.getElementById('calendarView').classList.remove('hidden');
         renderCoachList();
       } else {
-        document.getElementById('pageTitle').textContent = `${user.name} 코치 대시보드`;
+        document.getElementById('pageTitle').textContent = `${user.name} 대시보드`;
         document.getElementById('adminView').classList.add('hidden');
         document.getElementById('calendarView').classList.remove('hidden');
       }
@@ -533,11 +497,11 @@
       filterSelect.innerHTML = '';
 
       let availableBranches = [];
-      if (user.role === 'admin' || user.branches.includes('ALL')) {
+      if (user.role === 'admin' || (user.branches && user.branches.includes('ALL'))) {
         availableBranches = ['미사', '위례', '다산'];
         filterSelect.innerHTML += `<option value="ALL">전체 지점 보기</option>`;
       } else {
-        availableBranches = user.branches.filter(b => b !== '운정');
+        availableBranches = (user.branches || []).filter(b => b !== '운정');
       }
 
       availableBranches.forEach(b => {
@@ -556,8 +520,8 @@
           right: 'dayGridMonth,timeGridWeek'
         },
         locale: 'ko',
-        slotMinTime: '10:00:00', // 시작 시간: 10시
-        slotMaxTime: '24:00:00', // 종료 시간: 24시(자정)
+        slotMinTime: '10:00:00', // 10시~24시 적용
+        slotMaxTime: '24:00:00',
         events: getFilteredEvents(),
         eventClick: function(info) {
           openModalForEdit(info.event.id);
@@ -587,7 +551,6 @@
       }
     }
 
-    // 신규 일정 등록 모달
     function openModalForAdd() {
       document.getElementById('modalTitle').textContent = '레슨 / 연습실 일정 등록';
       document.getElementById('scheduleForm').reset();
@@ -600,9 +563,8 @@
       document.getElementById('scheduleModal').classList.remove('hidden');
     }
 
-    // 기존 일정 수정 모달 (기존 데이터 유지)
     function openModalForEdit(id) {
-      const target = schedules.find(s => s.id === id);
+      const target = schedules.find(s => String(s.id) === String(id));
       if (!target) return;
 
       document.getElementById('modalTitle').textContent = '일정 수정 / 삭제';
@@ -622,8 +584,7 @@
       document.getElementById('scheduleModal').classList.add('hidden');
     }
 
-    // 저장 (신규/수정)
-    document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+    document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const id = document.getElementById('modalScheduleId').value;
@@ -634,9 +595,8 @@
       const coach = document.getElementById('modalCoach').value.trim();
       const start = document.getElementById('modalStart').value;
 
-      // 중복 체크 (수정 시 본인 제외)
       const isDuplicate = schedules.some(schedule => {
-        return schedule.id !== id && 
+        return String(schedule.id) !== String(id) && 
                schedule.branch === branch && 
                schedule.room === room && 
                schedule.start === start;
@@ -648,44 +608,43 @@
       }
 
       const title = `[${branch}/${subject}/${room}] ${student} (${coach})`;
+      const scheduleData = { title, student, coach, start, branch, subject, room };
 
       if (id) {
-        const index = schedules.findIndex(s => s.id === id);
-        if (index !== -1) {
-          schedules[index] = { id, title, student, coach, start, branch, subject, room };
+        const { error } = await supabase.from('schedules').update(scheduleData).eq('id', id);
+        if (!error) {
           alert('✏️ 일정이 변경되었습니다.');
+        } else {
+          alert('수정 실패: ' + error.message);
         }
       } else {
-        const newSchedule = {
-          id: String(Date.now()),
-          title,
-          student,
-          coach,
-          start,
-          branch,
-          subject,
-          room
-        };
-        schedules.push(newSchedule);
-        alert('✅ 일정이 등록되었습니다.');
+        const { error } = await supabase.from('schedules').insert([scheduleData]);
+        if (!error) {
+          alert('✅ 일정이 등록되었습니다.');
+        } else {
+          alert('저장 실패: ' + error.message);
+        }
       }
 
-      localStorage.setItem('schedules', JSON.stringify(schedules));
+      await fetchSchedules();
       closeModal();
       applyFilters();
     });
 
-    // 일정 삭제
-    function deleteSchedule() {
+    async function deleteSchedule() {
       const id = document.getElementById('modalScheduleId').value;
       if (!id) return;
 
       if (confirm('해당 일정을 정말 삭제하시겠습니까?')) {
-        schedules = schedules.filter(s => s.id !== id);
-        localStorage.setItem('schedules', JSON.stringify(schedules));
-        alert('🗑️ 일정이 삭제되었습니다.');
-        closeModal();
-        applyFilters();
+        const { error } = await supabase.from('schedules').delete().eq('id', id);
+        if (!error) {
+          alert('🗑️ 일정이 삭제되었습니다.');
+          await fetchSchedules();
+          closeModal();
+          applyFilters();
+        } else {
+          alert('삭제 실패: ' + error.message);
+        }
       }
     }
 
@@ -695,9 +654,10 @@
       });
     }
 
-    document.getElementById('coachForm').addEventListener('submit', function(e) {
+    // 신규 코치 생성 (username 필드 사용)
+    document.getElementById('coachForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const id = document.getElementById('coachId').value.trim();
+      const username = document.getElementById('coachId').value.trim();
       const password = document.getElementById('coachPassword').value.trim();
       const name = document.getElementById('coachName').value.trim();
 
@@ -715,16 +675,24 @@
         return;
       }
 
-      if (coachList.some(c => c.id === id) || id === 'admin') {
-        alert('이미 존재하는 아이디입니다.');
-        return;
-      }
+      const newCoach = {
+        username,
+        password,
+        name,
+        role: 'coach',
+        color: '#3b82f6',
+        branches: selectedBranches
+      };
 
-      coachList.push({ id, password, name, branches: selectedBranches });
-      localStorage.setItem('coachList', JSON.stringify(coachList));
-      alert(`${name} 계정이 등록되었습니다.`);
-      this.reset();
-      renderCoachList();
+      const { error } = await supabase.from('coaches').insert([newCoach]);
+      if (!error) {
+        alert(`${name} 계정이 등록되었습니다.`);
+        this.reset();
+        await fetchCoaches();
+        renderCoachList();
+      } else {
+        alert('계정 생성 실패: ' + error.message);
+      }
     });
 
     function renderCoachList() {
@@ -732,31 +700,35 @@
       tbody.innerHTML = '';
 
       if (coachList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-sub);">등록된 코치가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-sub);">등록된 코치가 없습니다.</td></tr>';
         return;
       }
 
-      coachList.forEach((coach, index) => {
+      coachList.forEach((coach) => {
         const tr = document.createElement('tr');
-        let branchBadges = coach.branches.includes('ALL') 
+        const branches = coach.branches || ['ALL'];
+        let branchBadges = branches.includes('ALL') 
           ? '<span class="badge" style="background:#2563eb; color:#fff;">전체 지점</span>' 
-          : coach.branches.filter(b => b !== '운정').map(b => `<span class="badge">${b}점</span>`).join('');
+          : branches.filter(b => b !== '운정').map(b => `<span class="badge">${b}점</span>`).join('');
 
         tr.innerHTML = `
           <td><strong>${coach.name}</strong></td>
-          <td>${coach.id}</td>
+          <td>${coach.username}</td>
+          <td>${coach.role || 'coach'}</td>
           <td>${branchBadges}</td>
-          <td><button class="btn-delete" onclick="deleteCoach(${index})">삭제</button></td>
+          <td><button class="btn-delete" onclick="deleteCoach(${coach.id})">삭제</button></td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function deleteCoach(index) {
-      if (confirm(`${coachList[index].name} 계정을 삭제하시겠습니까?`)) {
-        coachList.splice(index, 1);
-        localStorage.setItem('coachList', JSON.stringify(coachList));
-        renderCoachList();
+    async function deleteCoach(id) {
+      if (confirm(`해당 코치 계정을 삭제하시겠습니까?`)) {
+        const { error } = await supabase.from('coaches').delete().eq('id', id);
+        if (!error) {
+          await fetchCoaches();
+          renderCoachList();
+        }
       }
     }
   </script>
