@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>블랙번치 스튜디오 - 통합 관리 시스템</title>
   
-  <!-- FullCalendar 라이브러리 (CDN) -->
+  <!-- FullCalendar CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   
   <style>
@@ -34,7 +34,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
@@ -150,6 +150,9 @@
       width: auto;
       background-color: #27272a;
       border: 1px solid var(--border-color);
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
     .btn-sm:hover {
@@ -208,6 +211,18 @@
       margin: 80px auto 0;
     }
 
+    /* 필터 바 스타일 */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+      background: #121215;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
     /* FullCalendar 어두운 테마 커스텀 */
     #calendar {
       margin-top: 16px;
@@ -220,30 +235,30 @@
       --fc-border-color: #2e2e38;
       --fc-page-bg-color: #121215;
       --fc-neutral-bg-color: #1a1a1e;
-      --fc-list-event-hover-bg-color: #27272a;
       color: var(--text-main);
     }
-    .fc .fc-toolbar-title {
-      font-size: 1.1rem;
-      font-weight: bold;
-    }
-    .fc .fc-button-primary {
-      background-color: #27272a;
-      border-color: var(--border-color);
-    }
-    .fc .fc-button-primary:hover {
-      background-color: #3f3f46;
-    }
-    .fc .fc-button-primary:not(:disabled).fc-button-active {
-      background-color: var(--accent-color);
-      border-color: var(--accent-color);
-    }
+    .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: bold; }
+    .fc .fc-button-primary { background-color: #27272a; border-color: var(--border-color); }
+    .fc .fc-button-primary:hover { background-color: #3f3f46; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: var(--accent-color); border-color: var(--accent-color); }
 
-    .filter-bar {
+    /* 모달 팝업 스타일 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 450px;
     }
   </style>
 </head>
@@ -272,16 +287,16 @@
       </div>
     </div>
 
-    <!-- 2. 상단 바 -->
+    <!-- 2. 상단 헤더 -->
     <div id="appHeader" class="top-bar hidden">
-      <h1 id="pageTitle">어드민 - 코치 계정 및 지점 권한 관리</h1>
+      <h1 id="pageTitle">어드민 - 통합 관리 시스템</h1>
       <div class="user-info">
         <span id="userInfoText"></span>
         <button class="btn btn-sm" onclick="logout()">로그아웃</button>
       </div>
     </div>
 
-    <!-- 3. 어드민 전용 화면 -->
+    <!-- 3. 어드민 전용 계정 관리 화면 -->
     <div id="adminView" class="hidden">
       <div class="card">
         <h2>신규 코치 계정 등록</h2>
@@ -308,15 +323,9 @@
                 <input type="checkbox" name="branch" value="ALL" id="branchAll" onchange="toggleSelectAll(this)">
                 <strong>전체 지점 (ALL)</strong>
               </label>
-              <label class="checkbox-item">
-                <input type="checkbox" name="branch" value="미사" class="branch-item"> 미사점
-              </label>
-              <label class="checkbox-item">
-                <input type="checkbox" name="branch" value="위례" class="branch-item"> 위례점
-              </label>
-              <label class="checkbox-item">
-                <input type="checkbox" name="branch" value="다산" class="branch-item"> 다산점
-              </label>
+              <label class="checkbox-item"><input type="checkbox" name="branch" value="미사" class="branch-item"> 미사점</label>
+              <label class="checkbox-item"><input type="checkbox" name="branch" value="위례" class="branch-item"> 위례점</label>
+              <label class="checkbox-item"><input type="checkbox" name="branch" value="다산" class="branch-item"> 다산점</label>
             </div>
           </div>
 
@@ -340,25 +349,103 @@
       </div>
     </div>
 
-    <!-- 4. 코치 전용 캘린더 화면 -->
-    <div id="coachView" class="hidden">
+    <!-- 4. 캘린더 대시보드 (어드민 & 코치 공통) -->
+    <div id="calendarView" class="hidden">
       <div class="card">
-        <h2>📅 레슨 및 예약 캘린더</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2>📅 레슨 및 연습실 예약 일정</h2>
+          <button class="btn btn-sm" style="background-color: var(--accent-color);" onclick="openModal()">+ 일정 등록</button>
+        </div>
         
-        <!-- 지점 필터링 드롭다운 (허용된 지점만 표시) -->
-        <div class="filter-bar">
-          <label style="font-weight: 600; font-size: 0.9rem;">지점 선택:</label>
-          <select id="branchSelectFilter" class="form-control" style="width: 200px;" onchange="filterCalendarByBranch()">
-            <!-- JS로 동적 생성 -->
-          </select>
-          <button class="btn btn-sm" style="margin-left: auto;" onclick="addSampleSchedule()">+ 테스트 레슨 추가</button>
+        <!-- 상세 필터 바 (지점, 과목, 룸/연습실) -->
+        <div class="filter-grid">
+          <div>
+            <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">지점 선택</label>
+            <select id="filterBranch" class="form-control" onchange="applyFilters()">
+              <!-- 동적 생성 -->
+            </select>
+          </div>
+          <div>
+            <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">과목 필터</label>
+            <select id="filterSubject" class="form-control" onchange="applyFilters()">
+              <option value="ALL">전체 과목</option>
+              <option value="스타일">스타일</option>
+              <option value="보컬 메이킹">보컬 메이킹</option>
+              <option value="2:1 그룹">2:1 그룹</option>
+              <option value="3:1 그룹">3:1 그룹</option>
+              <option value="연습실">연습실 예약</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-group" style="font-size:0.8rem; margin-bottom:4px;">레슨 룸 / 연습실 번호</label>
+            <select id="filterRoom" class="form-control" onchange="applyFilters()">
+              <option value="ALL">전체 룸/연습실</option>
+              <option value="A룸 (보컬 1)">A룸 (보컬 1)</option>
+              <option value="B룸 (보컬 2)">B룸 (보컬 2)</option>
+              <option value="C룸 (그룹룸)">C룸 (그룹룸)</option>
+              <option value="연습실 1">연습실 1</option>
+              <option value="연습실 2">연습실 2</option>
+              <option value="연습실 3">연습실 3</option>
+            </select>
+          </div>
         </div>
 
-        <!-- 캘린더 표시 영역 -->
+        <!-- 캘린더 화면 -->
         <div id="calendar"></div>
       </div>
     </div>
 
+  </div>
+
+  <!-- 일정 등록/수정 모달 -->
+  <div id="scheduleModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 style="margin-bottom:16px;">레슨 / 연습실 일정 등록</h3>
+      <form id="scheduleForm">
+        <div class="form-group">
+          <label>지점</label>
+          <select id="modalBranch" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label>과목</label>
+          <select id="modalSubject" class="form-control" required>
+            <option value="스타일">스타일</option>
+            <option value="보컬 메이킹">보컬 메이킹</option>
+            <option value="2:1 그룹">2:1 그룹</option>
+            <option value="3:1 그룹">3:1 그룹</option>
+            <option value="연습실">연습실 예약</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>레슨 룸 / 연습실 선택</label>
+          <select id="modalRoom" class="form-control" required>
+            <option value="A룸 (보컬 1)">A룸 (보컬 1)</option>
+            <option value="B룸 (보컬 2)">B룸 (보컬 2)</option>
+            <option value="C룸 (그룹룸)">C룸 (그룹룸)</option>
+            <option value="연습실 1">연습실 1</option>
+            <option value="연습실 2">연습실 2</option>
+            <option value="연습실 3">연습실 3</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>수강생 이름</label>
+          <input type="text" id="modalStudent" class="form-control" placeholder="예: 김보컬" required>
+        </div>
+        <div class="form-group">
+          <label>담당 코치</label>
+          <input type="text" id="modalCoach" class="form-control" placeholder="예: 연우 코치" required>
+        </div>
+        <div class="form-group">
+          <label>일시 (시작 시간)</label>
+          <input type="datetime-local" id="modalStart" class="form-control" required>
+        </div>
+        
+        <div style="display:flex; gap:8px; margin-top:20px;">
+          <button type="submit" class="btn">저장하기</button>
+          <button type="button" class="btn btn-sm" style="width:30%; background:#3f3f46;" onclick="closeModal()">취소</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -366,11 +453,11 @@
     let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
     let calendar = null;
 
-    // 샘플 일정 저장소
+    // 기본 일정 샘플 데이터
     let schedules = JSON.parse(localStorage.getItem('schedules')) || [
-      { id: '1', title: '[미사] 홍길동 수강생 레슨', start: new Date().toISOString().split('T')[0] + 'T14:00:00', branch: '미사' },
-      { id: '2', title: '[위례] 김철수 수강생 레슨', start: new Date().toISOString().split('T')[0] + 'T16:00:00', branch: '위례' },
-      { id: '3', title: '[다산] 이영희 연습실 예약', start: new Date().toISOString().split('T')[0] + 'T18:00:00', branch: '다산' }
+      { id: '1', title: '[미사/스타일/A룸] 김수강 - 연우 코치', start: new Date().toISOString().split('T')[0] + 'T14:00:00', branch: '미사', subject: '스타일', room: 'A룸 (보컬 1)' },
+      { id: '2', title: '[위례/보컬 메이킹/B룸] 이수강 - 승진 코치', start: new Date().toISOString().split('T')[0] + 'T16:00:00', branch: '위례', subject: '보컬 메이킹', room: 'B룸 (보컬 2)' },
+      { id: '3', title: '[다산/2:1 그룹/C룸] 박그룹, 최그룹', start: new Date().toISOString().split('T')[0] + 'T18:00:00', branch: '다산', subject: '2:1 그룹', room: 'C룸 (그룹룸)' }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -404,7 +491,7 @@
         return;
       }
 
-      alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+      alert('아이디 또는 비밀번호가 불일치합니다.');
     });
 
     function logout() {
@@ -417,7 +504,7 @@
       document.getElementById('loginView').classList.remove('hidden');
       document.getElementById('appHeader').classList.add('hidden');
       document.getElementById('adminView').classList.add('hidden');
-      document.getElementById('coachView').classList.add('hidden');
+      document.getElementById('calendarView').classList.add('hidden');
     }
 
     function showMainView(user) {
@@ -425,40 +512,45 @@
       document.getElementById('appHeader').classList.remove('hidden');
       document.getElementById('userInfoText').textContent = `${user.name} 님`;
 
+      // 지점 목록 구성
+      setupBranchFilter(user);
+
       if (user.role === 'admin') {
-        document.getElementById('pageTitle').textContent = '어드민 - 코치 계정 및 지점 권한 관리';
+        document.getElementById('pageTitle').textContent = '어드민 - 통합 계정 및 레슨 관리';
         document.getElementById('adminView').classList.remove('hidden');
-        document.getElementById('coachView').classList.add('hidden');
+        document.getElementById('calendarView').classList.remove('hidden');
         renderCoachList();
       } else {
         document.getElementById('pageTitle').textContent = `${user.name} 코치 대시보드`;
         document.getElementById('adminView').classList.add('hidden');
-        document.getElementById('coachView').classList.remove('hidden');
-        
-        setupCoachBranchFilter(user.branches);
-        initCalendar();
+        document.getElementById('calendarView').classList.remove('hidden');
       }
+
+      initCalendar();
     }
 
-    // 코치 지점 드롭다운 필터 세팅
-    function setupCoachBranchFilter(userBranches) {
-      const filterSelect = document.getElementById('branchSelectFilter');
+    // 지점 필터 옵션 구성
+    function setupBranchFilter(user) {
+      const filterSelect = document.getElementById('filterBranch');
+      const modalSelect = document.getElementById('modalBranch');
       filterSelect.innerHTML = '';
+      modalSelect.innerHTML = '';
 
       let availableBranches = [];
-      if (userBranches.includes('ALL')) {
+      if (user.role === 'admin' || user.branches.includes('ALL')) {
         availableBranches = ['미사', '위례', '다산'];
         filterSelect.innerHTML += `<option value="ALL">전체 지점 보기</option>`;
       } else {
-        availableBranches = userBranches.filter(b => b !== '운정');
+        availableBranches = user.branches.filter(b => b !== '운정');
       }
 
       availableBranches.forEach(b => {
         filterSelect.innerHTML += `<option value="${b}">${b}점</option>`;
+        modalSelect.innerHTML += `<option value="${b}">${b}점</option>`;
       });
     }
 
-    // FullCalendar 초기화
+    // FullCalendar 초기화 및 필터링
     function initCalendar() {
       const calendarEl = document.getElementById('calendar');
       
@@ -476,42 +568,66 @@
       calendar.render();
     }
 
-    // 지점 필터링된 일정 반환
     function getFilteredEvents() {
-      const selectedBranch = document.getElementById('branchSelectFilter').value;
-      if (selectedBranch === 'ALL') {
-        return schedules;
-      }
-      return schedules.filter(s => s.branch === selectedBranch);
+      const branch = document.getElementById('filterBranch').value;
+      const subject = document.getElementById('filterSubject').value;
+      const room = document.getElementById('filterRoom').value;
+
+      return schedules.filter(s => {
+        const matchBranch = (branch === 'ALL' || s.branch === branch);
+        const matchSubject = (subject === 'ALL' || s.subject === subject);
+        const matchRoom = (room === 'ALL' || s.room === room);
+        return matchBranch && matchSubject && matchRoom;
+      });
     }
 
-    function filterCalendarByBranch() {
+    function applyFilters() {
       if (calendar) {
         calendar.removeAllEvents();
         calendar.addEventSource(getFilteredEvents());
       }
     }
 
-    // 테스트 일정 추가 기능
-    function addSampleSchedule() {
-      const selectedBranch = document.getElementById('branchSelectFilter').value;
-      const targetBranch = selectedBranch === 'ALL' ? '미사' : selectedBranch;
-      
-      const title = prompt('레슨/예약 제목을 입력하세요:', `[${targetBranch}] 신규 수강생 레슨`);
-      if (title) {
-        const newEvent = {
-          id: String(Date.now()),
-          title: title,
-          start: new Date().toISOString().split('T')[0] + 'T12:00:00',
-          branch: targetBranch
-        };
-        schedules.push(newEvent);
-        localStorage.setItem('schedules', JSON.stringify(schedules));
-        filterCalendarByBranch();
-      }
+    // 일정 추가 모달 컨트롤
+    function openModal() {
+      document.getElementById('scheduleModal').classList.remove('hidden');
     }
 
-    // 어드민 전용 함수
+    function closeModal() {
+      document.getElementById('scheduleModal').classList.add('hidden');
+    }
+
+    document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const branch = document.getElementById('modalBranch').value;
+      const subject = document.getElementById('modalSubject').value;
+      const room = document.getElementById('modalRoom').value;
+      const student = document.getElementById('modalStudent').value.trim();
+      const coach = document.getElementById('modalCoach').value.trim();
+      const start = document.getElementById('modalStart').value;
+
+      const title = `[${branch}/${subject}/${room}] ${student} (${coach})`;
+
+      const newSchedule = {
+        id: String(Date.now()),
+        title,
+        start,
+        branch,
+        subject,
+        room
+      };
+
+      schedules.push(newSchedule);
+      localStorage.setItem('schedules', JSON.stringify(schedules));
+
+      alert('일정이 등록되었습니다.');
+      closeModal();
+      this.reset();
+      applyFilters();
+    });
+
+    // 어드민 코치 계정 관리 기능
     function toggleSelectAll(selectAllCheckbox) {
       document.querySelectorAll('.branch-item').forEach(cb => {
         cb.checked = selectAllCheckbox.checked;
@@ -545,7 +661,7 @@
 
       coachList.push({ id, password, name, branches: selectedBranches });
       localStorage.setItem('coachList', JSON.stringify(coachList));
-      alert(`${name} 계정이 생성되었습니다.`);
+      alert(`${name} 계정이 등록되었습니다.`);
       this.reset();
       renderCoachList();
     });
