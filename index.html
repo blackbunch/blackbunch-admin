@@ -79,7 +79,7 @@
 
     <!-- 통합 필터바 -->
     <div class="filter-bar">
-      <label>🏢 **지점 선택:**</label>
+      <label>🏢 지점 선택:</label>
       <select id="filterBranch" class="branch-select-highlight" onchange="applyFilters()">
         <option value="ALL">전체 지점 보기</option>
         <option value="위례점">위례점</option>
@@ -98,13 +98,13 @@
       
       <select id="filterRoom" onchange="applyFilters()">
         <option value="ALL">모든 방 보기</option>
-        <optgroup label="레슨 전용 방">
+        <optgroup label="레슨 전용 방 (지점 공통)">
           <option value="레슨 1번 방">레슨 1번 방</option>
           <option value="레슨 2번 방">레슨 2번 방</option>
           <option value="레슨 3번 방">레슨 3번 방</option>
           <option value="레슨 4번 방">레슨 4번 방</option>
         </optgroup>
-        <optgroup label="연습실 전용 방">
+        <optgroup label="연습실 전용 방 (지점 공통)">
           <option value="연습실 A">연습실 A</option>
         </optgroup>
       </select>
@@ -367,7 +367,6 @@
       const lessonBranchSelect = document.getElementById('lessonBranchSelect');
 
       if (currentUser.allowed_branch !== 'ALL') {
-        // 코치 권한: 허용된 지점만 고정
         const branch = currentUser.allowed_branch;
         
         filterBranch.innerHTML = `<option value="${branch}">${branch}</option>`;
@@ -418,7 +417,6 @@
       const selectedRoom = document.getElementById('filterRoom').value;
 
       const filtered = rawSchedules.filter(s => {
-        // 지점 권한 필터
         if (currentUser.allowed_branch !== 'ALL' && (s.branch_name || '위례점') !== currentUser.allowed_branch) {
           return false;
         }
@@ -468,7 +466,6 @@
       calendar.refetchEvents();
     }
 
-    // 어드민: 코치 계정 생성
     async function registerCoachUser() {
       const username = document.getElementById('newUserId').value;
       const password = document.getElementById('newUserPw').value;
@@ -498,7 +495,6 @@
       }
     }
 
-    // 어드민: 계정 목록 로드
     async function loadUserList() {
       try {
         const res = await fetch(`${SERVER_URL}/api/users`);
@@ -541,7 +537,6 @@
         if (res.ok) {
           let students = await res.json();
 
-          // 코치일 경우 본인 지점 수강생만 로드
           if (currentUser.allowed_branch !== 'ALL') {
             students = students.filter(s => (s.branch_name || '위례점') === currentUser.allowed_branch);
           }
@@ -788,7 +783,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             branch_name: branch,
-            student_name: studentName,
             coach_name: coach,
             subject: subject,
             room_name: room,
