@@ -32,6 +32,9 @@
     .btn-secondary:hover { background-color: #374151; }
     .btn-sm { padding: 6px 12px; font-size: 14px; }
 
+    /* 필터 및 헤더 컨트롤 */
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #2a2a2a; padding: 12px 16px; border-radius: 6px; }
+
     /* FullCalendar Dark Theme Overrides */
     .fc { background-color: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #2d2d2d; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #333 !important; }
@@ -42,7 +45,7 @@
 
     /* 모달 창 스타일 */
     .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .modal-content { background: #1e1e1e; padding: 24px; border-radius: 8px; width: 100%; max-width: 500px; border: 1px solid #333; }
+    .modal-content { background: #1e1e1e; padding: 24px; border-radius: 8px; width: 100%; max-width: 500px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   </style>
@@ -71,13 +74,25 @@
       <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>블랙번치 스튜디오 관리 시스템</h1>
         <div>
+          <button id="btnManageCoaches" class="btn btn-sm btn-secondary" style="margin-right: 8px;">+ 코치 계정 관리</button>
           <button id="btnNewSchedule" class="btn btn-sm" style="margin-right: 8px;">+ 레슨 등록</button>
           <button id="btnLogout" class="btn btn-sm btn-danger">로그아웃</button>
         </div>
       </header>
 
-      <!-- 캘린더 영역 -->
+      <!-- 캘린더 영역 & 필터 -->
       <div class="card">
+        <div class="filter-bar">
+          <label style="margin-bottom:0; color:#fff; font-weight:bold;">🚪 방 선택 필터:</label>
+          <select id="roomFilter" class="form-control" style="width: auto; display: inline-block;">
+            <option value="ALL">전체 방 보기</option>
+            <option value="1번 방">1번 방</option>
+            <option value="2번 방">2번 방</option>
+            <option value="3번 방">3번 방</option>
+            <option value="4번 방">4번 방</option>
+            <option value="연습실">연습실</option>
+          </select>
+        </div>
         <div id="calendar"></div>
       </div>
     </div>
@@ -88,13 +103,23 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="modalTitle">일정 등록</h3>
-        <button id="btnCloseModal" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+        <button class="btnCloseModal" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
       </div>
       <form id="scheduleForm">
         <input type="hidden" id="scheduleId">
         <div class="form-group">
           <label>수강생명 / 수업 내용</label>
           <input type="text" id="title" class="form-control" placeholder="예: 홍길동 보컬 레슨" required>
+        </div>
+        <div class="form-group">
+          <label>장소 / 방 선택</label>
+          <select id="roomSelect" class="form-control" required>
+            <option value="1번 방">1번 방</option>
+            <option value="2번 방">2번 방</option>
+            <option value="3번 방">3번 방</option>
+            <option value="4번 방">4번 방</option>
+            <option value="연습실">연습실</option>
+          </select>
         </div>
         <div class="form-group">
           <label>담당 코치</label>
@@ -110,16 +135,51 @@
         </div>
         <div class="modal-footer">
           <button type="button" id="btnDeleteSchedule" class="btn btn-danger hidden">삭제</button>
-          <button type="button" id="btnCancelModal" class="btn btn-secondary">취소</button>
+          <button type="button" class="btnCancelModal btn btn-secondary">취소</button>
           <button type="submit" class="btn">저장</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- 코치 계정 관리 모달 -->
+  <div id="coachModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>코치 계정 생성 및 관리</h3>
+        <button class="btnCloseModal" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+      </div>
+      <form id="coachForm" style="margin-bottom: 20px;">
+        <div class="form-group">
+          <label>아이디</label>
+          <input type="text" id="newCoachUsername" class="form-control" placeholder="아이디" required>
+        </div>
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" id="newCoachPassword" class="form-control" placeholder="비밀번호" required>
+        </div>
+        <div class="form-group">
+          <label>코치 이름</label>
+          <input type="text" id="newCoachName" class="form-control" placeholder="예: 김보컬 코치" required>
+        </div>
+        <div class="form-group">
+          <label>시간표 식별 색상</label>
+          <input type="color" id="newCoachColor" class="form-control" value="#4f46e5" style="height: 40px;">
+        </div>
+        <button type="submit" class="btn" style="width:100%;">+ 새 코치 추가</button>
+      </form>
+      <hr style="border-color:#333; margin-bottom: 15px;">
+      <h4>등록된 코치 목록</h4>
+      <ul id="coachListContainer" style="list-style:none; margin-top:10px;"></ul>
+      <div class="modal-footer">
+        <button type="button" class="btnCancelModal btn btn-secondary">닫기</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 // --------------------------------------------------
-// Supabase 프로젝트 주소 및 API Key 설정
+// Supabase 설정
 // --------------------------------------------------
 const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZva3drdXBxcXZwa2lmbmF1bHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDM5NzUsImV4cCI6MjEwMjE3OTk3NX0.hyu9bzJ3P4I3y9Q4N5VnlsF189nx3cGS9GnAKvpT4bk';
@@ -146,15 +206,17 @@ async function initData() {
   initCalendar();
 }
 
-// 코치 목록 불러오기
+// 코치 불러오기
 async function fetchCoaches() {
   try {
     const { data, error } = await supabaseClient.from('coaches').select('*');
     if (error) throw error;
     if (data) {
       coachList = data;
+      // 드롭다운 갱신
       const coachSelect = document.getElementById('coachSelect');
       coachSelect.innerHTML = coachList.map(c => `<option value="${c.id}">${c.name || c.username}</option>`).join('');
+      renderCoachListUI();
     }
   } catch (err) {
     console.error('Coaches 불러오기 실패:', err);
@@ -168,27 +230,38 @@ async function fetchSchedules() {
     if (error) throw error;
     if (data) {
       schedules = data;
-      if (calendar) {
-        calendar.removeAllEvents();
-        calendar.addEventSource(formatEvents(schedules));
-      }
+      refreshCalendarEvents();
     }
   } catch (err) {
     console.error('Schedules 불러오기 실패:', err);
   }
 }
 
+// 방 필터링 적용하여 캘린더 이벤트 갱신
+function refreshCalendarEvents() {
+  if (!calendar) return;
+  const selectedRoom = document.getElementById('roomFilter').value;
+  
+  const filtered = selectedRoom === 'ALL' 
+    ? schedules 
+    : schedules.filter(s => (s.room || '1번 방') === selectedRoom);
+
+  calendar.removeAllEvents();
+  calendar.addEventSource(formatEvents(filtered));
+}
+
 function formatEvents(scheduleData) {
   return scheduleData.map(s => {
     const coach = coachList.find(c => c.id === s.coach_id);
+    const roomName = s.room || '1번 방';
     return {
       id: s.id,
-      title: s.title,
+      title: `[${roomName}] ${s.title}`,
       start: s.start_time,
       end: s.end_time,
       backgroundColor: coach?.color || '#4f46e5',
       borderColor: coach?.color || '#4f46e5',
-      extendedProps: { coach_id: s.coach_id }
+      extendedProps: { coach_id: s.coach_id, room: roomName, rawTitle: s.title }
     };
   });
 }
@@ -219,19 +292,14 @@ function initCalendar() {
   calendar.render();
 }
 
-// 로그인 기능
+// 로그인
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
   const usernameInput = String(document.getElementById('username').value).trim();
   const passwordInput = String(document.getElementById('password').value).trim();
 
   try {
-    const { data, error } = await supabaseClient
-      .from('coaches')
-      .select('*')
-      .eq('username', usernameInput);
-
+    const { data, error } = await supabaseClient.from('coaches').select('*').eq('username', usernameInput);
     if (error) { alert(`DB 오류: ${error.message}`); return; }
     if (!data || data.length === 0) { alert(`'${usernameInput}' 아이디가 존재하지 않습니다.`); return; }
 
@@ -245,7 +313,6 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
     showMainView(currentUser);
     await initData();
-
   } catch (err) {
     alert(`로그인 오류: ${err.message || err}`);
   }
@@ -258,11 +325,22 @@ document.getElementById('btnLogout')?.addEventListener('click', () => {
   showLoginView();
 });
 
+// 필터 변경 시 캘린더 갱신
+document.getElementById('roomFilter')?.addEventListener('change', refreshCalendarEvents);
+
 // 모달 제어
-const modal = document.getElementById('scheduleModal');
+const scheduleModal = document.getElementById('scheduleModal');
+const coachModal = document.getElementById('coachModal');
+
 document.getElementById('btnNewSchedule')?.addEventListener('click', () => openModalForCreate());
-document.getElementById('btnCloseModal')?.addEventListener('click', closeModal);
-document.getElementById('btnCancelModal')?.addEventListener('click', closeModal);
+document.getElementById('btnManageCoaches')?.addEventListener('click', () => coachModal.classList.remove('hidden'));
+
+document.querySelectorAll('.btnCloseModal, .btnCancelModal').forEach(btn => {
+  btn.addEventListener('click', () => {
+    scheduleModal.classList.add('hidden');
+    coachModal.classList.add('hidden');
+  });
+});
 
 function openModalForCreate(startStr = '', endStr = '') {
   document.getElementById('modalTitle').innerText = '일정 추가';
@@ -273,45 +351,41 @@ function openModalForCreate(startStr = '', endStr = '') {
   if (startStr) document.getElementById('startTime').value = startStr.substring(0,16);
   if (endStr) document.getElementById('endTime').value = endStr.substring(0,16);
   
-  modal.classList.remove('hidden');
+  scheduleModal.classList.remove('hidden');
 }
 
 function openModalForEdit(event) {
   document.getElementById('modalTitle').innerText = '일정 수정';
   document.getElementById('scheduleId').value = event.id;
-  document.getElementById('title').value = event.title;
+  document.getElementById('title').value = event.extendedProps.rawTitle || event.title;
+  document.getElementById('roomSelect').value = event.extendedProps.room || '1번 방';
   document.getElementById('coachSelect').value = event.extendedProps.coach_id || '';
   document.getElementById('startTime').value = event.start.toISOString().substring(0,16);
   document.getElementById('endTime').value = event.end ? event.end.toISOString().substring(0,16) : '';
   document.getElementById('btnDeleteSchedule').classList.remove('hidden');
   
-  modal.classList.remove('hidden');
+  scheduleModal.classList.remove('hidden');
 }
 
-function closeModal() {
-  modal.classList.add('hidden');
-}
-
-// 일정 저장 (등록 / 수정)
+// 일정 저장
 document.getElementById('scheduleForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('scheduleId').value;
   const title = document.getElementById('title').value;
+  const room = document.getElementById('roomSelect').value;
   const coach_id = document.getElementById('coachSelect').value;
   const start_time = document.getElementById('startTime').value;
   const end_time = document.getElementById('endTime').value;
 
   try {
     if (id) {
-      // 수정
-      const { error } = await supabaseClient.from('schedules').update({ title, coach_id, start_time, end_time }).eq('id', id);
+      const { error } = await supabaseClient.from('schedules').update({ title, room, coach_id, start_time, end_time }).eq('id', id);
       if (error) throw error;
     } else {
-      // 추가
-      const { error } = await supabaseClient.from('schedules').insert([{ title, coach_id, start_time, end_time }]);
+      const { error } = await supabaseClient.from('schedules').insert([{ title, room, coach_id, start_time, end_time }]);
       if (error) throw error;
     }
-    closeModal();
+    scheduleModal.classList.add('hidden');
     await fetchSchedules();
   } catch (err) {
     alert(`일정 저장 실패: ${err.message}`);
@@ -321,18 +395,58 @@ document.getElementById('scheduleForm')?.addEventListener('submit', async (e) =>
 // 일정 삭제
 document.getElementById('btnDeleteSchedule')?.addEventListener('click', async () => {
   const id = document.getElementById('scheduleId').value;
-  if (!id) return;
-  if (!confirm('정말 이 일정을 삭제하시겠습니까?')) return;
+  if (!id || !confirm('정말 이 일정을 삭제하시겠습니까?')) return;
 
   try {
     const { error } = await supabaseClient.from('schedules').delete().eq('id', id);
     if (error) throw error;
-    closeModal();
+    scheduleModal.classList.add('hidden');
     await fetchSchedules();
   } catch (err) {
     alert(`삭제 실패: ${err.message}`);
   }
 });
+
+// 코치 신규 생성
+document.getElementById('coachForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('newCoachUsername').value.trim();
+  const password = document.getElementById('newCoachPassword').value.trim();
+  const name = document.getElementById('newCoachName').value.trim();
+  const color = document.getElementById('newCoachColor').value;
+
+  try {
+    const { error } = await supabaseClient.from('coaches').insert([{ username, password, name, color, role: 'coach' }]);
+    if (error) throw error;
+    alert('새 코치가 추가되었습니다.');
+    document.getElementById('coachForm').reset();
+    await fetchCoaches();
+  } catch (err) {
+    alert(`코치 추가 실패: ${err.message}`);
+  }
+});
+
+function renderCoachListUI() {
+  const container = document.getElementById('coachListContainer');
+  if (!container) return;
+  container.innerHTML = coachList.map(c => `
+    <li style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #333;">
+      <span><strong style="color:${c.color || '#fff'};">■</strong> ${c.name || c.username} (${c.username})</span>
+      ${c.username !== 'admin' ? `<button onclick="deleteCoach('${c.id}')" class="btn btn-sm btn-danger">삭제</button>` : '<span style="font-size:12px; color:#888;">최고 관리자</span>'}
+    </li>
+  `).join('');
+}
+
+async function deleteCoach(coachId) {
+  if (!confirm('이 코치 계정을 삭제하시겠습니까?')) return;
+  try {
+    const { error } = await supabaseClient.from('coaches').delete().eq('id', coachId);
+    if (error) throw error;
+    await fetchCoaches();
+  } catch (err) {
+    alert(`삭제 실패: ${err.message}`);
+  }
+}
 
 function showMainView(user) {
   document.getElementById('loginView').classList.add('hidden');
