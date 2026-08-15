@@ -93,7 +93,7 @@
       border-color: #333;
     }
     .btn-close {
-      filter: invert(1); /* 닫기 버튼 흰색 변환 */
+      filter: invert(1);
     }
     
     /* 체크박스 그룹 */
@@ -182,12 +182,12 @@
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label">이메일</label>
-          <input type="email" id="loginEmail" class="form-control" placeholder="coach@blackbunch.com">
+          <label class="form-label">아이디</label>
+          <input type="text" id="loginEmail" class="form-control" placeholder="admin">
         </div>
         <div class="mb-3">
           <label class="form-label">비밀번호</label>
-          <input type="password" id="loginPassword" class="form-control">
+          <input type="password" id="loginPassword" class="form-control" placeholder="1234">
         </div>
       </div>
       <div class="modal-footer">
@@ -303,8 +303,8 @@
               <input type="text" id="newCoachName" class="form-control form-control-sm" placeholder="예: 김보컬" required>
             </div>
             <div class="col-md-4">
-              <label class="form-label small fw-bold">이메일 계정</label>
-              <input type="email" id="newCoachEmail" class="form-control form-control-sm" placeholder="coach@blackbunch.com" required>
+              <label class="form-label small fw-bold">아이디 / 이메일</label>
+              <input type="text" id="newCoachEmail" class="form-control form-control-sm" placeholder="아이디 입력" required>
             </div>
             <div class="col-md-2">
               <label class="form-label small fw-bold">권한</label>
@@ -330,7 +330,7 @@
               <tr>
                 <th>담당 지점</th>
                 <th>이름</th>
-                <th>이메일</th>
+                <th>아이디</th>
                 <th>권한</th>
                 <th>색상</th>
                 <th>관리</th>
@@ -423,7 +423,7 @@
     document.getElementById('coachFilter').addEventListener('change', () => calendar.refetchEvents());
 
     await loadCoachesData();
-    await checkAuthStatus();
+    checkAuthStatus();
   });
 
   async function loadCoachesData() {
@@ -468,39 +468,22 @@
     });
   }
 
-  async function checkAuthStatus() {
-    const { data: { user } } = await sbClient.auth.getUser();
+  function checkAuthStatus() {
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     const userInfo = document.getElementById('userInfo');
     const authBtn = document.getElementById('authBtn');
     const manageCoachBtn = document.getElementById('manageCoachBtn');
-    const branchSelect = document.getElementById('branchSelect');
-    const modalBranch = document.getElementById('modalBranch');
 
-    if (user) {
-      const { data: coachData } = await sbClient
-        .from('coaches')
-        .select('*')
-        .eq('email', user.email)
-        .single();
-
-      userInfo.innerText = coachData ? `${coachData.name} (${coachData.role})` : user.email;
+    if (currentUser) {
+      userInfo.innerText = `${currentUser.name} (${currentUser.role})`;
       authBtn.innerText = "로그아웃";
       authBtn.setAttribute("onclick", "handleLogout()");
       authBtn.removeAttribute("data-bs-toggle");
 
-      if (coachData && coachData.role === 'admin') {
+      if (currentUser.role === 'admin') {
         manageCoachBtn.classList.remove('d-none');
-      } else if (coachData) {
+      } else {
         manageCoachBtn.classList.add('d-none');
-        const assignedBranches = (coachData.branch || '위례점').split(',').map(b => b.trim());
-        branchSelect.innerHTML = '';
-        modalBranch.innerHTML = '';
-
-        assignedBranches.forEach(branch => {
-          branchSelect.innerHTML += `<option value="${branch}">${branch}</option>`;
-          modalBranch.innerHTML += `<option value="${branch}">${branch}</option>`;
-        });
-        calendar.refetchEvents();
       }
     } else {
       userInfo.innerText = "";
@@ -512,21 +495,26 @@
     }
   }
 
-  async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+  function handleLogin() {
+    const idInput = document.getElementById('loginEmail').value.trim();
+    const pwInput = document.getElementById('loginPassword').value.trim();
 
-    const { error } = await sbClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert('로그인 실패: ' + error.message);
+    if (idInput === 'admin' && pwInput === '1234') {
+      const userData = { name: '관리자', role: 'admin' };
+      sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      
+      const modalEl = document.getElementById('loginModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
+
+      checkAuthStatus();
     } else {
-      bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-      await checkAuthStatus();
+      alert('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
   }
 
-  async function handleLogout() {
-    await sbClient.auth.signOut();
+  function handleLogout() {
+    sessionStorage.removeItem('loginUser');
     location.reload();
   }
 
@@ -616,7 +604,7 @@
     const color = document.getElementById('newCoachColor').value;
 
     if (!name || !email) {
-      alert('코치 이름과 이메일을 정확히 입력해 주세요.');
+      alert('코치 이름과 아이디를 정확히 입력해 주세요.');
       return;
     }
 
