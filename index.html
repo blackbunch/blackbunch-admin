@@ -47,10 +47,12 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>🎵 블랙번치 스튜디오 스케줄 관리</h2>
     <div id="authContainer" class="d-flex align-items-center gap-2">
-      <!-- 로그인 / 코치 관리 버튼 및 사용자 정보 표시 영역 -->
-      <button id="manageCoachBtn" class="btn btn-outline-dark d-none" data-bs-toggle="modal" data-bs-target="#coachModal">
+      <!-- 로그인 / 사용자 상태 표시 -->
+      <button id="manageCoachBtn" class="btn btn-outline-dark btn-sm d-none" data-bs-toggle="modal" data-bs-target="#coachModal">
         ⚙️ 코치 관리
       </button>
+      <span id="userInfo" class="fw-bold me-2"></span>
+      <button id="authBtn" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#loginModal">로그인</button>
     </div>
   </div>
 
@@ -83,7 +85,7 @@
         </select>
       </div>
       <div class="col-md-3 text-end pt-4">
-        <button id="addScheduleBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+        <button id="addScheduleBtn" class="btn btn-primary" onclick="openAddModal()">
           + 일정 추가
         </button>
       </div>
@@ -92,6 +94,32 @@
 
   <!-- 캘린더 영역 -->
   <div id="calendar"></div>
+</div>
+
+<!-- 로그인 모달 -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">로그인</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">이메일</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="coach@blackbunch.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">비밀번호</label>
+          <input type="password" id="loginPassword" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+        <button type="button" class="btn btn-primary" onclick="handleLogin()">로그인</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 일정 추가/수정 모달 -->
@@ -156,15 +184,15 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" id="deleteScheduleBtn" class="btn btn-danger d-none">삭제</button>
+        <button type="button" id="deleteScheduleBtn" class="btn btn-danger d-none" onclick="deleteSchedule()">삭제</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-        <button type="button" id="saveScheduleBtn" class="btn btn-primary">저장</button>
+        <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">저장</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ⚙️ 코치 등록/관리 모달 (다중 지점 선택 체크박스 지원) -->
+<!-- ⚙️ 코치 등록/관리 모달 -->
 <div class="modal fade" id="coachModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -173,7 +201,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- 신규 코치 등록 폼 -->
         <form id="coachForm" class="p-3 bg-light rounded mb-4">
           <h6 class="fw-bold mb-3">➕ 새 코치 등록</h6>
           <div class="row g-3 mb-2">
@@ -216,12 +243,11 @@
               <input type="color" id="newCoachColor" class="form-control form-control-color w-100" value="#3788d8">
             </div>
             <div class="col-md-12 text-end mt-3">
-              <button type="button" id="saveCoachBtn" class="btn btn-sm btn-success px-4">코치 추가</button>
+              <button type="button" id="saveCoachBtn" class="btn btn-sm btn-success px-4" onclick="registerNewCoach()">코치 추가</button>
             </div>
           </div>
         </form>
 
-        <!-- 등록된 코치 목록 -->
         <h6>📋 등록된 코치 목록</h6>
         <div class="table-responsive">
           <table class="table table-bordered table-hover align-middle small">
@@ -236,7 +262,7 @@
               </tr>
             </thead>
             <tbody id="coachTableBody">
-              <!-- JS로 동적 생성 -->
+              <!-- JS 로드 -->
             </tbody>
           </table>
         </div>
@@ -252,16 +278,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co'; 
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZva3drdXBxcXZwa2lmbmF1bHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDM5NzUsImV4cCI6MjEwMjE3OTk3NX0.hyu9bzJ3P4I3y9Q4N5VnlsF189nx3cGS9GnAKvpT4bk';
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let calendar;
+  let coachMap = {};
 
   document.addEventListener('DOMContentLoaded', async function() {
     const calendarEl = document.getElementById('calendar');
 
-    // 1. FullCalendar 초기화 (10:00 ~ 24:00)
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
       locale: 'ko',
@@ -293,11 +319,13 @@
           const { data, error } = await query;
           if (error) throw error;
 
-          const events = data.map(item => ({
+          const events = (data || []).map(item => ({
             id: item.id,
             title: `[${item.room_name}] ${item.student_name} (${item.coach_name})`,
             start: item.start_time,
             end: item.end_time,
+            backgroundColor: coachMap[item.coach_name] || '#3788d8',
+            borderColor: coachMap[item.coach_name] || '#3788d8',
             extendedProps: item
           }));
 
@@ -315,18 +343,14 @@
 
     calendar.render();
 
-    // 이벤트 리스너 등록
     document.getElementById('branchSelect').addEventListener('change', () => calendar.refetchEvents());
     document.getElementById('roomSelect').addEventListener('change', () => calendar.refetchEvents());
     document.getElementById('coachFilter').addEventListener('change', () => calendar.refetchEvents());
-    document.getElementById('saveCoachBtn').addEventListener('click', registerNewCoach);
 
-    // 데이터 및 권한 검사
     await loadCoachesData();
-    await checkUserPermission();
+    await checkAuthStatus();
   });
 
-  // 코치 목록 불러오기 & 테이블/드롭다운 업데이트
   async function loadCoachesData() {
     const { data: coaches, error } = await supabase.from('coaches').select('*');
     if (error) {
@@ -339,8 +363,10 @@
 
     coachFilter.innerHTML = '<option value="ALL" selected>전체 코치 보기</option>';
     modalCoachName.innerHTML = '';
+    coachMap = {};
 
-    coaches.forEach(c => {
+    (coaches || []).forEach(c => {
+      coachMap[c.name] = c.color || '#3788d8';
       coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
       modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
     });
@@ -348,8 +374,7 @@
     const coachTableBody = document.getElementById('coachTableBody');
     coachTableBody.innerHTML = '';
 
-    coaches.forEach(c => {
-      // 콤마로 연결된 지점 문자열 처리 (예: "위례점, 미사점")
+    (coaches || []).forEach(c => {
       const branchBadges = (c.branch || '위례점')
         .split(',')
         .map(b => `<span class="badge bg-secondary me-1">${b.trim()}</span>`)
@@ -368,79 +393,31 @@
     });
   }
 
-  // ➕ 새 코치 생성 (체크박스로 지점 복수 저장)
-  async function registerNewCoach() {
-    const checkedBranches = Array.from(document.querySelectorAll('.new-coach-branch:checked'))
-      .map(cb => cb.value);
-
-    if (checkedBranches.length === 0) {
-      alert('최소 하나 이상의 담당 지점을 선택해 주세요.');
-      return;
-    }
-
-    const branch = checkedBranches.join(', '); // 예: "위례점, 미사점"
-    const name = document.getElementById('newCoachName').value.trim();
-    const email = document.getElementById('newCoachEmail').value.trim();
-    const role = document.getElementById('newCoachRole').value;
-    const color = document.getElementById('newCoachColor').value;
-
-    if (!name || !email) {
-      alert('코치 이름과 이메일을 정확히 입력해 주세요.');
-      return;
-    }
-
-    const { error } = await supabase.from('coaches').insert([
-      { branch, name, email, role, color }
-    ]);
-
-    if (error) {
-      alert('코치 등록 실패: ' + error.message);
-    } else {
-      alert(`${name} 코치(${branch})가 성공적으로 등록되었습니다.`);
-      document.getElementById('newCoachName').value = '';
-      document.getElementById('newCoachEmail').value = '';
-      await loadCoachesData();
-    }
-  }
-
-  // 코치 삭제
-  async function deleteCoach(id) {
-    if (!confirm('정말 이 코치 계정을 삭제하시겠습니까?')) return;
-
-    const { error } = await supabase.from('coaches').delete().eq('id', id);
-    if (error) {
-      alert('삭제 실패: ' + error.message);
-    } else {
-      await loadCoachesData();
-    }
-  }
-
-  // 로그인 유저 권한 및 다중 담당 지점 필터링
-  async function checkUserPermission() {
+  async function checkAuthStatus() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: coachData } = await supabase
-      .from('coaches')
-      .select('*')
-      .eq('email', user.email)
-      .single();
-
+    const userInfo = document.getElementById('userInfo');
+    const authBtn = document.getElementById('authBtn');
+    const manageCoachBtn = document.getElementById('manageCoachBtn');
     const branchSelect = document.getElementById('branchSelect');
     const modalBranch = document.getElementById('modalBranch');
-    const manageCoachBtn = document.getElementById('manageCoachBtn');
 
-    if (coachData) {
-      if (coachData.role === 'admin') {
-        // 관리자: 전체 지점 접근 권한 및 코치 관리 메뉴 활성화
+    if (user) {
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      userInfo.innerText = coachData ? `${coachData.name} (${coachData.role})` : user.email;
+      authBtn.innerText = "로그아웃";
+      authBtn.setAttribute("onclick", "handleLogout()");
+      authBtn.removeAttribute("data-bs-toggle");
+
+      if (coachData && coachData.role === 'admin') {
         manageCoachBtn.classList.remove('d-none');
-      } else {
-        // 일반 코치: 부여받은 지점만 드롭다운에 노출
-        const assignedBranches = (coachData.branch || '위례점')
-          .split(',')
-          .map(b => b.trim());
-
-        // 메인 지점 필터 드롭다운을 해당 코치의 지점목록으로 재구성
+      } else if (coachData) {
+        manageCoachBtn.classList.add('d-none');
+        const assignedBranches = (coachData.branch || '위례점').split(',').map(b => b.trim());
         branchSelect.innerHTML = '';
         modalBranch.innerHTML = '';
 
@@ -448,10 +425,46 @@
           branchSelect.innerHTML += `<option value="${branch}">${branch}</option>`;
           modalBranch.innerHTML += `<option value="${branch}">${branch}</option>`;
         });
-
         calendar.refetchEvents();
       }
+    } else {
+      userInfo.innerText = "";
+      authBtn.innerText = "로그인";
+      authBtn.setAttribute("onclick", "");
+      authBtn.setAttribute("data-bs-toggle", "modal");
+      authBtn.setAttribute("data-bs-target", "#loginModal");
+      manageCoachBtn.classList.add('d-none');
     }
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert('로그인 실패: ' + error.message);
+    } else {
+      bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+      await checkAuthStatus();
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    location.reload();
+  }
+
+  function openAddModal() {
+    document.getElementById('modalTitle').innerText = "일정 추가";
+    document.getElementById('scheduleId').value = "";
+    document.getElementById('modalStudentName').value = "";
+    document.getElementById('modalSubject').value = "";
+    document.getElementById('modalStartTime').value = "";
+    document.getElementById('modalEndTime').value = "";
+    document.getElementById('deleteScheduleBtn').classList.add('d-none');
+    
+    new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
 
   function openEditModal(scheduleData) {
@@ -466,8 +479,91 @@
     document.getElementById('modalEndTime').value = scheduleData.end_time.slice(0, 16);
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
-    const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('scheduleModal')).show();
+  }
+
+  async function saveSchedule() {
+    const id = document.getElementById('scheduleId').value;
+    const branch = document.getElementById('modalBranch').value;
+    const student_name = document.getElementById('modalStudentName').value;
+    const coach_name = document.getElementById('modalCoachName').value;
+    const subject = document.getElementById('modalSubject').value;
+    const room_name = document.getElementById('modalRoomName').value;
+    const start_time = document.getElementById('modalStartTime').value;
+    const end_time = document.getElementById('modalEndTime').value;
+
+    if (!student_name || !start_time || !end_time) {
+      alert("학생 이름과 시간 항목을 정확히 입력해 주세요.");
+      return;
+    }
+
+    const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
+
+    let result;
+    if (id) {
+      result = await supabase.from('schedules').update(payload).eq('id', id);
+    } else {
+      result = await supabase.from('schedules').insert([payload]);
+    }
+
+    if (result.error) {
+      alert("저장 실패: " + result.error.message);
+    } else {
+      bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+      calendar.refetchEvents();
+    }
+  }
+
+  async function deleteSchedule() {
+    const id = document.getElementById('scheduleId').value;
+    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
+
+    const { error } = await supabase.from('schedules').delete().eq('id', id);
+    if (error) {
+      alert("삭제 실패: " + error.message);
+    } else {
+      bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+      calendar.refetchEvents();
+    }
+  }
+
+  async function registerNewCoach() {
+    const checkedBranches = Array.from(document.querySelectorAll('.new-coach-branch:checked')).map(cb => cb.value);
+    if (checkedBranches.length === 0) {
+      alert('최소 하나 이상의 담당 지점을 선택해 주세요.');
+      return;
+    }
+
+    const branch = checkedBranches.join(', ');
+    const name = document.getElementById('newCoachName').value.trim();
+    const email = document.getElementById('newCoachEmail').value.trim();
+    const role = document.getElementById('newCoachRole').value;
+    const color = document.getElementById('newCoachColor').value;
+
+    if (!name || !email) {
+      alert('코치 이름과 이메일을 정확히 입력해 주세요.');
+      return;
+    }
+
+    const { error } = await supabase.from('coaches').insert([{ branch, name, email, role, color }]);
+    if (error) {
+      alert('코치 등록 실패: ' + error.message);
+    } else {
+      alert(`${name} 코치(${branch})가 등록되었습니다.`);
+      document.getElementById('newCoachName').value = '';
+      document.getElementById('newCoachEmail').value = '';
+      await loadCoachesData();
+    }
+  }
+
+  async function deleteCoach(id) {
+    if (!confirm('정말 이 코치 계정을 삭제하시겠습니까?')) return;
+    const { error } = await supabase.from('coaches').delete().eq('id', id);
+    if (error) {
+      alert('삭제 실패: ' + error.message);
+    } else {
+      await loadCoachesData();
+    }
   }
 </script>
 
