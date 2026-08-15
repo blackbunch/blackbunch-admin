@@ -72,10 +72,12 @@
       border-color: #4f46e5;
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
     }
-    .form-select:disabled {
-      background-color: #1c1e28;
-      color: #6c757d;
-      border-color: #2e3140;
+
+    .readonly-select {
+      pointer-events: none;
+      background-color: #1c1e28 !important;
+      color: #818cf8 !important;
+      border-color: #2e3140 !important;
     }
 
     .btn-primary {
@@ -277,6 +279,7 @@
           <option value="ROOM 2">ROOM 2</option>
           <option value="ROOM 3">ROOM 3</option>
           <option value="ROOM 4">ROOM 4</option>
+          <option value="ROOM 5">ROOM 5</option>
           <option value="연습실">연습실</option>
         </select>
       </div>
@@ -342,18 +345,25 @@
               <option value="ROOM 2">ROOM 2</option>
               <option value="ROOM 3">ROOM 3</option>
               <option value="ROOM 4">ROOM 4</option>
+              <option value="ROOM 5">ROOM 5</option>
               <option value="연습실">연습실</option>
             </select>
+          </div>
+
+          <!-- 간결해진 날짜 및 시간 선택 -->
+          <div class="mb-3">
+            <label class="form-label">날짜</label>
+            <input type="date" id="modalDate" class="form-control" required>
           </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">시작 시간</label>
-              <input type="datetime-local" id="modalStartTime" class="form-control" required>
+              <select id="modalStartTime" class="form-select" required></select>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">종료 시간</label>
-              <input type="datetime-local" id="modalEndTime" class="form-control" required>
+              <select id="modalEndTime" class="form-select" required></select>
             </div>
           </div>
         </form>
@@ -465,16 +475,35 @@
   let calendar;
   let coachMap = {};
 
-  function formatLocalISO(dateStr) {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const offset = date.getTimezoneOffset() * 60000;
-    const localTime = new Date(date.getTime() - offset);
-    return localTime.toISOString().slice(0, 16);
+  // 30분 단위 시간 드롭다운 생성 함수 (10:00 ~ 24:00)
+  function populateTimeOptions() {
+    const startSelect = document.getElementById('modalStartTime');
+    const endSelect = document.getElementById('modalEndTime');
+    if (!startSelect || !endSelect) return;
+
+    startSelect.innerHTML = '';
+    endSelect.innerHTML = '';
+
+    for (let h = 10; h <= 24; h++) {
+      ['00', '30'].forEach(m => {
+        if (h === 24 && m === '30') return; // 24:00 까지만 생성
+        const timeStr = `${String(h).padStart(2, '0')}:${m}`;
+        startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+        endSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+      });
+    }
   }
 
   document.addEventListener('DOMContentLoaded', async function() {
+    populateTimeOptions();
     checkAuthStatus();
+
+    const modalEl = document.getElementById('scheduleModal');
+    if (modalEl) {
+      modalEl.addEventListener('shown.bs.modal', function () {
+        document.getElementById('modalStudentName').focus();
+      });
+    }
   });
 
   function checkAuthStatus() {
@@ -680,9 +709,11 @@
 
     if (currentUser && currentUser.role !== 'admin') {
       modalCoachName.value = currentUser.name;
-      modalCoachName.disabled = true;
+      modalCoachName.classList.add('readonly-select');
+      modalCoachName.setAttribute('tabindex', '-1');
     } else {
-      modalCoachName.disabled = false;
+      modalCoachName.classList.remove('readonly-select');
+      modalCoachName.removeAttribute('tabindex');
     }
   }
 
@@ -691,8 +722,13 @@
     document.getElementById('scheduleId').value = "";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalSubject').value = "";
-    document.getElementById('modalStartTime').value = "";
-    document.getElementById('modalEndTime').value = "";
+    
+    // 오늘 날짜 기본값 세팅
+    const todayStr = new Date().toISOString().slice(0, 10);
+    document.getElementById('modalDate').value = todayStr;
+    document.getElementById('modalStartTime').value = "10:00";
+    document.getElementById('modalEndTime').value = "11:00";
+
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     
     applyCoachRestriction();
@@ -708,8 +744,23 @@
     document.getElementById('modalSubject').value = scheduleData.subject || '';
     document.getElementById('modalRoomName').value = scheduleData.room_name;
     
-    document.getElementById('modalStartTime').value = formatLocalISO(scheduleData.start_time);
-    document.getElementById('modalEndTime').value = formatLocalISO(scheduleData.end_time);
+    // ISO 날짜/시간 파싱
+    if (scheduleData.start_time) {
+      const startObj = new Date(scheduleData.start_time);
+      const datePart = scheduleData.start_time.split('T')[0];
+      const startHours = String(startObj.getHours()).padStart(2, '0');
+      const startMinutes = String(startObj.getMinutes()).padStart(2, '0');
+      
+      document.getElementById('modalDate').value = datePart;
+      document.getElementById('modalStartTime').value = `${startHours}:${startMinutes}`;
+    }
+
+    if (scheduleData.end_time) {
+      const endObj = new Date(scheduleData.end_time);
+      const endHours = String(endObj.getHours()).padStart(2, '0');
+      const endMinutes = String(endObj.getMinutes()).padStart(2, '0');
+      document.getElementById('modalEndTime').value = `${endHours}:${endMinutes}`;
+    }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
     
@@ -725,16 +776,17 @@
     const subject = document.getElementById('modalSubject').value.trim();
     const room_name = document.getElementById('modalRoomName').value;
     
-    const rawStart = document.getElementById('modalStartTime').value;
-    const rawEnd = document.getElementById('modalEndTime').value;
+    const selectedDate = document.getElementById('modalDate').value;
+    const startTime = document.getElementById('modalStartTime').value;
+    const endTime = document.getElementById('modalEndTime').value;
 
-    if (!student_name || !coach_name || !rawStart || !rawEnd) {
-      alert("학생 이름, 코치, 시간 항목을 정확히 입력해 주세요.");
+    if (!student_name || !coach_name || !selectedDate || !startTime || !endTime) {
+      alert("학생 이름, 코치, 날짜 및 시간을 정확히 입력해 주세요.");
       return;
     }
 
-    const start_time = rawStart + ":00";
-    const end_time = rawEnd + ":00";
+    const start_time = `${selectedDate}T${startTime}:00`;
+    const end_time = `${selectedDate}T${endTime}:00`;
 
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
