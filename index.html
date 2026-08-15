@@ -474,6 +474,21 @@
   let calendar;
   let coachMap = {};
 
+  // KST (한국 표준시) 기준 날짜/시간 변환 헬퍼 함수
+  function formatKST(dateInput) {
+    const d = new Date(dateInput);
+    const kstTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) + (d.getTimezoneOffset() * 60 * 1000));
+    const year = kstTime.getFullYear();
+    const month = String(kstTime.getMonth() + 1).padStart(2, '0');
+    const day = String(kstTime.getDate()).padStart(2, '0');
+    const hours = String(kstTime.getHours()).padStart(2, '0');
+    const minutes = String(kstTime.getMinutes()).padStart(2, '0');
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`
+    };
+  }
+
   // 30분 단위 시간 드롭다운 생성 함수 (10:00 ~ 24:00)
   function populateTimeOptions() {
     const startSelect = document.getElementById('modalStartTime');
@@ -708,9 +723,11 @@
 
     if (currentUser && currentUser.role !== 'admin') {
       modalCoachName.value = currentUser.name;
+      modalCoachName.disabled = true;
       modalCoachName.classList.add('readonly-select');
       modalCoachName.setAttribute('tabindex', '-1');
     } else {
+      modalCoachName.disabled = false;
       modalCoachName.classList.remove('readonly-select');
       modalCoachName.removeAttribute('tabindex');
     }
@@ -722,14 +739,9 @@
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalSubject').value = "";
     
-    // 오늘 날짜 기본값 세팅 (로컬 타임존 기준 YYYY-MM-DD)
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-
-    document.getElementById('modalDate').value = todayStr;
+    // KST 기준 오늘 날짜 기본값 세팅
+    const nowKST = formatKST(new Date());
+    document.getElementById('modalDate').value = nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
     document.getElementById('modalEndTime').value = "11:00";
 
@@ -748,18 +760,16 @@
     document.getElementById('modalSubject').value = scheduleData.subject || '';
     document.getElementById('modalRoomName').value = scheduleData.room_name;
     
-    // ISO 날짜/시간 파싱
+    // KST 시간 기준으로 파싱하여 표시
     if (scheduleData.start_time) {
-      const datePart = scheduleData.start_time.split('T')[0];
-      const timePart = scheduleData.start_time.split('T')[1].substring(0, 5);
-      
-      document.getElementById('modalDate').value = datePart;
-      document.getElementById('modalStartTime').value = timePart;
+      const startKST = formatKST(scheduleData.start_time);
+      document.getElementById('modalDate').value = startKST.date;
+      document.getElementById('modalStartTime').value = startKST.time;
     }
 
     if (scheduleData.end_time) {
-      const endTimePart = scheduleData.end_time.split('T')[1].substring(0, 5);
-      document.getElementById('modalEndTime').value = endTimePart;
+      const endKST = formatKST(scheduleData.end_time);
+      document.getElementById('modalEndTime').value = endKST.time;
     }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
@@ -772,7 +782,10 @@
     const id = document.getElementById('scheduleId').value;
     const branch = document.getElementById('modalBranch').value;
     const student_name = document.getElementById('modalStudentName').value.trim();
-    const coach_name = document.getElementById('modalCoachName').value;
+    
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const coach_name = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('modalCoachName').value;
+    
     const subject = document.getElementById('modalSubject').value.trim();
     const room_name = document.getElementById('modalRoomName').value;
     
@@ -785,8 +798,9 @@
       return;
     }
 
-    const start_time = `${selectedDate}T${startTime}:00`;
-    const end_time = `${selectedDate}T${endTime}:00`;
+    // KST 타임존 오프셋(+09:00)을 명시하여 정확한 한국 시간으로 저장
+    const start_time = `${selectedDate}T${startTime}:00+09:00`;
+    const end_time = `${selectedDate}T${endTime}:00+09:00`;
 
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
