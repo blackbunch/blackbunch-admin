@@ -105,9 +105,26 @@
       overflow: hidden;
     }
     
-    /* 30분 단위 보조선 보이지 않게 처리하여 깔끔하게 변경 */
+    /* 요일/시간 표 칸 균등 고정 (핵심 수정 부분) */
+    .fc-timegrid-cols table,
+    .fc-col-header table {
+      width: 100% !important;
+      table-layout: fixed !important;
+    }
+    .fc-timegrid-axis {
+      width: 70px !important;
+    }
+    .fc-timegrid-slot {
+      height: 48px !important; /* 행 높이 일정하게 고정 */
+    }
+    .fc-scroller {
+      overflow-y: scroll !important; /* 스크롤 고정으로 컬럼 틀어짐 방지 */
+    }
+
+    /* 30분 단위 보조선 완화 */
     .fc-timegrid-slots tr:nth-child(even) td {
-      border-top-style: none !important;
+      border-top-style: dashed !important;
+      border-top-color: #1d1f2b !important;
     }
 
     .fc-col-header-cell {
@@ -121,9 +138,9 @@
       text-decoration: none !important;
     }
     
-    /* 오늘 날짜 이질감 있는 노란색 제거 */
+    /* 오늘 날짜 하이라이트 배경 */
     .fc .fc-day-today {
-      background-color: rgba(79, 70, 229, 0.05) !important;
+      background-color: rgba(79, 70, 229, 0.08) !important;
     }
     .fc-day-today .fc-col-header-cell-cushion {
       color: #818cf8 !important;
@@ -480,6 +497,8 @@
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
       locale: 'ko',
+      expandRows: false,
+      height: 'auto',
       buttonText: {
         today: '오늘',
         month: '월',
