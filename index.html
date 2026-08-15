@@ -280,7 +280,9 @@
 <script>
   const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co'; 
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZva3drdXBxcXZwa2lmbmF1bHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDM5NzUsImV4cCI6MjEwMjE3OTk3NX0.hyu9bzJ3P4I3y9Q4N5VnlsF189nx3cGS9GnAKvpT4bk';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // supabase 변수명 충돌 해결을 위해 supabaseClient 로 지정
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let calendar;
   let coachMap = {};
@@ -307,7 +309,7 @@
           const selectedRoom = document.getElementById('roomSelect').value;
           const selectedCoach = document.getElementById('coachFilter').value;
 
-          let query = supabase.from('schedules').select('*').eq('branch', selectedBranch);
+          let query = supabaseClient.from('schedules').select('*').eq('branch', selectedBranch);
 
           if (selectedRoom !== 'ALL') {
             query = query.eq('room_name', selectedRoom);
@@ -352,7 +354,7 @@
   });
 
   async function loadCoachesData() {
-    const { data: coaches, error } = await supabase.from('coaches').select('*');
+    const { data: coaches, error } = await supabaseClient.from('coaches').select('*');
     if (error) {
       console.error('코치 목록 불러오기 오류:', error);
       return;
@@ -394,7 +396,7 @@
   }
 
   async function checkAuthStatus() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabaseClient.auth.getUser();
     const userInfo = document.getElementById('userInfo');
     const authBtn = document.getElementById('authBtn');
     const manageCoachBtn = document.getElementById('manageCoachBtn');
@@ -402,7 +404,7 @@
     const modalBranch = document.getElementById('modalBranch');
 
     if (user) {
-      const { data: coachData } = await supabase
+      const { data: coachData } = await supabaseClient
         .from('coaches')
         .select('*')
         .eq('email', user.email)
@@ -441,7 +443,7 @@
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
       alert('로그인 실패: ' + error.message);
     } else {
@@ -451,7 +453,7 @@
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     location.reload();
   }
 
@@ -501,9 +503,9 @@
 
     let result;
     if (id) {
-      result = await supabase.from('schedules').update(payload).eq('id', id);
+      result = await supabaseClient.from('schedules').update(payload).eq('id', id);
     } else {
-      result = await supabase.from('schedules').insert([payload]);
+      result = await supabaseClient.from('schedules').insert([payload]);
     }
 
     if (result.error) {
@@ -518,7 +520,7 @@
     const id = document.getElementById('scheduleId').value;
     if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
 
-    const { error } = await supabase.from('schedules').delete().eq('id', id);
+    const { error } = await supabaseClient.from('schedules').delete().eq('id', id);
     if (error) {
       alert("삭제 실패: " + error.message);
     } else {
@@ -545,7 +547,7 @@
       return;
     }
 
-    const { error } = await supabase.from('coaches').insert([{ branch, name, email, role, color }]);
+    const { error } = await supabaseClient.from('coaches').insert([{ branch, name, email, role, color }]);
     if (error) {
       alert('코치 등록 실패: ' + error.message);
     } else {
@@ -558,7 +560,7 @@
 
   async function deleteCoach(id) {
     if (!confirm('정말 이 코치 계정을 삭제하시겠습니까?')) return;
-    const { error } = await supabase.from('coaches').delete().eq('id', id);
+    const { error } = await supabaseClient.from('coaches').delete().eq('id', id);
     if (error) {
       alert('삭제 실패: ' + error.message);
     } else {
