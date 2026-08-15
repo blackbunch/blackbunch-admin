@@ -350,7 +350,6 @@
             </select>
           </div>
 
-          <!-- 간결해진 날짜 및 시간 선택 -->
           <div class="mb-3">
             <label class="form-label">날짜</label>
             <input type="date" id="modalDate" class="form-control" required>
@@ -723,8 +722,13 @@
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalSubject').value = "";
     
-    // 오늘 날짜 기본값 세팅
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // 오늘 날짜 기본값 세팅 (로컬 타임존 기준 YYYY-MM-DD)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
     document.getElementById('modalDate').value = todayStr;
     document.getElementById('modalStartTime').value = "10:00";
     document.getElementById('modalEndTime').value = "11:00";
@@ -746,20 +750,16 @@
     
     // ISO 날짜/시간 파싱
     if (scheduleData.start_time) {
-      const startObj = new Date(scheduleData.start_time);
       const datePart = scheduleData.start_time.split('T')[0];
-      const startHours = String(startObj.getHours()).padStart(2, '0');
-      const startMinutes = String(startObj.getMinutes()).padStart(2, '0');
+      const timePart = scheduleData.start_time.split('T')[1].substring(0, 5);
       
       document.getElementById('modalDate').value = datePart;
-      document.getElementById('modalStartTime').value = `${startHours}:${startMinutes}`;
+      document.getElementById('modalStartTime').value = timePart;
     }
 
     if (scheduleData.end_time) {
-      const endObj = new Date(scheduleData.end_time);
-      const endHours = String(endObj.getHours()).padStart(2, '0');
-      const endMinutes = String(endObj.getMinutes()).padStart(2, '0');
-      document.getElementById('modalEndTime').value = `${endHours}:${endMinutes}`;
+      const endTimePart = scheduleData.end_time.split('T')[1].substring(0, 5);
+      document.getElementById('modalEndTime').value = endTimePart;
     }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
