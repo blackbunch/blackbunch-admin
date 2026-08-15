@@ -11,33 +11,110 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   
   <style>
+    /* 다크 테마 기본 배경 및 글자색 */
     body {
       padding: 20px;
-      background-color: #f8f9fa;
+      background-color: #121212;
+      color: #e0e0e0;
     }
+
+    /* 메인 카드 컨테이너 */
     .main-container {
       max-width: 1400px;
       margin: 0 auto;
-      background: white;
+      background: #1e1e1e;
       padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      border: 1px solid #2c2c2c;
     }
+
+    /* 필터 영역 */
+    .filter-section {
+      background-color: #282828;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #383838;
+    }
+
+    .form-label {
+      color: #b0b0b0;
+    }
+
+    /* 폼 입력창 & 셀렉트 박스 다크 스타일 */
+    .form-select, .form-control {
+      background-color: #121212;
+      color: #ffffff;
+      border: 1px solid #444;
+    }
+    .form-select:focus, .form-control:focus {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      border-color: #0d6efd;
+      box-shadow: none;
+    }
+
+    /* 캘린더 다크 커스텀 */
     #calendar {
       margin-top: 20px;
       min-height: 700px;
     }
-    .filter-section {
-      background-color: #f1f3f5;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+    .fc {
+      color: #e0e0e0;
     }
+    .fc-theme-standard td, .fc-theme-standard th {
+      border-color: #333333 !important;
+    }
+    .fc-col-header-cell-cushion, .fc-daygrid-day-number {
+      color: #e0e0e0 !important;
+      text-decoration: none !important;
+    }
+    .fc-timegrid-slot-label-cushion {
+      color: #a0a0a0;
+    }
+    .fc-button-primary {
+      background-color: #333 !important;
+      border-color: #444 !important;
+      color: #fff !important;
+    }
+    .fc-button-primary:hover, .fc-button-primary:active, .fc-button-active {
+      background-color: #0d6efd !important;
+      border-color: #0d6efd !important;
+    }
+
+    /* 모달 팝업 다크 스타일 */
+    .modal-content {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #333;
+    }
+    .modal-header, .modal-footer {
+      border-color: #333;
+    }
+    .btn-close {
+      filter: invert(1); /* 닫기 버튼 흰색 변환 */
+    }
+    
+    /* 체크박스 그룹 */
     .branch-checkbox-group {
       display: flex;
       gap: 12px;
       align-items: center;
       padding-top: 4px;
+    }
+
+    /* 테이블 다크 스타일 */
+    .table-dark-custom {
+      color: #e0e0e0;
+      border-color: #333;
+    }
+    .table-dark-custom th {
+      background-color: #282828;
+      border-color: #333;
+    }
+    .table-dark-custom td {
+      border-color: #333;
     }
   </style>
 </head>
@@ -47,8 +124,7 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>🎵 블랙번치 스튜디오 스케줄 관리</h2>
     <div id="authContainer" class="d-flex align-items-center gap-2">
-      <!-- 로그인 / 사용자 상태 표시 -->
-      <button id="manageCoachBtn" class="btn btn-outline-dark btn-sm d-none" data-bs-toggle="modal" data-bs-target="#coachModal">
+      <button id="manageCoachBtn" class="btn btn-outline-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#coachModal">
         ⚙️ 코치 관리
       </button>
       <span id="userInfo" class="fw-bold me-2"></span>
@@ -56,7 +132,7 @@
     </div>
   </div>
 
-  <!-- 필터 섹션 (지점, 룸, 코치) -->
+  <!-- 필터 섹션 -->
   <div class="filter-section">
     <div class="row g-3 align-items-center">
       <div class="col-md-3">
@@ -151,7 +227,6 @@
           <div class="mb-3">
             <label class="form-label">담당 코치</label>
             <select id="modalCoachName" class="form-select" required>
-              <!-- JS로 동적 로드 -->
             </select>
           </div>
 
@@ -201,7 +276,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="coachForm" class="p-3 bg-light rounded mb-4">
+        <form id="coachForm" class="p-3 style-dark-box rounded mb-4" style="background-color: #282828;">
           <h6 class="fw-bold mb-3">➕ 새 코치 등록</h6>
           <div class="row g-3 mb-2">
             <div class="col-md-12">
@@ -250,8 +325,8 @@
 
         <h6>📋 등록된 코치 목록</h6>
         <div class="table-responsive">
-          <table class="table table-bordered table-hover align-middle small">
-            <thead class="table-dark">
+          <table class="table table-bordered table-dark-custom align-middle small">
+            <thead>
               <tr>
                 <th>담당 지점</th>
                 <th>이름</th>
@@ -262,7 +337,6 @@
               </tr>
             </thead>
             <tbody id="coachTableBody">
-              <!-- JS 로드 -->
             </tbody>
           </table>
         </div>
@@ -281,8 +355,7 @@
   const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co'; 
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZva3drdXBxcXZwa2lmbmF1bHJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDM5NzUsImV4cCI6MjEwMjE3OTk3NX0.hyu9bzJ3P4I3y9Q4N5VnlsF189nx3cGS9GnAKvpT4bk';
   
-  // supabase 변수명 충돌 해결을 위해 supabaseClient 로 지정
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   let calendar;
   let coachMap = {};
@@ -309,7 +382,7 @@
           const selectedRoom = document.getElementById('roomSelect').value;
           const selectedCoach = document.getElementById('coachFilter').value;
 
-          let query = supabaseClient.from('schedules').select('*').eq('branch', selectedBranch);
+          let query = sbClient.from('schedules').select('*').eq('branch', selectedBranch);
 
           if (selectedRoom !== 'ALL') {
             query = query.eq('room_name', selectedRoom);
@@ -354,7 +427,7 @@
   });
 
   async function loadCoachesData() {
-    const { data: coaches, error } = await supabaseClient.from('coaches').select('*');
+    const { data: coaches, error } = await sbClient.from('coaches').select('*');
     if (error) {
       console.error('코치 목록 불러오기 오류:', error);
       return;
@@ -396,7 +469,7 @@
   }
 
   async function checkAuthStatus() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user } } = await sbClient.auth.getUser();
     const userInfo = document.getElementById('userInfo');
     const authBtn = document.getElementById('authBtn');
     const manageCoachBtn = document.getElementById('manageCoachBtn');
@@ -404,7 +477,7 @@
     const modalBranch = document.getElementById('modalBranch');
 
     if (user) {
-      const { data: coachData } = await supabaseClient
+      const { data: coachData } = await sbClient
         .from('coaches')
         .select('*')
         .eq('email', user.email)
@@ -443,7 +516,7 @@
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { error } = await sbClient.auth.signInWithPassword({ email, password });
     if (error) {
       alert('로그인 실패: ' + error.message);
     } else {
@@ -453,7 +526,7 @@
   }
 
   async function handleLogout() {
-    await supabaseClient.auth.signOut();
+    await sbClient.auth.signOut();
     location.reload();
   }
 
@@ -503,9 +576,9 @@
 
     let result;
     if (id) {
-      result = await supabaseClient.from('schedules').update(payload).eq('id', id);
+      result = await sbClient.from('schedules').update(payload).eq('id', id);
     } else {
-      result = await supabaseClient.from('schedules').insert([payload]);
+      result = await sbClient.from('schedules').insert([payload]);
     }
 
     if (result.error) {
@@ -520,7 +593,7 @@
     const id = document.getElementById('scheduleId').value;
     if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
 
-    const { error } = await supabaseClient.from('schedules').delete().eq('id', id);
+    const { error } = await sbClient.from('schedules').delete().eq('id', id);
     if (error) {
       alert("삭제 실패: " + error.message);
     } else {
@@ -547,7 +620,7 @@
       return;
     }
 
-    const { error } = await supabaseClient.from('coaches').insert([{ branch, name, email, role, color }]);
+    const { error } = await sbClient.from('coaches').insert([{ branch, name, email, role, color }]);
     if (error) {
       alert('코치 등록 실패: ' + error.message);
     } else {
@@ -560,7 +633,7 @@
 
   async function deleteCoach(id) {
     if (!confirm('정말 이 코치 계정을 삭제하시겠습니까?')) return;
-    const { error } = await supabaseClient.from('coaches').delete().eq('id', id);
+    const { error } = await sbClient.from('coaches').delete().eq('id', id);
     if (error) {
       alert('삭제 실패: ' + error.message);
     } else {
