@@ -335,7 +335,12 @@
 
           <div class="mb-3">
             <label class="form-label">과목 / 레슨 내용</label>
-            <input type="text" id="modalSubject" class="form-control" placeholder="예: 보컬 레슨 / 발성 교정">
+            <select id="modalSubject" class="form-select" required onchange="calculateEndTime()">
+              <option value="스타일" selected>스타일 (50분)</option>
+              <option value="보컬 메이킹">보컬 메이킹 (50분)</option>
+              <option value="2:1 그룹">2:1 그룹 (55분)</option>
+              <option value="3:1 그룹">3:1 그룹 (90분)</option>
+            </select>
           </div>
 
           <div class="mb-3">
@@ -358,11 +363,11 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">시작 시간</label>
-              <select id="modalStartTime" class="form-select" required></select>
+              <select id="modalStartTime" class="form-select" required onchange="calculateEndTime()"></select>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">종료 시간</label>
-              <select id="modalEndTime" class="form-select" required></select>
+              <label class="form-label">종료 시간 (자동 설정)</label>
+              <input type="time" id="modalEndTime" class="form-control readonly-select" readonly required>
             </div>
           </div>
         </form>
@@ -474,6 +479,34 @@
   let calendar;
   let coachMap = {};
 
+  // 과목별 수업 시간 (분)
+  const DURATION_MAP = {
+    '스타일': 50,
+    '보컬 메이킹': 50,
+    '2:1 그룹': 55,
+    '3:1 그룹': 90
+  };
+
+  // 과목 및 시작 시간에 따른 종료 시간 자동 계산 함수
+  function calculateEndTime() {
+    const subject = document.getElementById('modalSubject').value;
+    const startTimeStr = document.getElementById('modalStartTime').value;
+    
+    if (!startTimeStr) return;
+
+    const durationMinutes = DURATION_MAP[subject] || 50;
+    const [hours, minutes] = startTimeStr.split(':').map(Number);
+
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    date.setMinutes(date.getMinutes() + durationMinutes);
+
+    const endHours = String(date.getHours()).padStart(2, '0');
+    const endMinutes = String(date.getMinutes()).padStart(2, '0');
+
+    document.getElementById('modalEndTime').value = `${endHours}:${endMinutes}`;
+  }
+
   // KST (한국 표준시) 기준 날짜/시간 변환 헬퍼 함수
   function formatKST(dateInput) {
     const d = new Date(dateInput);
@@ -489,21 +522,17 @@
     };
   }
 
-  // 30분 단위 시간 드롭다운 생성 함수 (10:00 ~ 24:00)
+  // 30분 단위 시작 시간 드롭다운 생성 함수 (10:00 ~ 23:30)
   function populateTimeOptions() {
     const startSelect = document.getElementById('modalStartTime');
-    const endSelect = document.getElementById('modalEndTime');
-    if (!startSelect || !endSelect) return;
+    if (!startSelect) return;
 
     startSelect.innerHTML = '';
-    endSelect.innerHTML = '';
 
-    for (let h = 10; h <= 24; h++) {
+    for (let h = 10; h <= 23; h++) {
       ['00', '30'].forEach(m => {
-        if (h === 24 && m === '30') return; // 24:00 까지만 생성
         const timeStr = `${String(h).padStart(2, '0')}:${m}`;
         startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
-        endSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
       });
     }
   }
@@ -543,7 +572,7 @@
         initCalendar();
       });
     } else {
-      loginView.classList.remove('d-none');
+      loginView.remove('d-none');
       mainApp.classList.add('d-none');
     }
   }
@@ -737,13 +766,14 @@
     document.getElementById('modalTitle').innerText = "일정 추가";
     document.getElementById('scheduleId').value = "";
     document.getElementById('modalStudentName').value = "";
-    document.getElementById('modalSubject').value = "";
+    document.getElementById('modalSubject').value = "스타일";
     
     // KST 기준 오늘 날짜 기본값 세팅
     const nowKST = formatKST(new Date());
     document.getElementById('modalDate').value = nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
-    document.getElementById('modalEndTime').value = "11:00";
+    
+    calculateEndTime(); // 종료 시간 자동 계산 호출
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     
@@ -757,7 +787,7 @@
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
-    document.getElementById('modalSubject').value = scheduleData.subject || '';
+    document.getElementById('modalSubject').value = scheduleData.subject || '스타일';
     document.getElementById('modalRoomName').value = scheduleData.room_name;
     
     // KST 시간 기준으로 파싱하여 표시
@@ -770,6 +800,8 @@
     if (scheduleData.end_time) {
       const endKST = formatKST(scheduleData.end_time);
       document.getElementById('modalEndTime').value = endKST.time;
+    } else {
+      calculateEndTime();
     }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
@@ -786,7 +818,7 @@
     const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     const coach_name = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('modalCoachName').value;
     
-    const subject = document.getElementById('modalSubject').value.trim();
+    const subject = document.getElementById('modalSubject').value;
     const room_name = document.getElementById('modalRoomName').value;
     
     const selectedDate = document.getElementById('modalDate').value;
