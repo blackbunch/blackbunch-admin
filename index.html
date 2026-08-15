@@ -33,7 +33,8 @@
     .btn-sm { padding: 6px 12px; font-size: 14px; }
 
     /* 필터 및 헤더 컨트롤 */
-    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #2a2a2a; padding: 12px 16px; border-radius: 6px; }
+    .filter-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; background: #2a2a2a; padding: 12px 16px; border-radius: 6px; flex-wrap: wrap; }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
 
     /* FullCalendar Dark Theme Overrides */
     .fc { background-color: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #2d2d2d; }
@@ -74,7 +75,7 @@
       <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>블랙번치 스튜디오 관리 시스템</h1>
         <div>
-          <button id="btnManageCoaches" class="btn btn-sm btn-secondary" style="margin-right: 8px;">+ 코치 계정 관리</button>
+          <button id="btnManageCoaches" class="btn btn-sm btn-secondary hidden" style="margin-right: 8px;">+ 코치 계정 관리</button>
           <button id="btnNewSchedule" class="btn btn-sm" style="margin-right: 8px;">+ 레슨 등록</button>
           <button id="btnLogout" class="btn btn-sm btn-danger">로그아웃</button>
         </div>
@@ -83,15 +84,28 @@
       <!-- 캘린더 영역 & 필터 -->
       <div class="card">
         <div class="filter-bar">
-          <label style="margin-bottom:0; color:#fff; font-weight:bold;">🚪 방 선택 필터:</label>
-          <select id="roomFilter" class="form-control" style="width: auto; display: inline-block;">
-            <option value="ALL">전체 방 보기</option>
-            <option value="1번 방">1번 방</option>
-            <option value="2번 방">2번 방</option>
-            <option value="3번 방">3번 방</option>
-            <option value="4번 방">4번 방</option>
-            <option value="연습실">연습실</option>
-          </select>
+          <!-- 지점 선택 필터 -->
+          <div class="filter-group">
+            <label style="margin-bottom:0; color:#fff; font-weight:bold;">📍 지점 선택:</label>
+            <select id="branchFilter" class="form-control" style="width: auto; display: inline-block;">
+              <option value="위례점">위례점</option>
+              <option value="미사점">미사점</option>
+              <option value="다산점">다산점</option>
+            </select>
+          </div>
+
+          <!-- 방 선택 필터 -->
+          <div class="filter-group">
+            <label style="margin-bottom:0; color:#fff; font-weight:bold;">🚪 방 선택:</label>
+            <select id="roomFilter" class="form-control" style="width: auto; display: inline-block;">
+              <option value="ALL">전체 방 보기</option>
+              <option value="1번 방">1번 방</option>
+              <option value="2번 방">2번 방</option>
+              <option value="3번 방">3번 방</option>
+              <option value="4번 방">4번 방</option>
+              <option value="연습실">연습실</option>
+            </select>
+          </div>
         </div>
         <div id="calendar"></div>
       </div>
@@ -107,6 +121,16 @@
       </div>
       <form id="scheduleForm">
         <input type="hidden" id="scheduleId">
+        
+        <div class="form-group">
+          <label>지점 선택</label>
+          <select id="branchSelect" class="form-control" required>
+            <option value="위례점">위례점</option>
+            <option value="미사점">미사점</option>
+            <option value="다산점">다산점</option>
+          </select>
+        </div>
+
         <div class="form-group">
           <label>수강생명 / 수업 내용</label>
           <input type="text" id="title" class="form-control" placeholder="예: 홍길동 보컬 레슨" required>
@@ -213,7 +237,6 @@ async function fetchCoaches() {
     if (error) throw error;
     if (data) {
       coachList = data;
-      // 드롭다운 갱신
       const coachSelect = document.getElementById('coachSelect');
       coachSelect.innerHTML = coachList.map(c => `<option value="${c.id}">${c.name || c.username}</option>`).join('');
       renderCoachListUI();
@@ -237,14 +260,20 @@ async function fetchSchedules() {
   }
 }
 
-// 방 필터링 적용하여 캘린더 이벤트 갱신
+// 지점 및 방 필터링 적용하여 캘린더 이벤트 갱신
 function refreshCalendarEvents() {
   if (!calendar) return;
+  const selectedBranch = document.getElementById('branchFilter').value;
   const selectedRoom = document.getElementById('roomFilter').value;
   
-  const filtered = selectedRoom === 'ALL' 
-    ? schedules 
-    : schedules.filter(s => (s.room || '1번 방') === selectedRoom);
+  const filtered = schedules.filter(s => {
+    // 지점 비교 (기본값 '위례점')
+    const matchBranch = (s.branch || '위례점') === selectedBranch;
+    // 방 비교
+    const matchRoom = selectedRoom === 'ALL' || (s.room || '1번 방') === selectedRoom;
+    
+    return matchBranch && matchRoom;
+  });
 
   calendar.removeAllEvents();
   calendar.addEventSource(formatEvents(filtered));
@@ -254,6 +283,7 @@ function formatEvents(scheduleData) {
   return scheduleData.map(s => {
     const coach = coachList.find(c => c.id === s.coach_id);
     const roomName = s.room || '1번 방';
+    const branchName = s.branch || '위례점';
     return {
       id: s.id,
       title: `[${roomName}] ${s.title}`,
@@ -261,7 +291,12 @@ function formatEvents(scheduleData) {
       end: s.end_time,
       backgroundColor: coach?.color || '#4f46e5',
       borderColor: coach?.color || '#4f46e5',
-      extendedProps: { coach_id: s.coach_id, room: roomName, rawTitle: s.title }
+      extendedProps: { 
+        coach_id: s.coach_id, 
+        room: roomName, 
+        branch: branchName,
+        rawTitle: s.title 
+      }
     };
   });
 }
@@ -326,6 +361,7 @@ document.getElementById('btnLogout')?.addEventListener('click', () => {
 });
 
 // 필터 변경 시 캘린더 갱신
+document.getElementById('branchFilter')?.addEventListener('change', refreshCalendarEvents);
 document.getElementById('roomFilter')?.addEventListener('change', refreshCalendarEvents);
 
 // 모달 제어
@@ -348,6 +384,10 @@ function openModalForCreate(startStr = '', endStr = '') {
   document.getElementById('title').value = '';
   document.getElementById('btnDeleteSchedule').classList.add('hidden');
   
+  // 현재 메인 화면에서 선택된 지점을 기본값으로 채워둠
+  const currentBranch = document.getElementById('branchFilter').value;
+  document.getElementById('branchSelect').value = currentBranch;
+  
   if (startStr) document.getElementById('startTime').value = startStr.substring(0,16);
   if (endStr) document.getElementById('endTime').value = endStr.substring(0,16);
   
@@ -358,6 +398,7 @@ function openModalForEdit(event) {
   document.getElementById('modalTitle').innerText = '일정 수정';
   document.getElementById('scheduleId').value = event.id;
   document.getElementById('title').value = event.extendedProps.rawTitle || event.title;
+  document.getElementById('branchSelect').value = event.extendedProps.branch || '위례점';
   document.getElementById('roomSelect').value = event.extendedProps.room || '1번 방';
   document.getElementById('coachSelect').value = event.extendedProps.coach_id || '';
   document.getElementById('startTime').value = event.start.toISOString().substring(0,16);
@@ -371,6 +412,7 @@ function openModalForEdit(event) {
 document.getElementById('scheduleForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('scheduleId').value;
+  const branch = document.getElementById('branchSelect').value;
   const title = document.getElementById('title').value;
   const room = document.getElementById('roomSelect').value;
   const coach_id = document.getElementById('coachSelect').value;
@@ -379,16 +421,16 @@ document.getElementById('scheduleForm')?.addEventListener('submit', async (e) =>
 
   try {
     if (id) {
-      const { error } = await supabaseClient.from('schedules').update({ title, room, coach_id, start_time, end_time }).eq('id', id);
+      const { error } = await supabaseClient.from('schedules').update({ branch, title, room, coach_id, start_time, end_time }).eq('id', id);
       if (error) throw error;
     } else {
-      const { error } = await supabaseClient.from('schedules').insert([{ title, room, coach_id, start_time, end_time }]);
+      const { error } = await supabaseClient.from('schedules').insert([{ branch, title, room, coach_id, start_time, end_time }]);
       if (error) throw error;
     }
     scheduleModal.classList.add('hidden');
     await fetchSchedules();
   } catch (err) {
-    alert(`일정 저장 실패: ${err.message}`);
+    alert(`일정 저장 실패: ${err.message}\n(Supabase 'schedules' 테이블에 'branch' 컬럼이 생성되어 있는지 확인해 주세요)`);
   }
 });
 
@@ -451,6 +493,15 @@ async function deleteCoach(coachId) {
 function showMainView(user) {
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('mainView').classList.remove('hidden');
+
+  const btnManageCoaches = document.getElementById('btnManageCoaches');
+  if (btnManageCoaches) {
+    if (user && user.role === 'admin') {
+      btnManageCoaches.classList.remove('hidden');
+    } else {
+      btnManageCoaches.classList.add('hidden');
+    }
+  }
 }
 
 function showLoginView() {
