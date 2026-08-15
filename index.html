@@ -9,100 +9,175 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  
+  <!-- Google Fonts (Pretendard) -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
   <style>
-    /* 다크 테마 기본 배경 및 글자색 */
+    * {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
     body {
-      padding: 20px;
-      background-color: #121212;
-      color: #e0e0e0;
+      padding: 30px 20px;
+      background-color: #0f1015;
+      color: #f1f3f5;
       min-height: 100vh;
     }
 
     /* 초기 로그인 카드 전용 스타일 */
     .login-container {
       max-width: 400px;
-      margin: 80px auto;
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      border: 1px solid #333;
+      margin: 100px auto;
+      background: #181920;
+      padding: 36px 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid #282a36;
     }
 
     /* 메인 캘린더 컨테이너 */
     .main-container {
       max-width: 1400px;
       margin: 0 auto;
-      background: #1e1e1e;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      border: 1px solid #2c2c2c;
+      background: #181920;
+      padding: 28px;
+      border-radius: 20px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      border: 1px solid #282a36;
     }
 
     /* 필터 영역 */
     .filter-section {
-      background-color: #282828;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border: 1px solid #383838;
+      background-color: #21232d;
+      padding: 18px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid #2e3140;
     }
 
     .form-label {
-      color: #b0b0b0;
+      color: #a0a5b5;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
     }
 
-    /* 폼 입력창 & 셀렉트 박스 다크 스타일 */
+    /* 폼 입력창 & 셀렉트 박스 스타일 */
     .form-select, .form-control {
-      background-color: #121212;
+      background-color: #14151b;
       color: #ffffff;
-      border: 1px solid #444;
+      border: 1px solid #2e3140;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.9rem;
     }
     .form-select:focus, .form-control:focus {
-      background-color: #1a1a1a;
+      background-color: #14151b;
       color: #ffffff;
-      border-color: #0d6efd;
-      box-shadow: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
     }
 
-    /* 캘린더 다크 커스텀 */
+    /* 버튼 스타일 정돈 */
+    .btn-primary {
+      background-color: #4f46e5;
+      border-color: #4f46e5;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background-color: #4338ca;
+      border-color: #4338ca;
+    }
+
+    /* 캘린더 다크 커스텀 (지저분한 선 및 배경 정돈) */
     #calendar {
-      margin-top: 20px;
-      min-height: 700px;
+      margin-top: 15px;
     }
     .fc {
-      color: #e0e0e0;
+      color: #e2e8f0;
     }
     .fc-theme-standard td, .fc-theme-standard th {
-      border-color: #333333 !important;
+      border-color: #262836 !important;
     }
-    .fc-col-header-cell-cushion, .fc-daygrid-day-number {
-      color: #e0e0e0 !important;
+    .fc-theme-standard .fc-scrollgrid {
+      border: 1px solid #262836 !important;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    /* 30분 단위 보조선 보이지 않게 처리하여 깔끔하게 변경 */
+    .fc-timegrid-slots tr:nth-child(even) td {
+      border-top-style: none !important;
+    }
+
+    .fc-col-header-cell {
+      background-color: #21232d;
+      padding: 12px 0 !important;
+    }
+    .fc-col-header-cell-cushion {
+      color: #cbd5e1 !important;
+      font-weight: 600;
+      font-size: 0.9rem;
       text-decoration: none !important;
     }
+    
+    /* 오늘 날짜 이질감 있는 노란색 제거 */
+    .fc .fc-day-today {
+      background-color: rgba(79, 70, 229, 0.05) !important;
+    }
+    .fc-day-today .fc-col-header-cell-cushion {
+      color: #818cf8 !important;
+    }
+
     .fc-timegrid-slot-label-cushion {
-      color: #a0a0a0;
+      color: #71717a;
+      font-size: 0.8rem;
     }
+
+    /* 캘린더 헤더 버튼 커스텀 */
     .fc-button-primary {
-      background-color: #333 !important;
-      border-color: #444 !important;
-      color: #fff !important;
+      background-color: #21232d !important;
+      border: 1px solid #2e3140 !important;
+      color: #cbd5e1 !important;
+      border-radius: 8px !important;
+      font-size: 0.85rem !important;
+      font-weight: 500 !important;
+      padding: 6px 12px !important;
+      box-shadow: none !important;
     }
-    .fc-button-primary:hover, .fc-button-primary:active, .fc-button-active {
-      background-color: #0d6efd !important;
-      border-color: #0d6efd !important;
+    .fc-button-primary:hover {
+      background-color: #2e3140 !important;
+      color: #ffffff !important;
+    }
+    .fc-button-active {
+      background-color: #4f46e5 !important;
+      border-color: #4f46e5 !important;
+      color: #ffffff !important;
+    }
+    .fc-toolbar-title {
+      font-size: 1.25rem !important;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    /* 이벤트 카드 스타일 정돈 */
+    .fc-event {
+      border-radius: 6px;
+      border: none !important;
+      padding: 2px 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      font-size: 0.82rem;
     }
 
     /* 모달 팝업 다크 스타일 */
     .modal-content {
-      background-color: #1e1e1e;
-      color: #e0e0e0;
-      border: 1px solid #333;
+      background-color: #181920;
+      color: #e2e8f0;
+      border: 1px solid #2e3140;
+      border-radius: 16px;
     }
     .modal-header, .modal-footer {
-      border-color: #333;
+      border-color: #2e3140;
     }
     .btn-close {
       filter: invert(1);
@@ -111,22 +186,23 @@
     /* 체크박스 그룹 */
     .branch-checkbox-group {
       display: flex;
-      gap: 12px;
+      gap: 16px;
       align-items: center;
       padding-top: 4px;
     }
 
     /* 테이블 다크 스타일 */
     .table-dark-custom {
-      color: #e0e0e0;
-      border-color: #333;
+      color: #e2e8f0;
+      border-color: #2e3140;
     }
     .table-dark-custom th {
-      background-color: #282828;
-      border-color: #333;
+      background-color: #21232d;
+      border-color: #2e3140;
+      color: #94a3b8;
     }
     .table-dark-custom td {
-      border-color: #333;
+      border-color: #2e3140;
     }
   </style>
 </head>
@@ -135,32 +211,32 @@
 <!-- 1. 로그인 게이트 화면 (최초 접속 시 표시) -->
 <div id="loginView" class="login-container">
   <div class="text-center mb-4">
-    <h3 class="fw-bold">🎵 블랙번치 스튜디오</h3>
+    <h3 class="fw-bold text-white mb-2">🎵 블랙번치 스튜디오</h3>
     <p class="text-secondary small mb-0">일정 관리 시스템 로그인</p>
   </div>
   <form onsubmit="event.preventDefault(); handleLogin();">
     <div class="mb-3">
-      <label class="form-label small fw-bold">아이디</label>
+      <label class="form-label font-weight-bold">아이디</label>
       <input type="text" id="loginEmail" class="form-control" placeholder="아이디를 입력하세요" required>
     </div>
     <div class="mb-4">
-      <label class="form-label small fw-bold">비밀번호</label>
+      <label class="form-label font-weight-bold">비밀번호</label>
       <input type="password" id="loginPassword" class="form-control" placeholder="비밀번호를 입력하세요" required>
     </div>
-    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">로그인</button>
+    <button type="submit" class="btn btn-primary w-100 py-2">로그인</button>
   </form>
 </div>
 
 <!-- 2. 메인 캘린더 화면 (로그인 후 표시) -->
 <div id="mainApp" class="main-container d-none">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>🎵 블랙번치 스튜디오 스케줄 관리</h2>
+    <h3 class="fw-bold m-0">🎵 블랙번치 스튜디오 스케줄 관리</h3>
     <div id="authContainer" class="d-flex align-items-center gap-2">
-      <button id="manageCoachBtn" class="btn btn-outline-light btn-sm d-none" data-bs-toggle="modal" data-bs-target="#coachModal">
+      <button id="manageCoachBtn" class="btn btn-outline-light btn-sm d-none" style="border-radius:8px;" data-bs-toggle="modal" data-bs-target="#coachModal">
         ⚙️ 코치 관리
       </button>
-      <span id="userInfo" class="fw-bold me-2"></span>
-      <button id="authBtn" class="btn btn-sm btn-outline-danger" onclick="handleLogout()">로그아웃</button>
+      <span id="userInfo" class="fw-bold me-2 small text-secondary"></span>
+      <button id="authBtn" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" onclick="handleLogout()">로그아웃</button>
     </div>
   </div>
 
@@ -192,8 +268,8 @@
           <option value="ALL" selected>전체 코치 보기</option>
         </select>
       </div>
-      <div class="col-md-3 text-end pt-4">
-        <button id="addScheduleBtn" class="btn btn-primary" onclick="openAddModal()">
+      <div class="col-md-3 text-end pt-3">
+        <button id="addScheduleBtn" class="btn btn-primary w-100" onclick="openAddModal()">
           + 일정 추가
         </button>
       </div>
@@ -206,10 +282,10 @@
 
 <!-- 일정 추가/수정 모달 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalTitle">일정 추가</h5>
+        <h5 class="modal-title fw-bold" id="modalTitle">일정 추가</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -265,8 +341,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" id="deleteScheduleBtn" class="btn btn-danger d-none" onclick="deleteSchedule()">삭제</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+        <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
+        <button type="button" class="btn btn-secondary" style="border-radius:8px;" data-bs-dismiss="modal">취소</button>
         <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">저장</button>
       </div>
     </div>
@@ -275,14 +351,14 @@
 
 <!-- ⚙️ 코치 등록/관리 모달 -->
 <div class="modal fade" id="coachModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">코치 계정 등록 및 관리</h5>
+        <h5 class="modal-title fw-bold">코치 계정 등록 및 관리</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="coachForm" class="p-3 rounded mb-4" style="background-color: #282828;">
+        <form id="coachForm" class="p-3 rounded mb-4" style="background-color: #21232d; border:1px solid #2e3140;">
           <h6 class="fw-bold mb-3">➕ 새 코치 등록</h6>
           <div class="row g-3 mb-2">
             <div class="col-md-12">
@@ -290,15 +366,15 @@
               <div class="branch-checkbox-group">
                 <div class="form-check form-check-inline">
                   <input class="form-check-input new-coach-branch" type="checkbox" id="chkWirye" value="위례점" checked>
-                  <label class="form-check-label" for="chkWirye">위례점</label>
+                  <label class="form-check-label small" for="chkWirye">위례점</label>
                 </div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input new-coach-branch" type="checkbox" id="chkMisa" value="미사점">
-                  <label class="form-check-label" for="chkMisa">미사점</label>
+                  <label class="form-check-label small" for="chkMisa">미사점</label>
                 </div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input new-coach-branch" type="checkbox" id="chkDasan" value="다산점">
-                  <label class="form-check-label" for="chkDasan">다산점</label>
+                  <label class="form-check-label small" for="chkDasan">다산점</label>
                 </div>
               </div>
             </div>
@@ -321,17 +397,17 @@
             </div>
             <div class="col-md-3">
               <label class="form-label small fw-bold">캘린더 색상</label>
-              <input type="color" id="newCoachColor" class="form-control form-control-color w-100" value="#3788d8">
+              <input type="color" id="newCoachColor" class="form-control form-control-color w-100" value="#4f46e5">
             </div>
             <div class="col-md-12 text-end mt-3">
-              <button type="button" id="saveCoachBtn" class="btn btn-sm btn-success px-4" onclick="registerNewCoach()">코치 추가</button>
+              <button type="button" id="saveCoachBtn" class="btn btn-sm btn-success px-4" style="border-radius:8px;" onclick="registerNewCoach()">코치 추가</button>
             </div>
           </div>
         </form>
 
-        <h6>📋 등록된 코치 목록</h6>
+        <h6 class="fw-bold mb-3">📋 등록된 코치 목록</h6>
         <div class="table-responsive">
-          <table class="table table-bordered table-dark-custom align-middle small">
+          <table class="table table-bordered table-dark-custom align-middle small mb-0">
             <thead>
               <tr>
                 <th>담당 지점</th>
@@ -378,7 +454,6 @@
     const manageCoachBtn = document.getElementById('manageCoachBtn');
 
     if (currentUser) {
-      // 로그인 상태: 로그인창 숨기고 메인 캘린더 화면 출력
       loginView.classList.add('d-none');
       mainApp.classList.remove('d-none');
 
@@ -390,23 +465,27 @@
         manageCoachBtn.classList.add('d-none');
       }
 
-      // 캘린더 및 코치 데이터 초기화
       initCalendar();
       loadCoachesData();
     } else {
-      // 미로그인 상태: 캘린더 화면 숨기고 로그인창 출력
       loginView.classList.remove('d-none');
       mainApp.classList.add('d-none');
     }
   }
 
   function initCalendar() {
-    if (calendar) return; // 이미 생성된 경우 재생성하지 않음
+    if (calendar) return;
 
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
       locale: 'ko',
+      buttonText: {
+        today: '오늘',
+        month: '월',
+        week: '주',
+        day: '일'
+      },
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
@@ -440,8 +519,8 @@
             title: `[${item.room_name}] ${item.student_name} (${item.coach_name})`,
             start: item.start_time,
             end: item.end_time,
-            backgroundColor: coachMap[item.coach_name] || '#3788d8',
-            borderColor: coachMap[item.coach_name] || '#3788d8',
+            backgroundColor: coachMap[item.coach_name] || '#4f46e5',
+            borderColor: coachMap[item.coach_name] || '#4f46e5',
             extendedProps: item
           }));
 
@@ -479,7 +558,7 @@
     coachMap = {};
 
     (coaches || []).forEach(c => {
-      coachMap[c.name] = c.color || '#3788d8';
+      coachMap[c.name] = c.color || '#4f46e5';
       coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
       modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
     });
@@ -499,8 +578,8 @@
           <td class="fw-bold">${c.name}</td>
           <td>${c.email}</td>
           <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
-          <td><div style="width:20px; height:20px; background-color:${c.color || '#3788d8'}; border-radius:3px;"></div></td>
-          <td><button class="btn btn-sm btn-outline-danger" onclick="deleteCoach('${c.id}')">삭제</button></td>
+          <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
+          <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="deleteCoach('${c.id}')">삭제</button></td>
         </tr>
       `;
     });
