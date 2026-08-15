@@ -89,7 +89,7 @@
       border-color: #4338ca;
     }
 
-    /* 캘린더 다크 커스텀 (지저분한 선 및 배경 정돈) */
+    /* 캘린더 다크 커스텀 */
     #calendar {
       margin-top: 15px;
     }
@@ -118,7 +118,7 @@
       height: 48px !important;
     }
 
-    /* 🛑 하얀 스크롤바 및 불필요한 테두리 스크롤 숨김 */
+    /* 스크롤바 숨김 처리 */
     .fc-scroller-harness,
     .fc-scroller {
       overflow: hidden !important;
@@ -412,11 +412,15 @@
               <label class="form-label small fw-bold">코치 이름</label>
               <input type="text" id="newCoachName" class="form-control form-control-sm" placeholder="예: 김보컬" required>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label small fw-bold">아이디 / 이메일</label>
               <input type="text" id="newCoachEmail" class="form-control form-control-sm" placeholder="아이디 입력" required>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">비밀번호</label>
+              <input type="password" id="newCoachPassword" class="form-control form-control-sm" placeholder="비밀번호 입력" required>
+            </div>
+            <div class="col-md-3">
               <label class="form-label small fw-bold">권한</label>
               <select id="newCoachRole" class="form-select form-select-sm">
                 <option value="coach" selected>코치</option>
@@ -441,6 +445,7 @@
                 <th>담당 지점</th>
                 <th>이름</th>
                 <th>아이디</th>
+                <th>비밀번호</th>
                 <th>권한</th>
                 <th>색상</th>
                 <th>관리</th>
@@ -607,6 +612,7 @@
           <td>${branchBadges}</td>
           <td class="fw-bold">${c.name}</td>
           <td>${c.email}</td>
+          <td><code>${c.password || '*****'}</code></td>
           <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
           <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
           <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="deleteCoach('${c.id}')">삭제</button></td>
@@ -715,21 +721,23 @@
     const branch = checkedBranches.join(', ');
     const name = document.getElementById('newCoachName').value.trim();
     const email = document.getElementById('newCoachEmail').value.trim();
+    const password = document.getElementById('newCoachPassword').value.trim();
     const role = document.getElementById('newCoachRole').value;
     const color = document.getElementById('newCoachColor').value;
 
-    if (!name || !email) {
-      alert('코치 이름과 아이디를 정확히 입력해 주세요.');
+    if (!name || !email || !password) {
+      alert('코치 이름, 아이디, 비밀번호를 모두 입력해 주세요.');
       return;
     }
 
-    const { error } = await sbClient.from('coaches').insert([{ branch, name, email, role, color }]);
+    const { error } = await sbClient.from('coaches').insert([{ branch, name, email, password, role, color }]);
     if (error) {
       alert('코치 등록 실패: ' + error.message);
     } else {
       alert(`${name} 코치(${branch})가 등록되었습니다.`);
       document.getElementById('newCoachName').value = '';
       document.getElementById('newCoachEmail').value = '';
+      document.getElementById('newCoachPassword').value = '';
       await loadCoachesData();
     }
   }
