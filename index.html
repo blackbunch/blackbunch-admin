@@ -24,7 +24,6 @@
       min-height: 100vh;
     }
 
-    /* 초기 로그인 카드 전용 스타일 */
     .login-container {
       max-width: 400px;
       margin: 100px auto;
@@ -35,7 +34,6 @@
       border: 1px solid #282a36;
     }
 
-    /* 메인 캘린더 컨테이너 */
     .main-container {
       max-width: 1400px;
       margin: 0 auto;
@@ -46,7 +44,6 @@
       border: 1px solid #282a36;
     }
 
-    /* 필터 영역 */
     .filter-section {
       background-color: #21232d;
       padding: 18px 20px;
@@ -61,7 +58,6 @@
       margin-bottom: 6px;
     }
 
-    /* 폼 입력창 & 셀렉트 박스 스타일 */
     .form-select, .form-control {
       background-color: #14151b;
       color: #ffffff;
@@ -77,7 +73,6 @@
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
     }
 
-    /* 버튼 스타일 정돈 */
     .btn-primary {
       background-color: #4f46e5;
       border-color: #4f46e5;
@@ -89,7 +84,6 @@
       border-color: #4338ca;
     }
 
-    /* 캘린더 다크 커스텀 */
     #calendar {
       margin-top: 15px;
     }
@@ -105,7 +99,6 @@
       overflow: hidden;
     }
     
-    /* 요일/시간 표 칸 균등 고정 */
     .fc-timegrid-cols table,
     .fc-col-header table {
       width: 100% !important;
@@ -118,7 +111,6 @@
       height: 48px !important;
     }
 
-    /* 스크롤바 숨김 처리 */
     .fc-scroller-harness,
     .fc-scroller {
       overflow: hidden !important;
@@ -132,7 +124,6 @@
       scrollbar-width: none !important;
     }
 
-    /* 30분 단위 보조선 완화 */
     .fc-timegrid-slots tr:nth-child(even) td {
       border-top-style: dashed !important;
       border-top-color: #1d1f2b !important;
@@ -149,7 +140,6 @@
       text-decoration: none !important;
     }
     
-    /* 오늘 날짜 하이라이트 배경 */
     .fc .fc-day-today {
       background-color: rgba(79, 70, 229, 0.08) !important;
     }
@@ -162,7 +152,6 @@
       font-size: 0.8rem;
     }
 
-    /* 캘린더 헤더 버튼 커스텀 */
     .fc-button-primary {
       background-color: #21232d !important;
       border: 1px solid #2e3140 !important;
@@ -188,7 +177,6 @@
       color: #f8fafc;
     }
 
-    /* 이벤트 카드 스타일 정돈 */
     .fc-event {
       border-radius: 6px;
       border: none !important;
@@ -197,7 +185,6 @@
       font-size: 0.82rem;
     }
 
-    /* 모달 팝업 다크 스타일 */
     .modal-content {
       background-color: #181920;
       color: #e2e8f0;
@@ -211,7 +198,6 @@
       filter: invert(1);
     }
     
-    /* 체크박스 그룹 */
     .branch-checkbox-group {
       display: flex;
       gap: 16px;
@@ -219,7 +205,6 @@
       padding-top: 4px;
     }
 
-    /* 테이블 다크 스타일 */
     .table-dark-custom {
       color: #e2e8f0;
       border-color: #2e3140;
@@ -236,7 +221,7 @@
 </head>
 <body>
 
-<!-- 1. 로그인 게이트 화면 (최초 접속 시 표시) -->
+<!-- 1. 로그인 게이트 화면 -->
 <div id="loginView" class="login-container">
   <div class="text-center mb-4">
     <h3 class="fw-bold text-white mb-2">🎵 블랙번치 스튜디오</h3>
@@ -255,7 +240,7 @@
   </form>
 </div>
 
-<!-- 2. 메인 캘린더 화면 (로그인 후 표시) -->
+<!-- 2. 메인 캘린더 화면 -->
 <div id="mainApp" class="main-container d-none">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold m-0">🎵 블랙번치 스튜디오 스케줄 관리</h3>
@@ -475,6 +460,15 @@
   let calendar;
   let coachMap = {};
 
+  // 날짜/시간을 'YYYY-MM-DDTHH:mm' 형태로 변환해주는 헬퍼 함수 (한국시간 보정)
+  function formatLocalISO(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const offset = date.getTimezoneOffset() * 60000;
+    const localTime = new Date(date.getTime() - offset);
+    return localTime.toISOString().slice(0, 16);
+  }
+
   document.addEventListener('DOMContentLoaded', async function() {
     checkAuthStatus();
   });
@@ -611,7 +605,7 @@
         <tr>
           <td>${branchBadges}</td>
           <td class="fw-bold">${c.name}</td>
-          <td>${c.email}</td>
+          <td>${c.email || c.username || '-'}</td>
           <td><code>${c.password || '*****'}</code></td>
           <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
           <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
@@ -659,8 +653,9 @@
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
     document.getElementById('modalSubject').value = scheduleData.subject || '';
     document.getElementById('modalRoomName').value = scheduleData.room_name;
-    document.getElementById('modalStartTime').value = scheduleData.start_time.slice(0, 16);
-    document.getElementById('modalEndTime').value = scheduleData.end_time.slice(0, 16);
+    
+    document.getElementById('modalStartTime').value = formatLocalISO(scheduleData.start_time);
+    document.getElementById('modalEndTime').value = formatLocalISO(scheduleData.end_time);
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
@@ -673,13 +668,18 @@
     const coach_name = document.getElementById('modalCoachName').value;
     const subject = document.getElementById('modalSubject').value;
     const room_name = document.getElementById('modalRoomName').value;
-    const start_time = document.getElementById('modalStartTime').value;
-    const end_time = document.getElementById('modalEndTime').value;
+    
+    const rawStart = document.getElementById('modalStartTime').value;
+    const rawEnd = document.getElementById('modalEndTime').value;
 
-    if (!student_name || !start_time || !end_time) {
+    if (!student_name || !rawStart || !rawEnd) {
       alert("학생 이름과 시간 항목을 정확히 입력해 주세요.");
       return;
     }
+
+    // 타임존 시차 오차 저장을 방지하기 위해 로컬 시간 규격 그대로 저장
+    const start_time = rawStart + ":00";
+    const end_time = rawEnd + ":00";
 
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
@@ -730,7 +730,18 @@
       return;
     }
 
-    const { error } = await sbClient.from('coaches').insert([{ branch, name, email, password, role, color }]);
+    // username과 email 컬럼을 둘 다 지원하도록 안전 처리
+    const payload = { 
+      branch, 
+      name, 
+      username: email,
+      email: email, 
+      password, 
+      role, 
+      color 
+    };
+
+    const { error } = await sbClient.from('coaches').insert([payload]);
     if (error) {
       alert('코치 등록 실패: ' + error.message);
     } else {
