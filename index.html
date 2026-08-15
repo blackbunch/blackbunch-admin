@@ -72,6 +72,11 @@
       border-color: #4f46e5;
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
     }
+    .form-select:disabled {
+      background-color: #1c1e28;
+      color: #6c757d;
+      border-color: #2e3140;
+    }
 
     .btn-primary {
       background-color: #4f46e5;
@@ -272,7 +277,7 @@
           <option value="ROOM 2">ROOM 2</option>
           <option value="ROOM 3">ROOM 3</option>
           <option value="ROOM 4">ROOM 4</option>
-          <option value="ROOM 5">ROOM 5</option>
+          <option value="연습실">연습실</option>
         </select>
       </div>
       <div class="col-md-3">
@@ -331,13 +336,13 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">방 번호(룸)</label>
+            <label class="form-label">방 번호(룸 / 연습실)</label>
             <select id="modalRoomName" class="form-select" required>
               <option value="ROOM 1">ROOM 1</option>
               <option value="ROOM 2">ROOM 2</option>
               <option value="ROOM 3">ROOM 3</option>
               <option value="ROOM 4">ROOM 4</option>
-              <option value="ROOM 5">ROOM 5</option>
+              <option value="연습실">연습실</option>
             </select>
           </div>
 
@@ -622,7 +627,6 @@
     }
   }
 
-  // 🔑 실시간 DB 기반 로그인 처리 함수
   async function handleLogin() {
     const idInput = document.getElementById('loginEmail').value.trim();
     const pwInput = document.getElementById('loginPassword').value.trim();
@@ -632,7 +636,6 @@
       return;
     }
 
-    // 기본 관리자 계정 예외 지원
     if (idInput === 'admin' && pwInput === '1234') {
       const userData = { id: 'admin', name: '관리자', role: 'admin' };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
@@ -640,7 +643,6 @@
       return;
     }
 
-    // Supabase DB 코치 목록에서 조회
     const { data: coaches, error } = await sbClient
       .from('coaches')
       .select('*')
@@ -672,6 +674,18 @@
     location.reload();
   }
 
+  function applyCoachRestriction() {
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const modalCoachName = document.getElementById('modalCoachName');
+
+    if (currentUser && currentUser.role !== 'admin') {
+      modalCoachName.value = currentUser.name;
+      modalCoachName.disabled = true;
+    } else {
+      modalCoachName.disabled = false;
+    }
+  }
+
   function openAddModal() {
     document.getElementById('modalTitle').innerText = "일정 추가";
     document.getElementById('scheduleId').value = "";
@@ -681,6 +695,7 @@
     document.getElementById('modalEndTime').value = "";
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     
+    applyCoachRestriction();
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
 
@@ -697,6 +712,8 @@
     document.getElementById('modalEndTime').value = formatLocalISO(scheduleData.end_time);
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
+    
+    applyCoachRestriction();
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
 
