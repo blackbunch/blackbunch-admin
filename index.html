@@ -236,7 +236,7 @@
       <label class="form-label font-weight-bold">비밀번호</label>
       <input type="password" id="loginPassword" class="form-control" placeholder="비밀번호를 입력하세요" required>
     </div>
-    <button type="submit" class="btn btn-primary w-100 py-2">로그인</button>
+    <button type="submit" id="loginBtn" class="btn btn-primary w-100 py-2">로그인</button>
   </form>
 </div>
 
@@ -460,7 +460,6 @@
   let calendar;
   let coachMap = {};
 
-  // 날짜/시간을 'YYYY-MM-DDTHH:mm' 형태로 변환해주는 헬퍼 함수 (한국시간 보정)
   function formatLocalISO(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -492,8 +491,9 @@
         manageCoachBtn.classList.add('d-none');
       }
 
-      initCalendar();
-      loadCoachesData();
+      loadCoachesData().then(() => {
+        initCalendar();
+      });
     } else {
       loginView.classList.remove('d-none');
       mainApp.classList.add('d-none');
@@ -501,9 +501,14 @@
   }
 
   function initCalendar() {
-    if (calendar) return;
-
     const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    if (calendar) {
+      calendar.refetchEvents();
+      return;
+    }
+
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
       locale: 'ko',
@@ -582,45 +587,79 @@
     const coachFilter = document.getElementById('coachFilter');
     const modalCoachName = document.getElementById('modalCoachName');
 
-    coachFilter.innerHTML = '<option value="ALL" selected>전체 코치 보기</option>';
-    modalCoachName.innerHTML = '';
+    if (coachFilter) coachFilter.innerHTML = '<option value="ALL" selected>전체 코치 보기</option>';
+    if (modalCoachName) modalCoachName.innerHTML = '';
     coachMap = {};
 
     (coaches || []).forEach(c => {
       coachMap[c.name] = c.color || '#4f46e5';
-      coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-      modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      if (coachFilter) coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      if (modalCoachName) modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
     });
 
     const coachTableBody = document.getElementById('coachTableBody');
-    coachTableBody.innerHTML = '';
+    if (coachTableBody) {
+      coachTableBody.innerHTML = '';
 
-    (coaches || []).forEach(c => {
-      const branchBadges = (c.branch || '위례점')
-        .split(',')
-        .map(b => `<span class="badge bg-secondary me-1">${b.trim()}</span>`)
-        .join('');
+      (coaches || []).forEach(c => {
+        const branchBadges = (c.branch || '위례점')
+          .split(',')
+          .map(b => `<span class="badge bg-secondary me-1">${b.trim()}</span>`)
+          .join('');
 
-      coachTableBody.innerHTML += `
-        <tr>
-          <td>${branchBadges}</td>
-          <td class="fw-bold">${c.name}</td>
-          <td>${c.email || c.username || '-'}</td>
-          <td><code>${c.password || '*****'}</code></td>
-          <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
-          <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
-          <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="deleteCoach('${c.id}')">삭제</button></td>
-        </tr>
-      `;
-    });
+        coachTableBody.innerHTML += `
+          <tr>
+            <td>${branchBadges}</td>
+            <td class="fw-bold">${c.name}</td>
+            <td>${c.email || c.username || '-'}</td>
+            <td><code>${c.password || '*****'}</code></td>
+            <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
+            <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
+            <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="deleteCoach('${c.id}')">삭제</button></td>
+          </tr>
+        `;
+      });
+    }
   }
 
-  function handleLogin() {
+  // 🔑 실시간 DB 기반 로그인 처리 함수
+  async function handleLogin() {
     const idInput = document.getElementById('loginEmail').value.trim();
     const pwInput = document.getElementById('loginPassword').value.trim();
 
+    if (!idInput || !pwInput) {
+      alert("아이디와 비밀번호를 모두 입력해 주세요.");
+      return;
+    }
+
+    // 기본 관리자 계정 예외 지원
     if (idInput === 'admin' && pwInput === '1234') {
-      const userData = { name: '관리자', role: 'admin' };
+      const userData = { id: 'admin', name: '관리자', role: 'admin' };
+      sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      checkAuthStatus();
+      return;
+    }
+
+    // Supabase DB 코치 목록에서 조회
+    const { data: coaches, error } = await sbClient
+      .from('coaches')
+      .select('*')
+      .or(`email.eq.${idInput},username.eq.${idInput}`)
+      .eq('password', pwInput);
+
+    if (error) {
+      alert('로그인 오류: ' + error.message);
+      return;
+    }
+
+    if (coaches && coaches.length > 0) {
+      const matchedCoach = coaches[0];
+      const userData = {
+        id: matchedCoach.id,
+        name: matchedCoach.name,
+        role: matchedCoach.role || 'coach',
+        branch: matchedCoach.branch
+      };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
       checkAuthStatus();
     } else {
@@ -664,20 +703,19 @@
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
     const branch = document.getElementById('modalBranch').value;
-    const student_name = document.getElementById('modalStudentName').value;
+    const student_name = document.getElementById('modalStudentName').value.trim();
     const coach_name = document.getElementById('modalCoachName').value;
-    const subject = document.getElementById('modalSubject').value;
+    const subject = document.getElementById('modalSubject').value.trim();
     const room_name = document.getElementById('modalRoomName').value;
     
     const rawStart = document.getElementById('modalStartTime').value;
     const rawEnd = document.getElementById('modalEndTime').value;
 
-    if (!student_name || !rawStart || !rawEnd) {
-      alert("학생 이름과 시간 항목을 정확히 입력해 주세요.");
+    if (!student_name || !coach_name || !rawStart || !rawEnd) {
+      alert("학생 이름, 코치, 시간 항목을 정확히 입력해 주세요.");
       return;
     }
 
-    // 타임존 시차 오차 저장을 방지하기 위해 로컬 시간 규격 그대로 저장
     const start_time = rawStart + ":00";
     const end_time = rawEnd + ":00";
 
@@ -693,7 +731,9 @@
     if (result.error) {
       alert("저장 실패: " + result.error.message);
     } else {
-      bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+      const modalEl = document.getElementById('scheduleModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
       calendar.refetchEvents();
     }
   }
@@ -706,7 +746,9 @@
     if (error) {
       alert("삭제 실패: " + error.message);
     } else {
-      bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+      const modalEl = document.getElementById('scheduleModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
       calendar.refetchEvents();
     }
   }
@@ -730,7 +772,6 @@
       return;
     }
 
-    // username과 email 컬럼을 둘 다 지원하도록 안전 처리
     const payload = { 
       branch, 
       name, 
