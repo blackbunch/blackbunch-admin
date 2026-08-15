@@ -40,7 +40,7 @@
 <div class="main-container">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>🎵 블랙번치 스튜디오 스케줄 관리</h2>
-    <div id="authContainer">
+    <div id="authContainer" class="d-flex align-items-center gap-2">
       <!-- 로그인 / 사용자 정보 표시 영역 -->
     </div>
   </div>
@@ -162,17 +162,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // 1. Supabase 설정 (프로젝트 URL 및 Anon Key 설정)
-  const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // 실제 Supabase URL로 설정되어 있는지 확인
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 실제 Anon Key로 설정되어 있는지 확인
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let calendar;
+  let currentUser = null; // 현재 로그인된 사용자 정보
 
   document.addEventListener('DOMContentLoaded', async function() {
     const calendarEl = document.getElementById('calendar');
 
-    // 2. FullCalendar 초기화
+    // 1. FullCalendar 초기화 (10시 ~ 24시 설정)
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'timeGridWeek',
       locale: 'ko',
@@ -181,7 +181,6 @@
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
-      // 💡 요청하신 캘린더 시간 설정: 오전 10시 ~ 밤 24시
       slotMinTime: '10:00:00',
       slotMaxTime: '24:00:00',
       allDaySlot: false,
@@ -221,18 +220,53 @@
       },
 
       eventClick: function(info) {
-        // 이벤트 클릭 시 수정 모달 열기
         openEditModal(info.event.extendedProps);
       }
     });
 
     calendar.render();
 
-    // 지점/룸/코치 필터 변경 이벤트 등록
+    // 지점/룸/코치 필터 변경 이벤트
     document.getElementById('branchSelect').addEventListener('change', () => calendar.refetchEvents());
     document.getElementById('roomSelect').addEventListener('change', () => calendar.refetchEvents());
     document.getElementById('coachFilter').addEventListener('change', () => calendar.refetchEvents());
+
+    // 권한 및 사용자 정보 로드 실행
+    await checkUserPermission();
   });
+
+  // 코치 권한 및 지점 고정 함수
+  async function checkUserPermission() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 코치 테이블에서 정보 가져오기
+    const { data: coachData } = await supabase
+      .from('coaches')
+      .select('*')
+      .eq('email', user.email)
+      .single();
+
+    const branchSelect = document.getElementById('branchSelect');
+    const modalBranch = document.getElementById('modalBranch');
+
+    if (coachData && coachData.role !== 'admin') {
+      // 일반 코치인 경우: 지정된 지점으로 선택 고정 및 변경 불가(disabled) 처리
+      const userBranch = coachData.branch || '위례점';
+      
+      branchSelect.value = userBranch;
+      branchSelect.disabled = true; // 코치는 다른 지점으로 변경 불가능
+
+      modalBranch.value = userBranch;
+      modalBranch.disabled = true; // 모달에서도 지점 변경 불가능
+
+      calendar.refetchEvents();
+    } else {
+      // 관리자(Admin)인 경우: 모든 지점 자유롭게 변경 가능
+      branchSelect.disabled = false;
+      modalBranch.disabled = false;
+    }
+  }
 
   function openEditModal(scheduleData) {
     document.getElementById('modalTitle').innerText = "일정 수정";
