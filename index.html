@@ -798,9 +798,54 @@
       return;
     }
 
+    if (startTime >= endTime) {
+      alert("종료 시간은 시작 시간보다 이후여야 합니다.");
+      return;
+    }
+
     // KST 타임존 오프셋(+09:00)을 명시하여 정확한 한국 시간으로 저장
     const start_time = `${selectedDate}T${startTime}:00+09:00`;
     const end_time = `${selectedDate}T${endTime}:00+09:00`;
+
+    // ---------------- [ 중복 예약 검증 로직 ] ----------------
+    // 같은 지점 + 같은 룸의 해당 날짜 전체 예약을 조회
+    const dayStart = `${selectedDate}T00:00:00+09:00`;
+    const dayEnd = `${selectedDate}T23:59:59+09:00`;
+
+    let checkQuery = sbClient.from('schedules')
+      .select('*')
+      .eq('branch', branch)
+      .eq('room_name', room_name)
+      .gte('end_time', dayStart)
+      .lte('start_time', dayEnd);
+
+    if (id) {
+      // 자기 자신의 기존 일정 수정 시에는 중복 체크 대상에서 제외
+      checkQuery = checkQuery.neq('id', id);
+    }
+
+    const { data: existingSchedules, error: checkError } = await checkQuery;
+
+    if (checkError) {
+      alert("중복 예약 확인 중 오류가 발생했습니다: " + checkError.message);
+      return;
+    }
+
+    const newStart = new Date(start_time).getTime();
+    const newEnd = new Date(end_time).getTime();
+
+    const isOverlap = (existingSchedules || []).some(item => {
+      const existStart = new Date(item.start_time).getTime();
+      const existEnd = new Date(item.end_time).getTime();
+      // 시간이 겹치는지 판단 (새 시작시간 < 기존 종료시간 AND 새 종료시간 > 기존 시작시간)
+      return (newStart < existEnd && newEnd > existStart);
+    });
+
+    if (isOverlap) {
+      alert(`[예약 불가] 해당 시간대에 이미 ${branch} ${room_name} 예약이 존재합니다.`);
+      return;
+    }
+    // --------------------------------------------------------
 
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
