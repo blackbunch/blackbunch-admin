@@ -200,6 +200,27 @@
       color: #fbbf24 !important;
     }
 
+    /* [신규 추가] 미정 레슨생 대기 보관함 스타일 */
+    .unassigned-container {
+      background-color: #1e1b2e;
+      border: 1px solid #d97706;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .unassigned-card {
+      background-color: #14151b;
+      border: 1px solid #2e3140;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .modal-content {
       background-color: #181920;
       color: #e2e8f0;
@@ -294,6 +315,62 @@
       <span id="userInfo" class="fw-bold small text-secondary"></span>
       <button id="authBtn" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" onclick="handleLogout()">로그아웃</button>
     </div>
+  </div>
+
+  <!-- [신규 추가] 미정 레슨생 보관함 섹션 -->
+  <div class="unassigned-container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="fw-bold text-warning m-0">⏳ 미정 레슨생 보관함</h6>
+      <button class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
+    </div>
+
+    <!-- 미정 레슨생 등록 폼 (접이식) -->
+    <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
+      <div class="row g-2">
+        <div class="col-6 col-md-2">
+          <label class="form-label small">지점</label>
+          <select id="unBranch" class="form-select form-select-sm">
+            <option value="위례점" selected>위례점</option>
+            <option value="미사점">미사점</option>
+            <option value="다산점">다산점</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small">수강생 이름</label>
+          <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="학생 성함">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small">담당 코치</label>
+          <select id="unCoachName" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small">과목</label>
+          <select id="unSubject" class="form-select form-select-sm">
+            <option value="스타일" selected>스타일</option>
+            <option value="보컬 메이킹">보컬 메이킹</option>
+            <option value="2:1 그룹">2:1 그룹</option>
+            <option value="3:1 그룹">3:1 그룹</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small">희망 룸</label>
+          <select id="unRoomName" class="form-select form-select-sm">
+            <option value="ROOM 1">ROOM 1</option>
+            <option value="ROOM 2">ROOM 2</option>
+            <option value="ROOM 3">ROOM 3</option>
+            <option value="ROOM 4">ROOM 4</option>
+            <option value="ROOM 5">ROOM 5</option>
+            <option value="연습실">연습실</option>
+          </select>
+        </div>
+        <div class="col-12 text-end mt-2">
+          <button class="btn btn-sm btn-warning" style="border-radius:6px;" onclick="addUnassignedStudent()">보관함에 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 미정 레슨생 리스트 -->
+    <div id="unassignedList"></div>
   </div>
 
   <!-- 필터 섹션 -->
@@ -514,6 +591,7 @@
 
   let calendar;
   let coachMap = {};
+  let unassignedStudents = []; // [신규 추가] 미정 레슨생 보관 데이터 배열
 
   // 과목별 수업 시간 (분)
   const DURATION_MAP = {
@@ -576,6 +654,7 @@
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
     checkAuthStatus();
+    renderUnassignedList(); // [신규 추가] 미정 목록 초기 렌더링
 
     const modalEl = document.getElementById('scheduleModal');
     if (modalEl) {
@@ -611,6 +690,79 @@
       loginView.classList.remove('d-none');
       mainApp.classList.add('d-none');
     }
+  }
+
+  /* --- [신규 추가] 미정 레슨생 전용 관리 함수들 --- */
+  function toggleUnassignedForm() {
+    const form = document.getElementById('unassignedForm');
+    form.classList.toggle('d-none');
+  }
+
+  function addUnassignedStudent() {
+    const branch = document.getElementById('unBranch').value;
+    const name = document.getElementById('unStudentName').value.trim();
+    const coach = document.getElementById('unCoachName').value;
+    const subject = document.getElementById('unSubject').value;
+    const room = document.getElementById('unRoomName').value;
+
+    if (!name) {
+      alert('수강생 이름을 입력해주세요.');
+      return;
+    }
+
+    const item = { id: Date.now(), branch, name, coach, subject, room };
+    unassignedStudents.push(item);
+    
+    document.getElementById('unStudentName').value = '';
+    toggleUnassignedForm();
+    renderUnassignedList();
+  }
+
+  function renderUnassignedList() {
+    const container = document.getElementById('unassignedList');
+    if (!container) return;
+
+    if (unassignedStudents.length === 0) {
+      container.innerHTML = '<div class="small text-secondary py-1">대기 중인 미정 레슨생이 없습니다.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    unassignedStudents.forEach((s, idx) => {
+      container.innerHTML += `
+        <div class="unassigned-card">
+          <div class="small">
+            <span class="badge bg-secondary me-1">${s.branch}</span>
+            <strong class="text-white">${s.name}</strong> 
+            <span class="text-secondary">(${s.coach} 코치 | ${s.subject} | ${s.room})</span>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.75rem;" onclick="assignToCalendar(${idx})">📅 일정으로 등록</button>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;" onclick="removeUnassigned(${idx})">삭제</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  function removeUnassigned(idx) {
+    unassignedStudents.splice(idx, 1);
+    renderUnassignedList();
+  }
+
+  function assignToCalendar(idx) {
+    const data = unassignedStudents[idx];
+    openAddModal();
+
+    // 정보 자동 입력
+    document.getElementById('modalBranch').value = data.branch;
+    document.getElementById('modalStudentName').value = data.name;
+    document.getElementById('modalCoachName').value = data.coach;
+    document.getElementById('modalSubject').value = data.subject;
+    document.getElementById('modalRoomName').value = data.room;
+    calculateEndTime();
+
+    alert(`${data.name} 수강생의 정보가 세팅되었습니다. 날짜와 시간만 선택하고 [저장]을 누르세요.`);
   }
 
   function initCalendar() {
@@ -705,15 +857,18 @@
 
     const coachFilter = document.getElementById('coachFilter');
     const modalCoachName = document.getElementById('modalCoachName');
+    const unCoachName = document.getElementById('unCoachName'); // [신규 추가]
 
     if (coachFilter) coachFilter.innerHTML = '<option value="ALL" selected>전체 코치 보기</option>';
     if (modalCoachName) modalCoachName.innerHTML = '';
+    if (unCoachName) unCoachName.innerHTML = ''; // [신규 추가]
     coachMap = {};
 
     (coaches || []).forEach(c => {
       coachMap[c.name] = c.color || '#4f46e5';
       if (coachFilter) coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
       if (modalCoachName) modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      if (unCoachName) unCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`; // [신규 추가]
     });
 
     const coachTableBody = document.getElementById('coachTableBody');
