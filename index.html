@@ -258,27 +258,57 @@
     /* ---------------- Mobile Responsive Optimization ---------------- */
     @media (max-width: 768px) {
       body {
-        padding: 10px 8px;
+        padding: 8px 4px;
       }
       .main-container {
-        padding: 14px 10px;
+        padding: 12px 8px;
         border-radius: 12px;
       }
       .fc-toolbar {
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
       .fc-toolbar-title {
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
       }
       .fc-header-toolbar {
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.6rem !important;
       }
       .filter-section {
-        padding: 12px;
+        padding: 10px;
+        margin-bottom: 12px;
       }
       .modal-dialog {
         margin: 10px;
+      }
+
+      /* [모바일 캘린더 크기 축소 커스텀 CSS] */
+      #calendar {
+        max-height: 55vh; /* 화면 높이 기준 스케일 감소 */
+        min-height: 420px;
+      }
+      .fc-timegrid-slot {
+        height: 28px !important; /* 타임 슬롯 높이 축소 (44px -> 28px) */
+      }
+      .fc-timegrid-axis {
+        width: 40px !important; /* 왼쪽 시간 라벨 폭 축소 */
+      }
+      .fc-timegrid-slot-label-cushion {
+        font-size: 0.65rem !important;
+      }
+      .fc-col-header-cell {
+        padding: 4px 0 !important;
+      }
+      .fc-col-header-cell-cushion {
+        font-size: 0.75rem !important;
+      }
+      .fc-event {
+        font-size: 0.7rem !important;
+        padding: 1px 2px !important;
+      }
+      .unassigned-container {
+        padding: 12px;
+        margin-bottom: 12px;
       }
     }
   </style>
@@ -783,7 +813,8 @@
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
       expandRows: true,
-      height: 'auto',
+      height: isMobile ? 'auto' : 'auto',
+      aspectRatio: isMobile ? 0.8 : 1.35, // 모바일 뷰 비율 조정
       buttonText: {
         today: '오늘',
         month: '월',
