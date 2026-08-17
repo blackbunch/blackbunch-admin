@@ -200,7 +200,7 @@
       color: #fbbf24 !important;
     }
 
-    /* [신규 추가] 미정 레슨생 대기 보관함 스타일 */
+    /* 미정 레슨생 대기 보관함 스타일 */
     .unassigned-container {
       background-color: #1e1b2e;
       border: 1px solid #d97706;
@@ -317,14 +317,14 @@
     </div>
   </div>
 
-  <!-- [신규 추가] 미정 레슨생 보관함 섹션 -->
+  <!-- 미정 레슨생 보관함 섹션 -->
   <div class="unassigned-container">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="fw-bold text-warning m-0">⏳ 미정 레슨생 보관함</h6>
+      <h6 class="fw-bold text-warning m-0">⏳ 1단계: 레슨생 정보 등록 (미정 목록)</h6>
       <button class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
     </div>
 
-    <!-- 미정 레슨생 등록 폼 (접이식) -->
+    <!-- 미정 레슨생 등록 폼 -->
     <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
       <div class="row g-2">
         <div class="col-6 col-md-2">
@@ -364,7 +364,7 @@
           </select>
         </div>
         <div class="col-12 text-end mt-2">
-          <button class="btn btn-sm btn-warning" style="border-radius:6px;" onclick="addUnassignedStudent()">보관함에 저장</button>
+          <button class="btn btn-sm btn-warning" style="border-radius:6px;" onclick="addUnassignedStudent()">미정 목록에 추가</button>
         </div>
       </div>
     </div>
@@ -404,7 +404,7 @@
       </div>
       <div class="col-6 col-md-3 pt-md-3">
         <button id="addScheduleBtn" class="btn btn-primary w-100" onclick="openAddModal()">
-          + 일정 추가
+          + 직접 일정 추가
         </button>
       </div>
     </div>
@@ -425,6 +425,7 @@
       <div class="modal-body">
         <form id="scheduleForm">
           <input type="hidden" id="scheduleId">
+          <input type="hidden" id="currentUnassignedIdx">
           
           <div class="mb-3">
             <label class="form-label">지점</label>
@@ -437,7 +438,7 @@
 
           <div class="mb-3">
             <label class="form-label">학생 이름</label>
-            <input type="text" id="modalStudentName" class="form-control" placeholder="학생 성함 입력 (미정시 '❓ 미정' 입력)" required>
+            <input type="text" id="modalStudentName" class="form-control" placeholder="학생 성함 입력" required>
           </div>
 
           <div class="mb-3">
@@ -469,7 +470,7 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">날짜</label>
+            <label class="form-label">날짜(요일 선택)</label>
             <input type="date" id="modalDate" class="form-control" required>
           </div>
 
@@ -488,7 +489,7 @@
       <div class="modal-footer">
         <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
         <button type="button" class="btn btn-secondary" style="border-radius:8px;" data-bs-dismiss="modal">취소</button>
-        <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">저장</button>
+        <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">스케줄 추가</button>
       </div>
     </div>
   </div>
@@ -591,7 +592,7 @@
 
   let calendar;
   let coachMap = {};
-  let unassignedStudents = []; // [신규 추가] 미정 레슨생 보관 데이터 배열
+  let unassignedStudents = []; // 미정 레슨생 목록 데이터
 
   // 과목별 수업 시간 (분)
   const DURATION_MAP = {
@@ -654,12 +655,12 @@
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
     checkAuthStatus();
-    renderUnassignedList(); // [신규 추가] 미정 목록 초기 렌더링
+    renderUnassignedList();
 
     const modalEl = document.getElementById('scheduleModal');
     if (modalEl) {
       modalEl.addEventListener('shown.bs.modal', function () {
-        document.getElementById('modalStudentName').focus();
+        document.getElementById('modalDate').focus();
       });
     }
   });
@@ -692,7 +693,7 @@
     }
   }
 
-  /* --- [신규 추가] 미정 레슨생 전용 관리 함수들 --- */
+  /* --- [1. 레슨생 정보 등록 -> 미정 목록 추가] --- */
   function toggleUnassignedForm() {
     const form = document.getElementById('unassignedForm');
     form.classList.toggle('d-none');
@@ -723,7 +724,7 @@
     if (!container) return;
 
     if (unassignedStudents.length === 0) {
-      container.innerHTML = '<div class="small text-secondary py-1">대기 중인 미정 레슨생이 없습니다.</div>';
+      container.innerHTML = '<div class="small text-secondary py-1">대기 중인 미정 레슨생이 없습니다. arriba "+ 미정 레슨생 등록" 버튼을 눌러 먼저 등록해 주세요.</div>';
       return;
     }
 
@@ -737,8 +738,8 @@
             <span class="text-secondary">(${s.coach} 코치 | ${s.subject} | ${s.room})</span>
           </div>
           <div>
-            <button class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.75rem;" onclick="assignToCalendar(${idx})">📅 일정으로 등록</button>
-            <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;" onclick="removeUnassigned(${idx})">삭제</button>
+            <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${idx})">👉 레슨생 선택 (요일/시간 설정)</button>
+            <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${idx})">삭제</button>
           </div>
         </div>
       `;
@@ -750,11 +751,13 @@
     renderUnassignedList();
   }
 
-  function assignToCalendar(idx) {
+  /* --- [2 & 3. 레슨생 선택 -> 요일, 시간 선택 -> 스케줄 추가] --- */
+  function selectUnassignedStudent(idx) {
     const data = unassignedStudents[idx];
     openAddModal();
 
-    // 정보 자동 입력
+    // 선택한 레슨생 정보 자동 입력
+    document.getElementById('currentUnassignedIdx').value = idx;
     document.getElementById('modalBranch').value = data.branch;
     document.getElementById('modalStudentName').value = data.name;
     document.getElementById('modalCoachName').value = data.coach;
@@ -762,7 +765,7 @@
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    alert(`${data.name} 수강생의 정보가 세팅되었습니다. 날짜와 시간만 선택하고 [저장]을 누르세요.`);
+    alert(`'${data.name}' 레슨생이 선택되었습니다.\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭하세요.`);
   }
 
   function initCalendar() {
@@ -857,18 +860,18 @@
 
     const coachFilter = document.getElementById('coachFilter');
     const modalCoachName = document.getElementById('modalCoachName');
-    const unCoachName = document.getElementById('unCoachName'); // [신규 추가]
+    const unCoachName = document.getElementById('unCoachName');
 
     if (coachFilter) coachFilter.innerHTML = '<option value="ALL" selected>전체 코치 보기</option>';
     if (modalCoachName) modalCoachName.innerHTML = '';
-    if (unCoachName) unCoachName.innerHTML = ''; // [신규 추가]
+    if (unCoachName) unCoachName.innerHTML = '';
     coachMap = {};
 
     (coaches || []).forEach(c => {
       coachMap[c.name] = c.color || '#4f46e5';
       if (coachFilter) coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
       if (modalCoachName) modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-      if (unCoachName) unCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`; // [신규 추가]
+      if (unCoachName) unCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
     });
 
     const coachTableBody = document.getElementById('coachTableBody');
@@ -962,6 +965,7 @@
   function openAddModal() {
     document.getElementById('modalTitle').innerText = "일정 추가";
     document.getElementById('scheduleId').value = "";
+    document.getElementById('currentUnassignedIdx').value = "";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalSubject').value = "스타일";
     
@@ -970,7 +974,7 @@
     document.getElementById('modalDate').value = nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
     
-    calculateEndTime(); // 종료 시간 자동 계산 호출
+    calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     
@@ -981,6 +985,7 @@
   function openEditModal(scheduleData) {
     document.getElementById('modalTitle').innerText = "일정 수정";
     document.getElementById('scheduleId').value = scheduleData.id;
+    document.getElementById('currentUnassignedIdx').value = "";
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
@@ -1008,6 +1013,7 @@
 
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
+    const unassignedIdx = document.getElementById('currentUnassignedIdx').value;
     const branch = document.getElementById('modalBranch').value;
     const student_name = document.getElementById('modalStudentName').value.trim();
     
@@ -1083,6 +1089,11 @@
     if (result.error) {
       alert("저장 실패: " + result.error.message);
     } else {
+      // 미정 목록에서 스케줄로 승격된 경우 목록에서 제거
+      if (unassignedIdx !== "") {
+        removeUnassigned(parseInt(unassignedIdx, 10));
+      }
+
       const modalEl = document.getElementById('scheduleModal');
       const modalInstance = bootstrap.Modal.getInstance(modalEl);
       if (modalInstance) modalInstance.hide();
