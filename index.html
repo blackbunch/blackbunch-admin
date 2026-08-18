@@ -774,21 +774,33 @@
     const coach = document.getElementById('unCoachName').value;
     const subject = document.getElementById('unSubject').value;
     const room = document.getElementById('unRoomName').value;
-    const remaining_sessions = parseInt(document.getElementById('unSessions').value || '4', 10);
+
+    const sessionEl = document.getElementById('unSessions');
+    const remaining_sessions = sessionEl ? parseInt(sessionEl.value, 10) : 4;
 
     if (!name) {
       alert('수강생 이름을 입력해주세요.');
       return;
     }
 
-    const payload = { branch, name, coach, subject, room, remaining_sessions };
+    const payload = { 
+      branch, 
+      name, 
+      coach, 
+      subject, 
+      room, 
+      remaining_sessions 
+    };
+
     const { error } = await sbClient.from('unassigned_students').insert([payload]);
 
     if (error) {
+      console.error('Supabase 오류:', error);
       alert('저장 실패: ' + error.message);
       return;
     }
 
+    alert(`${name} 레슨생이 ${remaining_sessions}회차로 등록되었습니다.`);
     document.getElementById('unStudentName').value = '';
     toggleUnassignedForm();
     await loadUnassignedStudents();
