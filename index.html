@@ -745,6 +745,7 @@
       }
 
       loadCoachesData().then(() => {
+        applyCoachRestriction();
         initCalendar();
         loadUnassignedStudents();
       });
@@ -773,7 +774,10 @@
   async function addUnassignedStudent() {
     const branch = document.getElementById('unBranch').value;
     const name = document.getElementById('unStudentName').value.trim();
-    const coach = document.getElementById('unCoachName').value;
+    
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const coach = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('unCoachName').value;
+    
     const subject = document.getElementById('unSubject').value;
     const room = document.getElementById('unRoomName').value;
 
@@ -1050,16 +1054,41 @@
   function applyCoachRestriction() {
     const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     const modalCoachName = document.getElementById('modalCoachName');
-
-    if (!modalCoachName) return;
+    const unCoachName = document.getElementById('unCoachName');
+    const coachFilter = document.getElementById('coachFilter');
 
     if (currentUser && currentUser.role !== 'admin') {
-      modalCoachName.value = currentUser.name;
-      modalCoachName.disabled = true;
-      modalCoachName.classList.add('readonly-select');
+      // 모달 내 코치 선택 고정
+      if (modalCoachName) {
+        modalCoachName.value = currentUser.name;
+        modalCoachName.disabled = true;
+        modalCoachName.classList.add('readonly-select');
+      }
+      // 미정 레슨생 등록 폼 코치 선택 고정
+      if (unCoachName) {
+        unCoachName.value = currentUser.name;
+        unCoachName.disabled = true;
+        unCoachName.classList.add('readonly-select');
+      }
+      // 상단 필터 코치 선택 고정
+      if (coachFilter) {
+        coachFilter.value = currentUser.name;
+        coachFilter.disabled = true;
+        coachFilter.classList.add('readonly-select');
+      }
     } else {
-      modalCoachName.disabled = false;
-      modalCoachName.classList.remove('readonly-select');
+      if (modalCoachName) {
+        modalCoachName.disabled = false;
+        modalCoachName.classList.remove('readonly-select');
+      }
+      if (unCoachName) {
+        unCoachName.disabled = false;
+        unCoachName.classList.remove('readonly-select');
+      }
+      if (coachFilter) {
+        coachFilter.disabled = false;
+        coachFilter.classList.remove('readonly-select');
+      }
     }
   }
 
