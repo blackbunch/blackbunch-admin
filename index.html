@@ -198,9 +198,10 @@
     .fc-event {
       border-radius: 6px;
       border: none !important;
-      padding: 2px 4px;
+      padding: 4px 6px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
+      word-break: break-all;
     }
 
     .fc-event-unassigned {
@@ -306,7 +307,7 @@
         min-height: 400px;
       }
       .fc-timegrid-slot {
-        height: 28px !important;
+        height: 32px !important;
       }
       .fc-timegrid-axis {
         width: 40px !important;
@@ -322,7 +323,7 @@
       }
       .fc-event {
         font-size: 0.7rem !important;
-        padding: 1px 2px !important;
+        padding: 2px 3px !important;
       }
       .fc-daygrid-day-number {
         font-size: 0.75rem !important;
@@ -459,7 +460,7 @@
       </div>
     </div>
 
-    <!-- 미정 레슨생 리스트 (코치별 그룹화 영역) -->
+    <!-- 미정 레슨생 리스트 -->
     <div id="unassignedList"></div>
   </div>
 
@@ -475,7 +476,7 @@
         </select>
       </div>
       <div class="col-6 col-md-3">
-        <label for="roomSelect" class="form-label fw-bold">🚪 룸/연습실</label>
+        <label for="roomSelect" class="form-label fw-bold">🚪 룸/연습실 필터</label>
         <select id="roomSelect" class="form-select">
           <option value="ALL" selected>전체 룸 보기</option>
           <option value="ROOM 1">ROOM 1</option>
@@ -882,7 +883,6 @@
     await loadUnassignedStudents();
   }
 
-  /* --- 코치별 필터 및 그룹화 렌더링 --- */
   function renderUnassignedList() {
     const container = document.getElementById('unassignedList');
     const filterVal = document.getElementById('unassignedCoachFilter').value;
@@ -893,7 +893,6 @@
       return;
     }
 
-    // 선택된 코치 필터 적용
     let filteredList = unassignedStudents;
     if (filterVal !== 'ALL') {
       filteredList = unassignedStudents.filter(s => s.coach === filterVal);
@@ -904,7 +903,6 @@
       return;
     }
 
-    // 코치별 그룹화
     const grouped = {};
     filteredList.forEach(s => {
       const coachName = s.coach || '미지정';
@@ -983,7 +981,6 @@
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    // 자동 반복 옵션 활성화 및 잔여 회차로 기본 설정
     const repeatCheck = document.getElementById('repeatScheduleCheck');
     const repeatWeeks = document.getElementById('repeatWeeksSelect');
     
@@ -993,7 +990,7 @@
       repeatWeeks.value = remaining > 0 ? remaining : 4;
     }
 
-    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요. 지정된 회차만큼 매주 스케줄이 연속 배치됩니다.`);
+    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
   }
 
   function initCalendar() {
@@ -1013,6 +1010,11 @@
       expandRows: true,
       height: 'auto',
       aspectRatio: isMobile ? 0.8 : 1.35,
+
+      // 동일 시간대 중복 일정 겹침 제어 옵션
+      eventOverlap: true,
+      slotEventOverlap: false, // 겹칠 때 가로로 수평 슬라이스하지 않고 일정 전체 폭을 최대한 확보하여 스택 정렬
+
       buttonText: {
         today: '오늘',
         month: '월',
@@ -1047,7 +1049,6 @@
           const { data: schedulesData, error } = await query;
           if (error) throw error;
 
-          // 동일 수강생의 회차 계산을 위한 모든 수강생 일정 카운트
           const studentSchedulesMap = {};
           (schedulesData || []).forEach(item => {
             if (item.student_name && !item.student_name.includes('미정')) {
@@ -1057,7 +1058,6 @@
             }
           });
 
-          // 각 수강생별 일정을 날짜 순으로 정렬하여 회차 부여
           Object.keys(studentSchedulesMap).forEach(key => {
             studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
             studentSchedulesMap[key].forEach((item, index) => {
@@ -1344,7 +1344,6 @@
       }
     }
 
-    // 수정 처리인 경우 (단일 일정 수정)
     if (id) {
       const start_time = `${selectedDate}T${startTime}:00+09:00`;
       const end_time = `${selectedDate}T${endTime}:00+09:00`;
@@ -1362,7 +1361,6 @@
       return;
     }
 
-    // 신규 생성 처리 (반복 옵션 적용 가능)
     const weeksToCreate = isRepeat ? repeatWeeks : 1;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
@@ -1378,7 +1376,6 @@
       const dayStart = `${currDateStr}T00:00:00+09:00`;
       const dayEnd = `${currDateStr}T23:59:59+09:00`;
 
-      // 해당 날짜/룸 중복 예약 체크
       const { data: existingSchedules, error: checkError } = await sbClient.from('schedules')
         .select('*')
         .eq('branch', branch)
@@ -1413,7 +1410,6 @@
     if (insertError) {
       alert("일정 저장 실패: " + insertError.message);
     } else {
-      // 미정 목록 연동 차감
       if (targetUnassigned) {
         const total = targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0;
         const countAdded = schedulesToInsert.length;
@@ -1444,7 +1440,6 @@
     const id = document.getElementById('scheduleId').value;
     if (!id || !confirm("정말 이 일정을 삭제하시겠습니까? (삭제 시 차감되었던 회차가 복구됩니다)")) return;
 
-    // 1. 삭제 대상 스케줄 데이터 조회
     const { data: scheduleData, error: fetchError } = await sbClient
       .from('schedules')
       .select('*')
@@ -1456,21 +1451,18 @@
       return;
     }
 
-    // 2. 일정 삭제
     const { error: deleteError } = await sbClient.from('schedules').delete().eq('id', id);
     if (deleteError) {
       alert("삭제 실패: " + deleteError.message);
       return;
     }
 
-    // 3. 차감되었던 회차 원복(복구) 처리
     const studentName = scheduleData.student_name;
     const coachName = scheduleData.coach_name;
     const branch = scheduleData.branch;
     const room = scheduleData.room_name;
     const subject = scheduleData.subject;
 
-    // 미정 목록에서 기존 레슨생 찾기
     const { data: existingUnassigned } = await sbClient
       .from('unassigned_students')
       .select('*')
@@ -1493,7 +1485,6 @@
         }).eq('id', target.id);
       }
     } else {
-      // 이미 모든 회차가 완료되어 미정 목록에서 지워졌던 경우 목록 다시 생성
       await sbClient.from('unassigned_students').insert([{
         branch: branch,
         name: studentName,
