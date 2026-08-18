@@ -369,9 +369,38 @@
             <option value="다산점">다산점</option>
           </select>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
           <label class="form-label small">수강생 이름</label>
           <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="학생 성함">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small">등록 회차</label>
+          <select id="unSessions" class="form-select form-select-sm">
+            <option value="1">1회 (원데이)</option>
+            <option value="2">2회</option>
+            <option value="3">3회</option>
+            <option value="4" selected>4회 (1개월 기본)</option>
+            <option value="5">5회</option>
+            <option value="6">6회</option>
+            <option value="7">7회</option>
+            <option value="8">8회 (2개월)</option>
+            <option value="9">9회</option>
+            <option value="10">10회</option>
+            <option value="11">11회</option>
+            <option value="12">12회 (3개월)</option>
+            <option value="13">13회</option>
+            <option value="14">14회</option>
+            <option value="15">15회</option>
+            <option value="16">16회 (4개월)</option>
+            <option value="17">17회</option>
+            <option value="18">18회</option>
+            <option value="19">19회</option>
+            <option value="20">20회 (5개월)</option>
+            <option value="21">21회</option>
+            <option value="22">22회</option>
+            <option value="23">23회</option>
+            <option value="24">24회 (6개월)</option>
+          </select>
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label small">담당 코치</label>
@@ -723,7 +752,7 @@
     }
   }
 
-  /* --- [Supabase DB 연동: 미정 레슨생 관리] --- */
+  /* --- [Supabase DB 연동: 미정 레슨생 관리 & 회차 처리] --- */
   function toggleUnassignedForm() {
     const form = document.getElementById('unassignedForm');
     form.classList.toggle('d-none');
@@ -745,13 +774,14 @@
     const coach = document.getElementById('unCoachName').value;
     const subject = document.getElementById('unSubject').value;
     const room = document.getElementById('unRoomName').value;
+    const remaining_sessions = parseInt(document.getElementById('unSessions').value || '4', 10);
 
     if (!name) {
       alert('수강생 이름을 입력해주세요.');
       return;
     }
 
-    const payload = { branch, name, coach, subject, room };
+    const payload = { branch, name, coach, subject, room, remaining_sessions };
     const { error } = await sbClient.from('unassigned_students').insert([payload]);
 
     if (error) {
@@ -780,10 +810,11 @@
           <div class="small">
             <span class="badge bg-secondary me-1">${s.branch}</span>
             <strong class="text-white">${s.name}</strong> 
+            <span class="text-warning fw-bold">[남은 회차: ${s.remaining_sessions || 0}회]</span>
             <span class="text-secondary">(${s.coach} 코치 | ${s.subject} | ${s.room})</span>
           </div>
           <div>
-            <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 레슨생 선택 (요일/시간 설정)</button>
+            <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (1회 차감)</button>
             <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
           </div>
         </div>
@@ -805,6 +836,11 @@
     const data = unassignedStudents.find(item => item.id === dbId);
     if (!data) return;
 
+    if (data.remaining_sessions <= 0) {
+      alert("해당 레슨생의 남은 회차가 없습니다. 회차를 재충전해 주세요.");
+      return;
+    }
+
     openAddModal();
 
     document.getElementById('currentUnassignedDbId').value = data.id;
@@ -815,7 +851,7 @@
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    alert(`'${data.name}' 레슨생이 선택되었습니다.\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭하세요.`);
+    alert(`'${data.name}' 레슨생이 선택되었습니다. (남은 회차: ${data.remaining_sessions}회)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
   }
 
   function initCalendar() {
@@ -1125,6 +1161,15 @@
       return;
     }
 
+    let targetUnassigned = null;
+    if (!id && unassignedDbId) {
+      targetUnassigned = unassignedStudents.find(s => s.id == unassignedDbId);
+      if (targetUnassigned && targetUnassigned.remaining_sessions <= 0) {
+        alert("해당 레슨생의 남은 회차가 없습니다. 회차를 재충전해 주세요.");
+        return;
+      }
+    }
+
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
     let result;
@@ -1137,8 +1182,14 @@
     if (result.error) {
       alert("저장 실패: " + result.error.message);
     } else {
-      if (unassignedDbId !== "") {
-        await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
+      if (!id && targetUnassigned) {
+        const nextSessions = targetUnassigned.remaining_sessions - 1;
+        
+        if (nextSessions <= 0) {
+          await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
+        } else {
+          await sbClient.from('unassigned_students').update({ remaining_sessions: nextSessions }).eq('id', unassignedDbId);
+        }
         await loadUnassignedStudents();
       }
 
