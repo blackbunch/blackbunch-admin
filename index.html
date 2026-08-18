@@ -274,6 +274,10 @@
       .fc-header-toolbar {
         margin-bottom: 0.6rem !important;
       }
+      .fc-button-primary {
+        padding: 4px 8px !important;
+        font-size: 0.75rem !important;
+      }
       .filter-section {
         padding: 10px;
         margin-bottom: 12px;
@@ -282,16 +286,16 @@
         margin: 10px;
       }
 
-      /* [모바일 캘린더 크기 축소 커스텀 CSS] */
+      /* 모바일 캘린더 크기 및 슬롯 제어 */
       #calendar {
-        max-height: 55vh; /* 화면 높이 기준 스케일 감소 */
-        min-height: 420px;
+        max-height: 60vh;
+        min-height: 400px;
       }
       .fc-timegrid-slot {
-        height: 28px !important; /* 타임 슬롯 높이 축소 (44px -> 28px) */
+        height: 28px !important;
       }
       .fc-timegrid-axis {
-        width: 40px !important; /* 왼쪽 시간 라벨 폭 축소 */
+        width: 40px !important;
       }
       .fc-timegrid-slot-label-cushion {
         font-size: 0.65rem !important;
@@ -305,6 +309,10 @@
       .fc-event {
         font-size: 0.7rem !important;
         padding: 1px 2px !important;
+      }
+      .fc-daygrid-day-number {
+        font-size: 0.75rem !important;
+        padding: 2px 4px !important;
       }
       .unassigned-container {
         padding: 12px;
@@ -813,8 +821,8 @@
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
       expandRows: true,
-      height: isMobile ? 'auto' : 'auto',
-      aspectRatio: isMobile ? 0.8 : 1.35, // 모바일 뷰 비율 조정
+      height: 'auto',
+      aspectRatio: isMobile ? 0.8 : 1.35,
       buttonText: {
         today: '오늘',
         month: '월',
@@ -824,7 +832,8 @@
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: isMobile ? 'timeGridWeek,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay'
+        // 모바일에서도 월 단위(dayGridMonth)를 포함한 [월 / 주 / 일] 선택 버튼 제공
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       slotMinTime: '10:00:00',
       slotMaxTime: '24:00:00',
@@ -1071,7 +1080,7 @@
     const start_time = `${selectedDate}T${startTime}:00+09:00`;
     const end_time = `${selectedDate}T${endTime}:00+09:00`;
 
-    // ---------------- [ 중복 예약 검증 로직 ] ----------------
+    // 중복 예약 검증
     const dayStart = `${selectedDate}T00:00:00+09:00`;
     const dayEnd = `${selectedDate}T23:59:59+09:00`;
 
@@ -1106,7 +1115,6 @@
       alert(`[예약 불가] 해당 시간대에 이미 ${branch} ${room_name} 예약이 존재합니다.`);
       return;
     }
-    // --------------------------------------------------------
 
     const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
 
@@ -1120,7 +1128,6 @@
     if (result.error) {
       alert("저장 실패: " + result.error.message);
     } else {
-      // 미정 목록에서 스케줄로 승격된 경우 목록에서 제거
       if (unassignedIdx !== "") {
         removeUnassigned(parseInt(unassignedIdx, 10));
       }
