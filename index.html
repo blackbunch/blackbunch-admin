@@ -17,11 +17,11 @@
     * {
       font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
       box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent; /* 모바일 클릭/터치 시 발생하는 잔상 네모 제거 */
+      -webkit-tap-highlight-color: transparent;
     }
 
     *:focus, *:active {
-      outline: none !important; /* 모바일 포커스 시 나타나는 사각형 윤곽선 제거 */
+      outline: none !important;
     }
 
     body {
@@ -558,7 +558,7 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">날짜(요일 선택)</label>
+            <label class="form-label">시작 날짜 (1회차 기준 요일)</label>
             <input type="date" id="modalDate" class="form-control" required>
           </div>
 
@@ -570,6 +570,30 @@
             <div class="col-6 mb-3">
               <label class="form-label">종료 시간 (자동)</label>
               <input type="time" id="modalEndTime" class="form-control readonly-select" readonly required>
+            </div>
+          </div>
+
+          <!-- 이후 주차 일정 자동 추가 옵션 -->
+          <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="repeatScheduleCheck" onchange="toggleRepeatOptions()">
+              <label class="form-check-label fw-bold text-warning small" for="repeatScheduleCheck">
+                🔁 이후 주차 스케줄에도 자동 추가 (회차 유지)
+              </label>
+            </div>
+            <div id="repeatOptionsGroup" class="d-none mt-2">
+              <label class="form-label small text-secondary">등록할 연속 주차(총 회차 수):</label>
+              <select id="repeatWeeksSelect" class="form-select form-select-sm">
+                <option value="4" selected>4주 (4회차)</option>
+                <option value="8">8주 (8회차)</option>
+                <option value="12">12주 (12회차)</option>
+                <option value="16">16주 (16회차)</option>
+                <option value="20">20주 (20회차)</option>
+                <option value="24">24주 (24회차)</option>
+              </select>
+              <p class="text-secondary small mb-0 mt-1" style="font-size:0.75rem;">
+                * 지정된 시작 날짜부터 매주 같은 요일·시간에 일정이 자동으로 배치됩니다.
+              </p>
             </div>
           </div>
         </form>
@@ -722,6 +746,23 @@
       date: `${year}-${month}-${day}`,
       time: `${hours}:${minutes}`
     };
+  }
+
+  function formatDateIso(dateObj) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function toggleRepeatOptions() {
+    const chk = document.getElementById('repeatScheduleCheck');
+    const group = document.getElementById('repeatOptionsGroup');
+    if (chk.checked) {
+      group.classList.remove('d-none');
+    } else {
+      group.classList.add('d-none');
+    }
   }
 
   function populateTimeOptions() {
@@ -923,6 +964,7 @@
 
     const total = data.total_sessions || data.remaining_sessions || 0;
     const completed = data.completed_sessions || 0;
+    const remaining = total - completed;
 
     if (completed >= total) {
       alert("해당 레슨생의 지정된 회차가 모두 완료되었습니다. 회차를 재충전해 주세요.");
@@ -939,7 +981,17 @@
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
+    // 자동 반복 옵션 활성화 및 잔여 회차로 기본 설정
+    const repeatCheck = document.getElementById('repeatScheduleCheck');
+    const repeatWeeks = document.getElementById('repeatWeeksSelect');
+    
+    repeatCheck.checked = true;
+    toggleRepeatOptions();
+    if (repeatWeeks) {
+      repeatWeeks.value = remaining > 0 ? remaining : 4;
+    }
+
+    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요. 지정된 회차만큼 매주 스케줄이 연속 배치됩니다.`);
   }
 
   function initCalendar() {
@@ -990,14 +1042,39 @@
             query = query.eq('coach_name', selectedCoach);
           }
 
-          const { data, error } = await query;
+          const { data: schedulesData, error } = await query;
           if (error) throw error;
 
-          const events = (data || []).map(item => {
+          // 동일 수강생의 회차 계산을 위한 모든 수강생 일정 카운트
+          const studentSchedulesMap = {};
+          (schedulesData || []).forEach(item => {
+            if (item.student_name && !item.student_name.includes('미정')) {
+              const key = `${item.student_name}_${item.coach_name}`;
+              if (!studentSchedulesMap[key]) studentSchedulesMap[key] = [];
+              studentSchedulesMap[key].push(item);
+            }
+          });
+
+          // 각 수강생별 일정을 날짜 순으로 정렬하여 회차 부여
+          Object.keys(studentSchedulesMap).forEach(key => {
+            studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            studentSchedulesMap[key].forEach((item, index) => {
+              item._session_no = index + 1;
+              item._total_sessions = studentSchedulesMap[key].length;
+            });
+          });
+
+          const events = (schedulesData || []).map(item => {
             const isUnassigned = !item.student_name || item.student_name.includes('미정');
+            
+            let displayTitle = `[${item.room_name}] ${item.student_name} (${item.coach_name})`;
+            if (!isUnassigned && item._session_no) {
+              displayTitle = `[${item.room_name}] ${item.student_name} (${item._session_no}/${item._total_sessions}회) (${item.coach_name})`;
+            }
+
             return {
               id: item.id,
-              title: `[${item.room_name}] ${item.student_name} (${item.coach_name})`,
+              title: displayTitle,
               start: item.start_time,
               end: item.end_time,
               backgroundColor: isUnassigned ? '#374151' : (coachMap[item.coach_name] || '#4f46e5'),
@@ -1186,7 +1263,9 @@
     calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
-    
+    document.getElementById('repeatScheduleCheck').checked = false;
+    toggleRepeatOptions();
+
     applyCoachRestriction();
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
@@ -1215,7 +1294,9 @@
     }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
-    
+    document.getElementById('repeatScheduleCheck').checked = false;
+    toggleRepeatOptions();
+
     applyCoachRestriction();
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
@@ -1236,6 +1317,9 @@
     const startTime = document.getElementById('modalStartTime').value;
     const endTime = document.getElementById('modalEndTime').value;
 
+    const isRepeat = document.getElementById('repeatScheduleCheck').checked;
+    const repeatWeeks = parseInt(document.getElementById('repeatWeeksSelect').value, 10) || 4;
+
     if (!student_name || !coach_name || !selectedDate || !startTime || !endTime) {
       alert("학생 이름, 코치, 날짜 및 시간을 정확히 입력해 주세요.");
       return;
@@ -1243,44 +1327,6 @@
 
     if (startTime >= endTime) {
       alert("종료 시간은 시작 시간보다 이후여야 합니다.");
-      return;
-    }
-
-    const start_time = `${selectedDate}T${startTime}:00+09:00`;
-    const end_time = `${selectedDate}T${endTime}:00+09:00`;
-
-    const dayStart = `${selectedDate}T00:00:00+09:00`;
-    const dayEnd = `${selectedDate}T23:59:59+09:00`;
-
-    let checkQuery = sbClient.from('schedules')
-      .select('*')
-      .eq('branch', branch)
-      .eq('room_name', room_name)
-      .gte('end_time', dayStart)
-      .lte('start_time', dayEnd);
-
-    if (id) {
-      checkQuery = checkQuery.neq('id', id);
-    }
-
-    const { data: existingSchedules, error: checkError } = await checkQuery;
-
-    if (checkError) {
-      alert("중복 예약 확인 중 오류가 발생했습니다: " + checkError.message);
-      return;
-    }
-
-    const newStart = new Date(start_time).getTime();
-    const newEnd = new Date(end_time).getTime();
-
-    const isOverlap = (existingSchedules || []).some(item => {
-      const existStart = new Date(item.start_time).getTime();
-      const existEnd = new Date(item.end_time).getTime();
-      return (newStart < existEnd && newEnd > existStart);
-    });
-
-    if (isOverlap) {
-      alert(`[예약 불가] 해당 시간대에 이미 ${branch} ${room_name} 예약이 존재합니다.`);
       return;
     }
 
@@ -1296,23 +1342,82 @@
       }
     }
 
-    const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
-
-    let result;
+    // 수정 처리인 경우 (단일 일정 수정)
     if (id) {
-      result = await sbClient.from('schedules').update(payload).eq('id', id);
-    } else {
-      result = await sbClient.from('schedules').insert([payload]);
+      const start_time = `${selectedDate}T${startTime}:00+09:00`;
+      const end_time = `${selectedDate}T${endTime}:00+09:00`;
+      const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
+
+      const result = await sbClient.from('schedules').update(payload).eq('id', id);
+      if (result.error) {
+        alert("수정 실패: " + result.error.message);
+      } else {
+        const modalEl = document.getElementById('scheduleModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+        calendar.refetchEvents();
+      }
+      return;
     }
 
-    if (result.error) {
-      alert("저장 실패: " + result.error.message);
+    // 신규 생성 처리 (반복 옵션 적용 가능)
+    const weeksToCreate = isRepeat ? repeatWeeks : 1;
+    const schedulesToInsert = [];
+    const baseDate = new Date(selectedDate);
+
+    for (let i = 0; i < weeksToCreate; i++) {
+      const currDateObj = new Date(baseDate);
+      currDateObj.setDate(baseDate.getDate() + (i * 7));
+      const currDateStr = formatDateIso(currDateObj);
+
+      const start_time = `${currDateStr}T${startTime}:00+09:00`;
+      const end_time = `${currDateStr}T${endTime}:00+09:00`;
+
+      const dayStart = `${currDateStr}T00:00:00+09:00`;
+      const dayEnd = `${currDateStr}T23:59:59+09:00`;
+
+      // 해당 날짜/룸 중복 예약 체크
+      const { data: existingSchedules, error: checkError } = await sbClient.from('schedules')
+        .select('*')
+        .eq('branch', branch)
+        .eq('room_name', room_name)
+        .gte('end_time', dayStart)
+        .lte('start_time', dayEnd);
+
+      if (checkError) {
+        alert(`${currDateStr} 중복 예약 확인 중 오류가 발생했습니다: ` + checkError.message);
+        return;
+      }
+
+      const newStart = new Date(start_time).getTime();
+      const newEnd = new Date(end_time).getTime();
+
+      const isOverlap = (existingSchedules || []).some(item => {
+        const existStart = new Date(item.start_time).getTime();
+        const existEnd = new Date(item.end_time).getTime();
+        return (newStart < existEnd && newEnd > existStart);
+      });
+
+      if (isOverlap) {
+        alert(`[예약 불가] ${currDateStr} 날짜에 이미 ${branch} ${room_name} 예약이 존재합니다.`);
+        return;
+      }
+
+      schedulesToInsert.push({ branch, student_name, coach_name, subject, room_name, start_time, end_time });
+    }
+
+    const { error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert);
+
+    if (insertError) {
+      alert("일정 저장 실패: " + insertError.message);
     } else {
-      if (!id && targetUnassigned) {
+      // 미정 목록 연동 차감
+      if (targetUnassigned) {
         const total = targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0;
-        const nextCompleted = (targetUnassigned.completed_sessions || 0) + 1;
-        const nextRemaining = (targetUnassigned.remaining_sessions !== undefined) ? targetUnassigned.remaining_sessions - 1 : (total - nextCompleted);
-        
+        const countAdded = schedulesToInsert.length;
+        const nextCompleted = (targetUnassigned.completed_sessions || 0) + countAdded;
+        const nextRemaining = total - nextCompleted;
+
         if (nextCompleted >= total) {
           await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
         } else {
@@ -1324,6 +1429,8 @@
         await loadUnassignedStudents();
       }
 
+      alert(`${schedulesToInsert.length}회차의 스케줄이 성공적으로 등록되었습니다.`);
+
       const modalEl = document.getElementById('scheduleModal');
       const modalInstance = bootstrap.Modal.getInstance(modalEl);
       if (modalInstance) modalInstance.hide();
@@ -1333,7 +1440,7 @@
 
   async function deleteSchedule() {
     const id = document.getElementById('scheduleId').value;
-    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까? (삭제 시 차감된 회차가 복구됩니다)")) return;
+    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까? (삭제 시 차감되었던 회차가 복구됩니다)")) return;
 
     // 1. 삭제 대상 스케줄 데이터 조회
     const { data: scheduleData, error: fetchError } = await sbClient
