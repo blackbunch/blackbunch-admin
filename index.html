@@ -399,7 +399,7 @@
           <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="학생 성함">
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label small">등록 회차</label>
+          <label class="form-label small">총 회차</label>
           <select id="unSessions" class="form-select form-select-sm">
             <option value="1">1회 (원데이)</option>
             <option value="2">2회</option>
@@ -807,7 +807,7 @@
     const room = document.getElementById('unRoomName').value;
 
     const sessionEl = document.getElementById('unSessions');
-    const remaining_sessions = sessionEl ? parseInt(sessionEl.value, 10) : 4;
+    const total_sessions = sessionEl ? parseInt(sessionEl.value, 10) : 4;
 
     if (!name) {
       alert('수강생 이름을 입력해주세요.');
@@ -820,7 +820,9 @@
       coach, 
       subject, 
       room, 
-      remaining_sessions 
+      total_sessions,
+      completed_sessions: 0,
+      remaining_sessions: total_sessions 
     };
 
     const { error } = await sbClient.from('unassigned_students').insert([payload]);
@@ -831,7 +833,7 @@
       return;
     }
 
-    alert(`${name} 레슨생이 ${remaining_sessions}회차로 등록되었습니다.`);
+    alert(`${name} 레슨생이 총 ${total_sessions}회차로 등록되었습니다.`);
     document.getElementById('unStudentName').value = '';
     toggleUnassignedForm();
     await loadUnassignedStudents();
@@ -874,16 +876,19 @@
       let cardsHtml = '';
 
       grouped[coachName].forEach(s => {
+        const total = s.total_sessions || s.remaining_sessions || 0;
+        const current = (s.completed_sessions !== undefined) ? (s.completed_sessions + 1) : 1;
+
         cardsHtml += `
           <div class="unassigned-card">
             <div class="small">
               <span class="badge bg-secondary me-1">${s.branch}</span>
               <strong class="text-white">${s.name}</strong> 
-              <span class="text-warning fw-bold">[남은 회차: ${s.remaining_sessions || 0}회]</span>
+              <span class="text-warning fw-bold">[현재 회차: ${current} / ${total}회]</span>
               <span class="text-secondary">(${s.subject} | ${s.room})</span>
             </div>
             <div>
-              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (1회 차감)</button>
+              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (${current}회차)</button>
               <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
             </div>
           </div>
@@ -916,8 +921,11 @@
     const data = unassignedStudents.find(item => item.id === dbId);
     if (!data) return;
 
-    if (data.remaining_sessions <= 0) {
-      alert("해당 레슨생의 남은 회차가 없습니다. 회차를 재충전해 주세요.");
+    const total = data.total_sessions || data.remaining_sessions || 0;
+    const completed = data.completed_sessions || 0;
+
+    if (completed >= total) {
+      alert("해당 레슨생의 지정된 회차가 모두 완료되었습니다. 회차를 재충전해 주세요.");
       return;
     }
 
@@ -931,7 +939,7 @@
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    alert(`'${data.name}' 레슨생이 선택되었습니다. (남은 회차: ${data.remaining_sessions}회)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
+    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
   }
 
   function initCalendar() {
@@ -1124,25 +1132,21 @@
     const unassignedCoachFilter = document.getElementById('unassignedCoachFilter');
 
     if (currentUser && currentUser.role !== 'admin') {
-      // 모달 내 코치 선택 고정
       if (modalCoachName) {
         modalCoachName.value = currentUser.name;
         modalCoachName.disabled = true;
         modalCoachName.classList.add('readonly-select');
       }
-      // 미정 레슨생 등록 폼 코치 선택 고정
       if (unCoachName) {
         unCoachName.value = currentUser.name;
         unCoachName.disabled = true;
         unCoachName.classList.add('readonly-select');
       }
-      // 상단 필터 코치 선택 고정
       if (coachFilter) {
         coachFilter.value = currentUser.name;
         coachFilter.disabled = true;
         coachFilter.classList.add('readonly-select');
       }
-      // 미정 목록 코치 필터 고정
       if (unassignedCoachFilter) {
         unassignedCoachFilter.value = currentUser.name;
         unassignedCoachFilter.disabled = true;
@@ -1283,8 +1287,11 @@
     let targetUnassigned = null;
     if (!id && unassignedDbId) {
       targetUnassigned = unassignedStudents.find(s => s.id == unassignedDbId);
-      if (targetUnassigned && targetUnassigned.remaining_sessions <= 0) {
-        alert("해당 레슨생의 남은 회차가 없습니다. 회차를 재충전해 주세요.");
+      const total = targetUnassigned ? (targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0) : 0;
+      const completed = targetUnassigned ? (targetUnassigned.completed_sessions || 0) : 0;
+
+      if (targetUnassigned && completed >= total) {
+        alert("해당 레슨생의 지정된 회차가 모두 완료되었습니다. 회차를 재충전해 주세요.");
         return;
       }
     }
@@ -1302,12 +1309,17 @@
       alert("저장 실패: " + result.error.message);
     } else {
       if (!id && targetUnassigned) {
-        const nextSessions = targetUnassigned.remaining_sessions - 1;
+        const total = targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0;
+        const nextCompleted = (targetUnassigned.completed_sessions || 0) + 1;
+        const nextRemaining = (targetUnassigned.remaining_sessions !== undefined) ? targetUnassigned.remaining_sessions - 1 : (total - nextCompleted);
         
-        if (nextSessions <= 0) {
+        if (nextCompleted >= total) {
           await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
         } else {
-          await sbClient.from('unassigned_students').update({ remaining_sessions: nextSessions }).eq('id', unassignedDbId);
+          await sbClient.from('unassigned_students').update({ 
+            completed_sessions: nextCompleted,
+            remaining_sessions: nextRemaining 
+          }).eq('id', unassignedDbId);
         }
         await loadUnassignedStudents();
       }
