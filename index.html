@@ -1333,17 +1333,78 @@
 
   async function deleteSchedule() {
     const id = document.getElementById('scheduleId').value;
-    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
+    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까? (삭제 시 차감된 회차가 복구됩니다)")) return;
 
-    const { error } = await sbClient.from('schedules').delete().eq('id', id);
-    if (error) {
-      alert("삭제 실패: " + error.message);
-    } else {
-      const modalEl = document.getElementById('scheduleModal');
-      const modalInstance = bootstrap.Modal.getInstance(modalEl);
-      if (modalInstance) modalInstance.hide();
-      calendar.refetchEvents();
+    // 1. 삭제 대상 스케줄 데이터 조회
+    const { data: scheduleData, error: fetchError } = await sbClient
+      .from('schedules')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !scheduleData) {
+      alert("일정 정보를 불러오는데 실패했습니다.");
+      return;
     }
+
+    // 2. 일정 삭제
+    const { error: deleteError } = await sbClient.from('schedules').delete().eq('id', id);
+    if (deleteError) {
+      alert("삭제 실패: " + deleteError.message);
+      return;
+    }
+
+    // 3. 차감되었던 회차 원복(복구) 처리
+    const studentName = scheduleData.student_name;
+    const coachName = scheduleData.coach_name;
+    const branch = scheduleData.branch;
+    const room = scheduleData.room_name;
+    const subject = scheduleData.subject;
+
+    // 미정 목록에서 기존 레슨생 찾기
+    const { data: existingUnassigned } = await sbClient
+      .from('unassigned_students')
+      .select('*')
+      .eq('name', studentName)
+      .eq('coach', coachName)
+      .limit(1);
+
+    if (existingUnassigned && existingUnassigned.length > 0) {
+      const target = existingUnassigned[0];
+      const prevCompleted = target.completed_sessions || 0;
+
+      if (prevCompleted > 0) {
+        const nextCompleted = prevCompleted - 1;
+        const total = target.total_sessions || 4;
+        const nextRemaining = total - nextCompleted;
+
+        await sbClient.from('unassigned_students').update({
+          completed_sessions: nextCompleted,
+          remaining_sessions: nextRemaining
+        }).eq('id', target.id);
+      }
+    } else {
+      // 이미 모든 회차가 완료되어 미정 목록에서 지워졌던 경우 목록 다시 생성
+      await sbClient.from('unassigned_students').insert([{
+        branch: branch,
+        name: studentName,
+        coach: coachName,
+        subject: subject || '스타일',
+        room: room || 'ROOM 1',
+        total_sessions: 4,
+        completed_sessions: 3,
+        remaining_sessions: 1
+      }]);
+    }
+
+    alert("일정이 삭제되었으며 차감되었던 회차가 원복되었습니다.");
+
+    const modalEl = document.getElementById('scheduleModal');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+
+    await loadUnassignedStudents();
+    calendar.refetchEvents();
   }
 
   async function registerNewCoach() {
