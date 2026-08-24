@@ -509,6 +509,7 @@
         <form id="scheduleForm">
           <input type="hidden" id="scheduleId">
           <input type="hidden" id="currentUnassignedDbId">
+          <input type="hidden" id="modalTotalSessions" value="4">
           
           <div class="mb-3">
             <label class="form-label">지점</label>
@@ -919,7 +920,7 @@
               <span class="text-secondary">(${s.subject} | ${s.room})</span>
             </div>
             <div>
-              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (${current}회차)</button>
+              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (${current}/${total}회차)</button>
               <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
             </div>
           </div>
@@ -964,6 +965,7 @@
     openAddModal();
 
     document.getElementById('currentUnassignedDbId').value = data.id;
+    document.getElementById('modalTotalSessions').value = total;
     document.getElementById('modalBranch').value = data.branch;
     document.getElementById('modalStudentName').value = data.name;
     document.getElementById('modalCoachName').value = data.coach;
@@ -1049,9 +1051,13 @@
 
           Object.keys(studentSchedulesMap).forEach(key => {
             studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            
+            /* 수강생별 데이터 중 DB의 total_sessions 정보를 추적하여 총 회차 계산 */
+            const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
+
             studentSchedulesMap[key].forEach((item, index) => {
               item._session_no = index + 1;
-              item._total_sessions = studentSchedulesMap[key].length;
+              item._total_sessions = item.total_sessions || total;
             });
           });
 
@@ -1065,7 +1071,8 @@
               roomNum = roomNum + '.';
             }
 
-            const sessionText = item._session_no ? `${item._session_no}회` : '1회';
+            /* 회차 표시를 "현재회차/총회차회" 형태로 변경 */
+            const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
             const studentNameText = item.student_name || '미정';
             const coachNameText = item.coach_name || '미정';
 
@@ -1265,6 +1272,7 @@
     document.getElementById('modalTitle').innerText = "일정 추가";
     document.getElementById('scheduleId').value = "";
     document.getElementById('currentUnassignedDbId').value = "";
+    document.getElementById('modalTotalSessions').value = "4";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalSubject').value = "스타일";
     
@@ -1276,7 +1284,6 @@
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     
-    /* 기본적으로 반복 옵션 OFF 상태로 초기화 */
     document.getElementById('repeatScheduleCheck').checked = false;
     toggleRepeatOptions();
 
@@ -1288,6 +1295,7 @@
     document.getElementById('modalTitle').innerText = "일정 수정";
     document.getElementById('scheduleId').value = scheduleData.id;
     document.getElementById('currentUnassignedDbId').value = "";
+    document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 4;
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
@@ -1318,6 +1326,8 @@
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
     const unassignedDbId = document.getElementById('currentUnassignedDbId').value;
+    const totalSessionsVal = parseInt(document.getElementById('modalTotalSessions').value, 10) || 4;
+    
     const branch = document.getElementById('modalBranch').value;
     const student_name = document.getElementById('modalStudentName').value.trim();
     
@@ -1356,11 +1366,10 @@
       }
     }
 
-    // 기존 스케줄 단일 수정일 경우
     if (id) {
       const start_time = `${selectedDate}T${startTime}:00+09:00`;
       const end_time = `${selectedDate}T${endTime}:00+09:00`;
-      const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time };
+      const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time, total_sessions: totalSessionsVal };
 
       const result = await sbClient.from('schedules').update(payload).eq('id', id);
       if (result.error) {
@@ -1374,7 +1383,6 @@
       return;
     }
 
-    // 반복 옵션이 ON일 때는 선택 주차 수만큼, OFF일 때는 1회만 등록
     const weeksToCreate = isRepeat ? repeatWeeks : 1;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
@@ -1387,7 +1395,16 @@
       const start_time = `${currDateStr}T${startTime}:00+09:00`;
       const end_time = `${currDateStr}T${endTime}:00+09:00`;
 
-      schedulesToInsert.push({ branch, student_name, coach_name, subject, room_name, start_time, end_time });
+      schedulesToInsert.push({ 
+        branch, 
+        student_name, 
+        coach_name, 
+        subject, 
+        room_name, 
+        start_time, 
+        end_time,
+        total_sessions: totalSessionsVal
+      });
     }
 
     const { error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert);
@@ -1447,6 +1464,7 @@
     const branch = scheduleData.branch;
     const room = scheduleData.room_name;
     const subject = scheduleData.subject;
+    const total = scheduleData.total_sessions || 4;
 
     const { data: existingUnassigned } = await sbClient
       .from('unassigned_students')
@@ -1461,7 +1479,6 @@
 
       if (prevCompleted > 0) {
         const nextCompleted = prevCompleted - 1;
-        const total = target.total_sessions || 4;
         const nextRemaining = total - nextCompleted;
 
         await sbClient.from('unassigned_students').update({
@@ -1476,8 +1493,8 @@
         coach: coachName,
         subject: subject || '스타일',
         room: room || 'ROOM 1',
-        total_sessions: 4,
-        completed_sessions: 3,
+        total_sessions: total,
+        completed_sessions: total - 1,
         remaining_sessions: 1
       }]);
     }
