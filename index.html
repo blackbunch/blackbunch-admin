@@ -204,6 +204,27 @@
       word-break: break-all;
     }
 
+    /* === [수정된 부분] 중복 일정을 세로(위아래)로 나열하기 위한 스타일 === */
+    .fc-timegrid-event-harness {
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      margin-bottom: 2px !important;
+    }
+    .fc-timegrid-event-harness > .fc-timegrid-event {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      height: auto !important;
+      min-height: 40px !important;
+    }
+    .fc-timegrid-col-events {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
     .fc-event-unassigned {
       background-color: #374151 !important;
       border: 1px dashed #f59e0b !important;
@@ -1011,9 +1032,9 @@
       height: 'auto',
       aspectRatio: isMobile ? 0.8 : 1.35,
 
-      // 동일 시간대 중복 일정 겹침 제어 옵션
+      // === [수정된 부분] 가로 분할 방지 및 세로 스택 정렬 옵션 ===
       eventOverlap: true,
-      slotEventOverlap: false, // 겹칠 때 가로로 수평 슬라이스하지 않고 일정 전체 폭을 최대한 확보하여 스택 정렬
+      slotEventOverlap: false,
 
       buttonText: {
         today: '오늘',
