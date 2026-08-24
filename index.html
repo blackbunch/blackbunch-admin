@@ -123,6 +123,11 @@
     .fc-timegrid-axis {
       width: 60px !important;
     }
+    
+    /* 기본 시간대 슬롯 높이 고정 */
+    .fc-timegrid-slot {
+      height: 48px !important;
+    }
 
     .fc-timegrid-slots tr:nth-child(even) td {
       border-top-style: dashed !important;
@@ -178,37 +183,16 @@
       color: #f8fafc;
     }
 
-    /* === [수정] 일정 높이 고정 및 세로 나열 CSS 설정 === */
-    .fc-timegrid-slot, 
-    .fc-timegrid-slot-lane, 
-    .fc-timegrid-cols tr {
-      height: 48px !important;
-      max-height: 48px !important;
-    }
-
-    .fc-timegrid-col-events {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 2px;
-    }
-
+    /* === 일정 수에 따라 가로 너비가 나뉘며 크기 자동 조절 === */
     .fc-timegrid-event-harness {
-      position: relative !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      margin-bottom: 2px !important;
+      position: absolute !important;
     }
-
     .fc-timegrid-event {
-      position: relative !important;
       border-radius: 6px !important;
       padding: 2px 4px !important;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       border: 1px solid rgba(255,255,255,0.15) !important;
       width: 100% !important;
-      min-height: 20px !important;
     }
     
     .fc-event-main {
@@ -216,8 +200,6 @@
       font-size: 0.72rem;
       line-height: 1.2;
       overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
       word-break: break-all;
     }
 
@@ -323,11 +305,8 @@
         max-height: 65vh;
         min-height: 400px;
       }
-      .fc-timegrid-slot,
-      .fc-timegrid-slot-lane,
-      .fc-timegrid-cols tr {
+      .fc-timegrid-slot {
         height: 40px !important;
-        max-height: 40px !important;
       }
       .fc-timegrid-axis {
         width: 45px !important;
@@ -1016,13 +995,12 @@
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
-      expandRows: false,
+      expandRows: true,
       height: 'auto',
 
-      /* === [수정] 동일 시간대 일정 세로 정렬 설정 === */
-      eventOverlap: false,
-      slotEventOverlap: false,
-      eventOrder: 'start,title',
+      /* === [설정] 일정 개수에 따라 가로 너비를 나눠 갖도록 오버랩 활성화 === */
+      eventOverlap: true,
+      slotEventOverlap: true,
 
       buttonText: {
         today: '오늘',
@@ -1078,10 +1056,20 @@
           const events = (schedulesData || []).map(item => {
             const isUnassigned = !item.student_name || item.student_name.includes('미정');
             
-            let displayTitle = `[${item.room_name}] ${item.student_name} (${item.coach_name})`;
-            if (!isUnassigned && item._session_no) {
-              displayTitle = `[${item.room_name}] ${item.student_name} (${item._session_no}/${item._total_sessions}회) (${item.coach_name})`;
+            // 방 번호 정제 (예: "ROOM 1" -> "1.", "연습실" -> "연습실.")
+            let roomNum = item.room_name || '';
+            if (roomNum.includes('ROOM')) {
+              roomNum = roomNum.replace('ROOM', '').trim() + '.';
+            } else if (roomNum) {
+              roomNum = roomNum + '.';
             }
+
+            // 요청된 예시 포맷: 1. 레슨생(코치) 1회
+            const sessionText = item._session_no ? `${item._session_no}회` : '1회';
+            const studentNameText = item.student_name || '미정';
+            const coachNameText = item.coach_name || '미정';
+
+            const displayTitle = `${roomNum} ${studentNameText}(${coachNameText}) ${sessionText}`;
 
             return {
               id: item.id,
