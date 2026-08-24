@@ -177,7 +177,7 @@
       color: #f8fafc;
     }
 
-    /* === [수정] 겹치는 일정 세로 쌓임 설정 === */
+    /* === [수정] 동일 시간대 겹침 시 순서대로 시각적 구분 오프셋 적용 === */
     .fc-timegrid-event-harness {
       position: absolute !important;
       left: 0 !important;
@@ -187,16 +187,17 @@
     .fc-timegrid-event {
       border-radius: 6px !important;
       padding: 2px 4px !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.2) !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.25) !important;
       width: 100% !important;
-      opacity: 0.9;
-      transition: opacity 0.2s, z-index 0.2s;
+      transition: transform 0.15s ease, z-index 0.15s ease;
     }
     
+    /* Hover 시 맨 위로 나오며 살짝 커짐 */
     .fc-timegrid-event:hover {
-      opacity: 1;
-      z-index: 999 !important;
+      z-index: 9999 !important;
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8);
     }
     
     .fc-event-main {
@@ -333,7 +334,6 @@
 </head>
 <body>
 
-<!-- 1. 로그인 게이트 화면 -->
 <div id="loginView" class="login-container">
   <div class="text-center mb-4">
     <h3 class="fw-bold text-white mb-2">🎵 블랙번치 스튜디오</h3>
@@ -352,7 +352,6 @@
   </form>
 </div>
 
-<!-- 2. 메인 캘린더 화면 -->
 <div id="mainApp" class="main-container d-none">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h4 class="fw-bold m-0">🎵 블랙번치 스튜디오 스케줄</h4>
@@ -365,7 +364,6 @@
     </div>
   </div>
 
-  <!-- 미정 레슨생 보관함 섹션 -->
   <div class="unassigned-container">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <div class="d-flex align-items-center gap-3">
@@ -380,7 +378,6 @@
       <button class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
     </div>
 
-    <!-- 미정 레슨생 등록 폼 -->
     <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
       <div class="row g-2">
         <div class="col-6 col-md-2">
@@ -454,11 +451,9 @@
       </div>
     </div>
 
-    <!-- 미정 레슨생 리스트 -->
     <div id="unassignedList"></div>
   </div>
 
-  <!-- 필터 섹션 -->
   <div class="filter-section">
     <div class="row g-2 align-items-center">
       <div class="col-6 col-md-3">
@@ -495,11 +490,9 @@
     </div>
   </div>
 
-  <!-- 캘린더 영역 -->
   <div id="calendar"></div>
 </div>
 
-<!-- 일정 추가/수정 모달 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -603,7 +596,6 @@
   </div>
 </div>
 
-<!-- ⚙️ 코치 등록/관리 모달 -->
 <div class="modal fade" id="coachModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -998,7 +990,7 @@
       expandRows: true,
       height: 'auto',
 
-      /* === [수정] 동일 시간대 겹침 시 가로 나누기 방지 및 세로 포개짐 설정 === */
+      /* 동일 시간대 허용 및 세로 포개짐 처리 */
       eventOverlap: true,
       slotEventOverlap: false,
 
@@ -1085,6 +1077,21 @@
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
+        }
+      },
+
+      /* === [수정] 동일 시작 시간 스케줄을 순서대로 아래로 오프셋 처리하여 모두 보이게 만듦 === */
+      eventDidMount: function(info) {
+        const harness = info.el.closest('.fc-timegrid-event-harness');
+        if (harness && harness.parentElement) {
+          const siblings = Array.from(harness.parentElement.children);
+          const index = siblings.indexOf(harness);
+
+          if (index > 0) {
+            // 순서대로 24px씩 아래로 살짝 내리고 z-index 조정하여 이전/다음 일정의 제목이 전부 드러남
+            info.el.style.marginTop = `${index * 24}px`;
+            info.el.style.zIndex = index + 1;
+          }
         }
       },
 
