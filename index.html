@@ -130,7 +130,10 @@
       border-color: #4338ca;
     }
 
-    #calendar { margin-top: 15px; }
+    #calendar { 
+      margin-top: 15px; 
+      height: 700px;
+    }
     .fc { color: #e2e8f0; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #262836 !important; }
     .fc-theme-standard .fc-scrollgrid {
@@ -144,12 +147,6 @@
       table-layout: fixed !important;
     }
     .fc-timegrid-axis { width: 60px !important; }
-    .fc-timegrid-slot { height: 48px !important; }
-
-    .fc-timegrid-slots tr:nth-child(even) td {
-      border-top-style: dashed !important;
-      border-top-color: #1d1f2b !important;
-    }
 
     .fc-col-header-cell {
       background-color: #21232d;
@@ -196,20 +193,13 @@
       color: #f8fafc;
     }
 
-    .fc-timegrid-event-harness {
-      left: 2px !important;
-      right: 2px !important;
-      width: calc(100% - 4px) !important;
-    }
-
     .fc-timegrid-event {
       border-radius: 6px !important;
       padding: 2px 6px !important;
       box-shadow: 0 2px 4px rgba(0,0,0,0.5);
       border: 1px solid rgba(255,255,255,0.2) !important;
-      display: flex !important;
-      align-items: center !important;
-      cursor: pointer;
+      cursor: pointer !important;
+      z-index: 5 !important;
     }
 
     .fc-event-main {
@@ -296,8 +286,7 @@
       .fc-button-primary { padding: 4px 8px !important; font-size: 0.75rem !important; }
       .filter-section { padding: 10px; margin-bottom: 12px; }
       .modal-dialog { margin: 10px; }
-      #calendar { max-height: 65vh; min-height: 400px; }
-      .fc-timegrid-slot { height: 40px !important; }
+      #calendar { height: 500px; }
       .fc-timegrid-axis { width: 45px !important; }
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 4px 0 !important; }
@@ -653,7 +642,7 @@
   let calendar;
   let coachMap = {};
   let unassignedStudents = [];
-  let currentScheduleType = 'lesson'; // 'lesson' | 'consulting' | 'practice'
+  let currentScheduleType = 'lesson';
 
   const DURATION_MAP = {
     '스타일': 50,
@@ -1052,9 +1041,7 @@
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
-      expandRows: true,
-      height: 'auto',
-
+      height: '700px',
       displayEventTime: false,
 
       buttonText: { today: '오늘', month: '월', week: '주', day: '일' },
@@ -1064,10 +1051,10 @@
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       slotMinTime: '10:00:00',
-      slotMaxTime: '24:00:00',
+      slotMaxTime: '23:00:00',
       allDaySlot: false,
-      slotDuration: '00:10:00',
-      slotLabelInterval: '00:30:00',
+      slotDuration: '00:30:00',
+      slotLabelInterval: '01:00:00',
       
       events: async function(fetchInfo, successCallback, failureCallback) {
         try {
@@ -1156,36 +1143,6 @@
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
-        }
-      },
-
-      eventDidMount: function(info) {
-        const el = info.el;
-        const eventObj = info.event;
-        const allEvents = calendar.getEvents();
-
-        const sameStartEvents = allEvents.filter(e => {
-          return e.start && eventObj.start && 
-                 e.start.getTime() === eventObj.start.getTime();
-        }).sort((a, b) => String(a.id).localeCompare(String(b.id)));
-
-        const index = sameStartEvents.findIndex(e => e.id === eventObj.id);
-
-        if (index >= 0) {
-          const harness = el.closest('.fc-timegrid-event-harness');
-          if (harness) {
-            harness.style.left = '2px';
-            harness.style.right = '2px';
-            harness.style.width = 'calc(100% - 4px)';
-          }
-
-          const boxHeight = 28;
-          const gap = 4;
-
-          el.style.top = `${index * (boxHeight + gap)}px`;
-          el.style.height = `${boxHeight}px`;
-          el.style.position = 'absolute';
-          el.style.width = '100%';
         }
       },
 
