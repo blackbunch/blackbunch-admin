@@ -148,7 +148,6 @@
     }
     .fc-timegrid-axis { width: 60px !important; }
 
-    /* 이미지 스타일 반영: 헤더 밝은 보라/백색 배경 + 또렷한 퍼플 텍스트 */
     .fc-col-header-cell {
       background-color: #f0f0ff !important;
       padding: 10px 0 !important;
@@ -194,7 +193,6 @@
       color: #f8fafc;
     }
 
-    /* 이미지 스타일 반영: 둥근 모서리와 흰 테두리를 가진 카드형 스타일 */
     .fc-timegrid-event {
       border-radius: 8px !important;
       padding: 4px 8px !important;
@@ -362,7 +360,7 @@
       <div class="row g-2">
         <div class="col-6 col-md-2">
           <label class="form-label small">지점</label>
-          <select id="unBranch" class="form-select form-select-sm">
+          <select id="unBranch" class="form-select form-select-sm" onchange="updateRoomOptionsForUnassigned()">
             <option value="위례점" selected>위례점</option>
             <option value="미사점">미사점</option>
             <option value="다산점">다산점</option>
@@ -415,7 +413,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-6 col-md-3">
         <label for="branchSelect" class="form-label fw-bold">📍 지점 선택</label>
-        <select id="branchSelect" class="form-select">
+        <select id="branchSelect" class="form-select" onchange="handleBranchChange()">
           <option value="위례점" selected>위례점</option>
           <option value="미사점">미사점</option>
           <option value="다산점">다산점</option>
@@ -423,11 +421,11 @@
       </div>
       <div class="col-6 col-md-3 room-field">
         <label for="roomSelect" class="form-label fw-bold">🚪 룸/연습실 필터</label>
-        <select id="roomSelect" class="form-select"></select>
+        <select id="roomSelect" class="form-select" onchange="calendar && calendar.refetchEvents()"></select>
       </div>
       <div class="col-6 col-md-3 coach-field">
         <label for="coachFilter" class="form-label fw-bold">🎤 코치 필터</label>
-        <select id="coachFilter" class="form-select">
+        <select id="coachFilter" class="form-select" onchange="calendar && calendar.refetchEvents()">
           <option value="ALL" selected>전체 코치 보기</option>
         </select>
       </div>
@@ -457,7 +455,7 @@
           
           <div class="mb-3">
             <label class="form-label">지점</label>
-            <select id="modalBranch" class="form-select" required>
+            <select id="modalBranch" class="form-select" required onchange="updateRoomOptionsForModal()">
               <option value="위례점">위례점</option>
               <option value="미사점">미사점</option>
               <option value="다산점">다산점</option>
@@ -649,6 +647,13 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
 
+  // 지점별 기본 룸 데이터 구조 (필요 시 방 목록을 자유롭게 변경 가능)
+  const BRANCH_ROOMS = {
+    '위례점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
+    '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4'],
+    '다산점': ['ROOM 1', 'ROOM 2', 'ROOM 3']
+  };
+
   const DURATION_MAP = {
     '스타일': 50,
     '보컬 메이킹': 50,
@@ -662,38 +667,68 @@
     '3시간 대여': 180
   };
 
-  function updateRoomOptions() {
-    const filterRoomSelect = document.getElementById('roomSelect');
-    const modalRoomSelect = document.getElementById('modalRoomName');
-    const unRoomSelect = document.getElementById('unRoomName');
+  function getRoomsForBranch(branchName) {
+    return BRANCH_ROOMS[branchName] || ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'];
+  }
 
-    let filterOptions = '';
-    let itemOptions = '';
+  function updateRoomOptions() {
+    const selectedBranch = document.getElementById('branchSelect').value;
+    const filterRoomSelect = document.getElementById('roomSelect');
+
+    if (!filterRoomSelect) return;
 
     if (currentScheduleType === 'practice') {
-      filterOptions = `<option value="연습실" selected>연습실</option>`;
-      itemOptions = `<option value="연습실" selected>연습실</option>`;
+      filterRoomSelect.innerHTML = `<option value="연습실" selected>연습실</option>`;
     } else {
-      filterOptions = `
-        <option value="ALL" selected>전체 룸 보기</option>
-        <option value="ROOM 1">ROOM 1</option>
-        <option value="ROOM 2">ROOM 2</option>
-        <option value="ROOM 3">ROOM 3</option>
-        <option value="ROOM 4">ROOM 4</option>
-        <option value="ROOM 5">ROOM 5</option>
-      `;
-      itemOptions = `
-        <option value="ROOM 1" selected>ROOM 1</option>
-        <option value="ROOM 2">ROOM 2</option>
-        <option value="ROOM 3">ROOM 3</option>
-        <option value="ROOM 4">ROOM 4</option>
-        <option value="ROOM 5">ROOM 5</option>
-      `;
+      const roomList = getRoomsForBranch(selectedBranch);
+      let options = `<option value="ALL" selected>전체 룸 보기</option>`;
+      roomList.forEach(r => {
+        options += `<option value="${r}">${r}</option>`;
+      });
+      filterRoomSelect.innerHTML = options;
     }
 
-    if (filterRoomSelect) filterRoomSelect.innerHTML = filterOptions;
-    if (modalRoomSelect) modalRoomSelect.innerHTML = itemOptions;
-    if (unRoomSelect) unRoomSelect.innerHTML = itemOptions;
+    updateRoomOptionsForModal();
+    updateRoomOptionsForUnassigned();
+  }
+
+  function updateRoomOptionsForModal() {
+    const modalBranch = document.getElementById('modalBranch')?.value || '위례점';
+    const modalRoomSelect = document.getElementById('modalRoomName');
+    if (!modalRoomSelect) return;
+
+    if (currentScheduleType === 'practice') {
+      modalRoomSelect.innerHTML = `<option value="연습실" selected>연습실</option>`;
+    } else {
+      const roomList = getRoomsForBranch(modalBranch);
+      let options = '';
+      roomList.forEach((r, idx) => {
+        options += `<option value="${r}" ${idx === 0 ? 'selected' : ''}>${r}</option>`;
+      });
+      modalRoomSelect.innerHTML = options;
+    }
+  }
+
+  function updateRoomOptionsForUnassigned() {
+    const unBranch = document.getElementById('unBranch')?.value || '위례점';
+    const unRoomSelect = document.getElementById('unRoomName');
+    if (!unRoomSelect) return;
+
+    if (currentScheduleType === 'practice') {
+      unRoomSelect.innerHTML = `<option value="연습실" selected>연습실</option>`;
+    } else {
+      const roomList = getRoomsForBranch(unBranch);
+      let options = '';
+      roomList.forEach((r, idx) => {
+        options += `<option value="${r}" ${idx === 0 ? 'selected' : ''}>${r}</option>`;
+      });
+      unRoomSelect.innerHTML = options;
+    }
+  }
+
+  function handleBranchChange() {
+    updateRoomOptions();
+    if (calendar) calendar.refetchEvents();
   }
 
   function switchScheduleType(type) {
@@ -1022,11 +1057,13 @@
 
     document.getElementById('currentUnassignedDbId').value = data.id;
     document.getElementById('modalBranch').value = data.branch;
+    updateRoomOptionsForModal();
+
     document.getElementById('modalStudentName').value = data.name;
     if(data.phone) document.getElementById('modalPhone').value = data.phone;
     if (document.getElementById('modalCoachName')) document.getElementById('modalCoachName').value = data.coach || '연습실';
     document.getElementById('modalSubject').value = data.subject || '1시간 대여';
-    if (document.getElementById('modalRoomName')) document.getElementById('modalRoomName').value = data.room || '연습실';
+    if (document.getElementById('modalRoomName')) document.getElementById('modalRoomName').value = data.room || 'ROOM 1';
     calculateEndTime();
 
     alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
@@ -1049,7 +1086,6 @@
       height: '700px',
       displayEventTime: false,
 
-      // 날짜 헤더 이미지 형태 반영 (예: 8. 24. (월))
       dayHeaderContent: function(arg) {
         const d = arg.date;
         const month = d.getMonth() + 1;
@@ -1115,20 +1151,13 @@
             });
           }
 
-          // 순번 부여
           filteredData.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
           const events = filteredData.map((item, index) => {
             const isUnassigned = !item.student_name || item.student_name.includes('미정');
             
-            let roomNum = item.room_name || '';
-            if (roomNum.includes('ROOM')) {
-              roomNum = roomNum.replace('ROOM', '').trim();
-            }
-
             let displayTitle = '';
             let eventBgColor = coachMap[item.coach_name] || '#5046e5';
-
             const seqNum = index + 1;
 
             if (currentScheduleType === 'practice') {
@@ -1162,7 +1191,6 @@
         }
       },
 
-      // 이미지와 동일하게 텍스트 가독성을 최상으로 맞춘 렌더링
       eventContent: function(arg) {
         return {
           html: `<div style="font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
@@ -1175,10 +1203,6 @@
     });
 
     calendar.render();
-
-    document.getElementById('branchSelect').addEventListener('change', () => calendar.refetchEvents());
-    document.getElementById('roomSelect').addEventListener('change', () => calendar.refetchEvents());
-    document.getElementById('coachFilter').addEventListener('change', () => calendar.refetchEvents());
   }
 
   async function loadCoachesData() {
@@ -1400,6 +1424,9 @@
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 1;
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
+    
+    updateRoomOptionsForModal();
+
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     
     if (type !== 'practice' && document.getElementById('modalCoachName')) {
@@ -1409,7 +1436,7 @@
     document.getElementById('modalSubject').value = scheduleData.subject || (type === 'practice' ? '1시간 대여' : (type === 'consulting' ? '상담' : '스타일'));
     
     if (document.getElementById('modalRoomName')) {
-      document.getElementById('modalRoomName').value = scheduleData.room_name || '연습실';
+      document.getElementById('modalRoomName').value = scheduleData.room_name || 'ROOM 1';
     }
     
     if (type === 'consulting' || type === 'practice') {
