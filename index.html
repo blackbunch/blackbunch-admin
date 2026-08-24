@@ -121,25 +121,7 @@
       table-layout: fixed !important;
     }
     .fc-timegrid-axis {
-      width: 50px !important;
-    }
-    .fc-timegrid-slot {
-      height: 50px !important;
-    }
-
-    .fc-scroller-harness,
-    .fc-scroller {
-      overflow: hidden !important;
-      -webkit-overflow-scrolling: touch;
-    }
-    .fc-scroller::-webkit-scrollbar {
-      display: none !important;
-      width: 0 !important;
-      height: 0 !important;
-    }
-    .fc-scroller {
-      scrollbar-width: none !important;
-      -ms-overflow-style: none !important;
+      width: 60px !important;
     }
 
     .fc-timegrid-slots tr:nth-child(even) td {
@@ -166,8 +148,9 @@
     }
 
     .fc-timegrid-slot-label-cushion {
-      color: #71717a;
-      font-size: 0.75rem;
+      color: #a0a5b5;
+      font-size: 0.78rem;
+      font-weight: 500;
     }
 
     .fc-button-primary {
@@ -195,34 +178,47 @@
       color: #f8fafc;
     }
 
-    /* === [수정] 겹치는 스케줄이 모두 세로로 쌓여 보이도록 절대 위치 해제 === */
-    .fc-timegrid-event-harness {
-      position: static !important;
-      width: 100% !important;
-      left: 0 !important;
-      right: 0 !important;
-      margin-bottom: 2px !important;
-    }
-    
-    .fc-timegrid-event {
-      position: relative !important;
-      width: 100% !important;
-      height: auto !important;
-      min-height: 28px !important;
-      margin: 1px 0 !important;
-      border-radius: 4px;
-      border: none !important;
-      padding: 3px 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      font-size: 0.78rem;
-      word-break: break-all;
+    /* === [수정] 일정 높이 고정 및 세로 나열 CSS 설정 === */
+    .fc-timegrid-slot, 
+    .fc-timegrid-slot-lane, 
+    .fc-timegrid-cols tr {
+      height: 48px !important;
+      max-height: 48px !important;
     }
 
     .fc-timegrid-col-events {
       display: flex !important;
       flex-direction: column !important;
+      gap: 2px;
+    }
+
+    .fc-timegrid-event-harness {
       position: relative !important;
-      margin: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      margin-bottom: 2px !important;
+    }
+
+    .fc-timegrid-event {
+      position: relative !important;
+      border-radius: 6px !important;
+      padding: 2px 4px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15) !important;
+      width: 100% !important;
+      min-height: 20px !important;
+    }
+    
+    .fc-event-main {
+      padding: 2px 3px !important;
+      font-size: 0.72rem;
+      line-height: 1.2;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      word-break: break-all;
     }
 
     .fc-event-unassigned {
@@ -324,14 +320,17 @@
       }
 
       #calendar {
-        max-height: 60vh;
+        max-height: 65vh;
         min-height: 400px;
       }
-      .fc-timegrid-slot {
+      .fc-timegrid-slot,
+      .fc-timegrid-slot-lane,
+      .fc-timegrid-cols tr {
         height: 40px !important;
+        max-height: 40px !important;
       }
       .fc-timegrid-axis {
-        width: 40px !important;
+        width: 45px !important;
       }
       .fc-timegrid-slot-label-cushion {
         font-size: 0.65rem !important;
@@ -342,17 +341,9 @@
       .fc-col-header-cell-cushion {
         font-size: 0.75rem !important;
       }
-      .fc-event {
-        font-size: 0.7rem !important;
-        padding: 2px 4px !important;
-      }
-      .fc-daygrid-day-number {
-        font-size: 0.75rem !important;
-        padding: 2px 4px !important;
-      }
-      .unassigned-container {
-        padding: 12px;
-        margin-bottom: 12px;
+      .fc-event-main {
+        font-size: 0.65rem !important;
+        padding: 1px 2px !important;
       }
     }
   </style>
@@ -1025,13 +1016,13 @@
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
-      expandRows: true,
+      expandRows: false,
       height: 'auto',
-      aspectRatio: isMobile ? 0.8 : 1.35,
 
-      /* === [수정] 겹치는 스케줄이 세로 순서대로 그대로 나열되도록 설정 === */
-      eventOverlap: true,
+      /* === [수정] 동일 시간대 일정 세로 정렬 설정 === */
+      eventOverlap: false,
       slotEventOverlap: false,
+      eventOrder: 'start,title',
 
       buttonText: {
         today: '오늘',
