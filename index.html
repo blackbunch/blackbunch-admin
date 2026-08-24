@@ -401,7 +401,7 @@
             <!-- 동적 구성 -->
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">희망 룸</label>
           <select id="unRoomName" class="form-select form-select-sm">
             <option value="ROOM 1">ROOM 1</option>
@@ -431,7 +431,7 @@
           <option value="다산점">다산점</option>
         </select>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3 lesson-only-field">
         <label for="roomSelect" class="form-label fw-bold">🚪 룸/연습실 필터</label>
         <select id="roomSelect" class="form-select">
           <option value="ALL" selected>전체 룸 보기</option>
@@ -515,9 +515,9 @@
             </select>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-3 lesson-only-field" id="roomSelectGroup">
             <label class="form-label">방 번호(룸 / 연습실)</label>
-            <select id="modalRoomName" class="form-select" required>
+            <select id="modalRoomName" class="form-select">
               <option value="ROOM 1">ROOM 1</option>
               <option value="ROOM 2">ROOM 2</option>
               <option value="ROOM 3">ROOM 3</option>
@@ -878,7 +878,7 @@
     const coach = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('unCoachName').value;
     
     const subject = document.getElementById('unSubject').value;
-    const room = document.getElementById('unRoomName').value;
+    const room = currentScheduleType === 'consulting' ? '상담실' : (document.getElementById('unRoomName')?.value || 'ROOM 1');
 
     const sessionEl = document.getElementById('unSessions');
     const total_sessions = currentScheduleType === 'consulting' ? 1 : (sessionEl ? parseInt(sessionEl.value, 10) : 4);
@@ -959,7 +959,7 @@
               <strong class="text-white">${s.name}</strong> 
               ${s.phone ? `<span class="text-secondary">(${s.phone})</span>` : ''}
               ${currentScheduleType === 'lesson' ? `<span class="text-warning fw-bold">[진행: ${current} / ${total}회]</span>` : `<span class="badge ${s.subject==='체험'?'bg-warning text-dark':'bg-info'} ms-1">${s.subject || '상담'}</span>`}
-              <span class="text-secondary">(${s.subject} | ${s.room})</span>
+              ${currentScheduleType === 'lesson' ? `<span class="text-secondary">(${s.subject} | ${s.room})</span>` : `<span class="text-secondary">(${s.subject})</span>`}
             </div>
             <div>
               <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>
@@ -1004,7 +1004,7 @@
     if(data.phone) document.getElementById('modalPhone').value = data.phone;
     document.getElementById('modalCoachName').value = data.coach;
     document.getElementById('modalSubject').value = data.subject || (currentScheduleType === 'consulting' ? '상담' : '스타일');
-    document.getElementById('modalRoomName').value = data.room;
+    if (document.getElementById('modalRoomName')) document.getElementById('modalRoomName').value = data.room || 'ROOM 1';
     calculateEndTime();
 
     alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
@@ -1040,8 +1040,8 @@
       slotMinTime: '10:00:00',
       slotMaxTime: '24:00:00',
       allDaySlot: false,
-      slotDuration: '00:10:00', // 10분 단위 그리드
-      slotLabelInterval: '00:30:00', // 30분 간격으로 시간 라벨표시
+      slotDuration: '00:10:00',
+      slotLabelInterval: '00:30:00',
       
       events: async function(fetchInfo, successCallback, failureCallback) {
         try {
@@ -1051,7 +1051,9 @@
 
           let query = sbClient.from('schedules').select('*').eq('branch', selectedBranch);
 
-          if (selectedRoom !== 'ALL') query = query.eq('room_name', selectedRoom);
+          if (currentScheduleType === 'lesson' && selectedRoom !== 'ALL') {
+            query = query.eq('room_name', selectedRoom);
+          }
           if (selectedCoach !== 'ALL') query = query.eq('coach_name', selectedCoach);
 
           const { data: schedulesData, error } = await query;
@@ -1089,8 +1091,10 @@
             let roomNum = item.room_name || '';
             if (roomNum.includes('ROOM')) {
               roomNum = roomNum.replace('ROOM', '').trim() + '.';
-            } else if (roomNum) {
+            } else if (roomNum && roomNum !== '상담실') {
               roomNum = roomNum + '.';
+            } else {
+              roomNum = '';
             }
 
             let displayTitle = '';
@@ -1098,12 +1102,12 @@
 
             if (currentScheduleType === 'consulting') {
               const statusTag = item.consult_status ? `[${item.consult_status}]` : `[${item.subject || '상담'}]`;
-              displayTitle = `${roomNum} ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
+              displayTitle = `${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
               
               if (item.consult_status === '취소') {
                 eventBgColor = '#6b7280';
               } else {
-                eventBgColor = item.subject === '체험' ? '#f59e0b' : '#ec4899'; // 체험 레슨 주황색, 상담 핑크색
+                eventBgColor = item.subject === '체험' ? '#f59e0b' : '#ec4899';
               }
             } else {
               const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
@@ -1309,6 +1313,10 @@
     document.getElementById('consultMemoGroup').classList.toggle('d-none', !isConsulting);
     document.getElementById('repeatSection').classList.toggle('d-none', isConsulting);
 
+    document.querySelectorAll('.lesson-only-field').forEach(el => {
+      el.style.display = isConsulting ? 'none' : 'block';
+    });
+
     updateSubjectOptions();
   }
 
@@ -1349,7 +1357,10 @@
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
     document.getElementById('modalSubject').value = scheduleData.subject || (isConsulting ? '상담' : '스타일');
-    document.getElementById('modalRoomName').value = scheduleData.room_name;
+    
+    if (!isConsulting && document.getElementById('modalRoomName')) {
+      document.getElementById('modalRoomName').value = scheduleData.room_name;
+    }
     
     if (isConsulting) {
       document.getElementById('modalPhone').value = scheduleData.phone || '';
@@ -1390,7 +1401,7 @@
     const coach_name = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('modalCoachName').value;
     
     const subject = document.getElementById('modalSubject').value;
-    const room_name = document.getElementById('modalRoomName').value;
+    const room_name = currentScheduleType === 'consulting' ? '상담실' : (document.getElementById('modalRoomName')?.value || 'ROOM 1');
     
     const selectedDate = document.getElementById('modalDate').value;
     const startTime = document.getElementById('modalStartTime').value;
