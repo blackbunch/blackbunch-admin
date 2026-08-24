@@ -124,7 +124,7 @@
       width: 50px !important;
     }
     .fc-timegrid-slot {
-      height: 44px !important;
+      height: 50px !important;
     }
 
     .fc-scroller-harness,
@@ -195,34 +195,34 @@
       color: #f8fafc;
     }
 
-    .fc-event {
-      border-radius: 6px;
+    /* === [수정] 겹치는 스케줄이 모두 세로로 쌓여 보이도록 절대 위치 해제 === */
+    .fc-timegrid-event-harness {
+      position: static !important;
+      width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-bottom: 2px !important;
+    }
+    
+    .fc-timegrid-event {
+      position: relative !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 28px !important;
+      margin: 1px 0 !important;
+      border-radius: 4px;
       border: none !important;
-      padding: 4px 6px;
+      padding: 3px 6px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       word-break: break-all;
     }
 
-    /* === [수정된 부분] 중복 일정을 세로(위아래)로 나열하기 위한 스타일 === */
-    .fc-timegrid-event-harness {
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      margin-bottom: 2px !important;
-    }
-    .fc-timegrid-event-harness > .fc-timegrid-event {
-      position: relative !important;
-      top: auto !important;
-      left: auto !important;
-      right: auto !important;
-      bottom: auto !important;
-      height: auto !important;
-      min-height: 40px !important;
-    }
     .fc-timegrid-col-events {
       display: flex !important;
       flex-direction: column !important;
+      position: relative !important;
+      margin: 0 !important;
     }
 
     .fc-event-unassigned {
@@ -328,7 +328,7 @@
         min-height: 400px;
       }
       .fc-timegrid-slot {
-        height: 32px !important;
+        height: 40px !important;
       }
       .fc-timegrid-axis {
         width: 40px !important;
@@ -344,7 +344,7 @@
       }
       .fc-event {
         font-size: 0.7rem !important;
-        padding: 2px 3px !important;
+        padding: 2px 4px !important;
       }
       .fc-daygrid-day-number {
         font-size: 0.75rem !important;
@@ -721,11 +721,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // 1. Supabase 접속 URL 및 발급받은 Anon Key
   const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_6oV8ES_Cz6BzemiBkDBCLA_wl_g_GQP';
 
-  // 2. Supabase 클라이언트 생성
   const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let calendar;
@@ -845,7 +843,6 @@
     }
   }
 
-  /* --- [Supabase DB 연동: 미정 레슨생 관리 & 회차 처리] --- */
   function toggleUnassignedForm() {
     const form = document.getElementById('unassignedForm');
     form.classList.toggle('d-none');
@@ -1032,7 +1029,7 @@
       height: 'auto',
       aspectRatio: isMobile ? 0.8 : 1.35,
 
-      // === [수정된 부분] 가로 분할 방지 및 세로 스택 정렬 옵션 ===
+      /* === [수정] 겹치는 스케줄이 세로 순서대로 그대로 나열되도록 설정 === */
       eventOverlap: true,
       slotEventOverlap: false,
 
@@ -1393,35 +1390,6 @@
 
       const start_time = `${currDateStr}T${startTime}:00+09:00`;
       const end_time = `${currDateStr}T${endTime}:00+09:00`;
-
-      const dayStart = `${currDateStr}T00:00:00+09:00`;
-      const dayEnd = `${currDateStr}T23:59:59+09:00`;
-
-      const { data: existingSchedules, error: checkError } = await sbClient.from('schedules')
-        .select('*')
-        .eq('branch', branch)
-        .eq('room_name', room_name)
-        .gte('end_time', dayStart)
-        .lte('start_time', dayEnd);
-
-      if (checkError) {
-        alert(`${currDateStr} 중복 예약 확인 중 오류가 발생했습니다: ` + checkError.message);
-        return;
-      }
-
-      const newStart = new Date(start_time).getTime();
-      const newEnd = new Date(end_time).getTime();
-
-      const isOverlap = (existingSchedules || []).some(item => {
-        const existStart = new Date(item.start_time).getTime();
-        const existEnd = new Date(item.end_time).getTime();
-        return (newStart < existEnd && newEnd > existStart);
-      });
-
-      if (isOverlap) {
-        alert(`[예약 불가] ${currDateStr} 날짜에 이미 ${branch} ${room_name} 예약이 존재합니다.`);
-        return;
-      }
 
       schedulesToInsert.push({ branch, student_name, coach_name, subject, room_name, start_time, end_time });
     }
