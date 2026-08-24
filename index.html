@@ -196,7 +196,6 @@
       color: #f8fafc;
     }
 
-    /* 가로 네모 정렬 스타일 */
     .fc-timegrid-event-harness {
       left: 2px !important;
       right: 2px !important;
@@ -407,14 +406,7 @@
         </div>
         <div class="col-6 col-md-2 room-field">
           <label class="form-label small">이용 룸</label>
-          <select id="unRoomName" class="form-select form-select-sm">
-            <option value="ROOM 1">ROOM 1</option>
-            <option value="ROOM 2">ROOM 2</option>
-            <option value="ROOM 3">ROOM 3</option>
-            <option value="ROOM 4">ROOM 4</option>
-            <option value="ROOM 5">ROOM 5</option>
-            <option value="연습실" selected>연습실</option>
-          </select>
+          <select id="unRoomName" class="form-select form-select-sm"></select>
         </div>
         <div class="col-12 text-end mt-2">
           <button class="btn btn-sm btn-warning" style="border-radius:6px;" onclick="addUnassignedStudent()">미정 목록에 저장</button>
@@ -437,15 +429,7 @@
       </div>
       <div class="col-6 col-md-3 room-field">
         <label for="roomSelect" class="form-label fw-bold">🚪 룸/연습실 필터</label>
-        <select id="roomSelect" class="form-select">
-          <option value="ALL" selected>전체 룸 보기</option>
-          <option value="ROOM 1">ROOM 1</option>
-          <option value="ROOM 2">ROOM 2</option>
-          <option value="ROOM 3">ROOM 3</option>
-          <option value="ROOM 4">ROOM 4</option>
-          <option value="ROOM 5">ROOM 5</option>
-          <option value="연습실">연습실</option>
-        </select>
+        <select id="roomSelect" class="form-select"></select>
       </div>
       <div class="col-6 col-md-3 coach-field">
         <label for="coachFilter" class="form-label fw-bold">🎤 코치 필터</label>
@@ -518,14 +502,7 @@
 
           <div class="mb-3 room-field" id="roomSelectGroup">
             <label class="form-label">방 번호(룸 / 연습실)</label>
-            <select id="modalRoomName" class="form-select">
-              <option value="ROOM 1">ROOM 1</option>
-              <option value="ROOM 2">ROOM 2</option>
-              <option value="ROOM 3">ROOM 3</option>
-              <option value="ROOM 4">ROOM 4</option>
-              <option value="ROOM 5">ROOM 5</option>
-              <option value="연습실" selected>연습실</option>
-            </select>
+            <select id="modalRoomName" class="form-select"></select>
           </div>
 
           <div class="mb-3">
@@ -633,7 +610,7 @@
             </div>
             <div class="col-12 col-md-3 mt-2">
               <label class="form-label small fw-bold">캘린더 색상</label>
-              <input type="color" id="newCoachColor" class="form-control form-control-color w-100" value="#4f46e5">
+              <input type="color" id="newCoachColor" class="form-control form-color-color w-100" value="#4f46e5">
             </div>
             <div class="col-12 text-end mt-3">
               <button type="button" id="saveCoachBtn" class="btn btn-sm btn-success px-4" style="border-radius:8px;" onclick="registerNewCoach()">코치 추가</button>
@@ -691,6 +668,40 @@
     '3시간 대여': 180
   };
 
+  function updateRoomOptions() {
+    const filterRoomSelect = document.getElementById('roomSelect');
+    const modalRoomSelect = document.getElementById('modalRoomName');
+    const unRoomSelect = document.getElementById('unRoomName');
+
+    let filterOptions = '';
+    let itemOptions = '';
+
+    if (currentScheduleType === 'practice') {
+      filterOptions = `<option value="연습실" selected>연습실</option>`;
+      itemOptions = `<option value="연습실" selected>연습실</option>`;
+    } else {
+      filterOptions = `
+        <option value="ALL" selected>전체 룸 보기</option>
+        <option value="ROOM 1">ROOM 1</option>
+        <option value="ROOM 2">ROOM 2</option>
+        <option value="ROOM 3">ROOM 3</option>
+        <option value="ROOM 4">ROOM 4</option>
+        <option value="ROOM 5">ROOM 5</option>
+      `;
+      itemOptions = `
+        <option value="ROOM 1" selected>ROOM 1</option>
+        <option value="ROOM 2">ROOM 2</option>
+        <option value="ROOM 3">ROOM 3</option>
+        <option value="ROOM 4">ROOM 4</option>
+        <option value="ROOM 5">ROOM 5</option>
+      `;
+    }
+
+    if (filterRoomSelect) filterRoomSelect.innerHTML = filterOptions;
+    if (modalRoomSelect) modalRoomSelect.innerHTML = itemOptions;
+    if (unRoomSelect) unRoomSelect.innerHTML = itemOptions;
+  }
+
   function switchScheduleType(type) {
     currentScheduleType = type;
     
@@ -720,7 +731,6 @@
       type === 'practice' ? '+ 연습실 이용자 등록' :
       '+ 미정 레슨생 등록';
 
-    // UI 필드 보이기/숨기기 조정
     document.querySelectorAll('.lesson-only-field').forEach(el => {
       el.style.display = (type === 'lesson') ? 'block' : 'none';
     });
@@ -737,6 +747,7 @@
       el.style.display = (type === 'consulting') ? 'none' : 'block';
     });
 
+    updateRoomOptions();
     updateSubjectOptions();
     loadUnassignedStudents();
     if (calendar) calendar.refetchEvents();
@@ -836,6 +847,7 @@
 
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
+    updateRoomOptions();
     updateSubjectOptions();
     checkAuthStatus();
   });
@@ -1147,7 +1159,6 @@
         }
       },
 
-      /* 가로 형태의 세로 차곡차곡 쌓기 스크립트 */
       eventDidMount: function(info) {
         const el = info.el;
         const eventObj = info.event;
@@ -1364,6 +1375,7 @@
       el.style.display = (type === 'lesson') ? 'block' : 'none';
     });
 
+    updateRoomOptions();
     updateSubjectOptions();
   }
 
