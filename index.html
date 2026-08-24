@@ -397,9 +397,7 @@
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label small">과목 / 구분</label>
-          <select id="unSubject" class="form-select form-select-sm">
-            <!-- 동적 구성 -->
-          </select>
+          <select id="unSubject" class="form-select form-select-sm"></select>
         </div>
         <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">희망 룸</label>
@@ -500,9 +498,7 @@
 
           <div class="mb-3">
             <label class="form-label">과목 / 레슨 / 상담 구분</label>
-            <select id="modalSubject" class="form-select" required onchange="calculateEndTime()">
-              <!-- 동적 생성 -->
-            </select>
+            <select id="modalSubject" class="form-select" required onchange="calculateEndTime()"></select>
           </div>
 
           <div id="consultStatusGroup" class="mb-3 d-none">
@@ -677,7 +673,6 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson'; // 'lesson' or 'consulting'
 
-  // 과목/구분별 소요시간 매핑 (상담: 15분, 체험레슨: 30분)
   const DURATION_MAP = {
     '스타일': 50,
     '보컬 메이킹': 50,
@@ -794,7 +789,6 @@
     }
   }
 
-  // 10분 간격 시간 선택 옵션 생성
   function populateTimeOptions() {
     const startSelect = document.getElementById('modalStartTime');
     if (!startSelect) return;
