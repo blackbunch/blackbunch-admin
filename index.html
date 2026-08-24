@@ -189,28 +189,32 @@
       color: #f8fafc;
     }
 
-    /* 이벤트 네모 박스 스타일 수정 (가로 나란히 배치 대응) */
+    /* --- 세로 폭이 좁은 네모들이 위아래로 붙어서 쌓이도록 스타일 재정의 --- */
+    .fc-timegrid-event-harness {
+      left: 2px !important;
+      right: 2px !important;
+      width: calc(100% - 4px) !important;
+    }
+
     .fc-timegrid-event {
       border-radius: 6px !important;
-      padding: 2px 4px !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      padding: 2px 6px !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
       border: 1px solid rgba(255,255,255,0.2) !important;
-      transition: transform 0.15s ease, z-index 0.15s ease;
+      display: flex !important;
+      align-items: center !important;
+      cursor: pointer;
     }
-    
-    .fc-timegrid-event:hover {
-      z-index: 9999 !important;
-      transform: scale(1.03);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
-    }
-    
+
     .fc-event-main {
-      padding: 2px 3px !important;
+      padding: 0 !important;
       font-size: 0.75rem;
       font-weight: 600;
-      line-height: 1.25;
-      overflow: hidden;
-      word-break: break-all;
+      line-height: 1.2;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      width: 100%;
     }
 
     .fc-event-time { display: none !important; }
@@ -292,7 +296,7 @@
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 4px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.75rem !important; }
-      .fc-event-main { font-size: 0.68rem !important; padding: 1px 2px !important; }
+      .fc-event-main { font-size: 0.68rem !important; }
     }
   </style>
 </head>
@@ -1013,10 +1017,6 @@
       height: 'auto',
 
       displayEventTime: false,
-      
-      /* 동시 시간대 이벤트를 가로로 정돈하여 배치하기 위한 옵션 */
-      eventOverlap: true,
-      slotEventOverlap: true,
 
       buttonText: { today: '오늘', month: '월', week: '주', day: '일' },
       headerToolbar: {
@@ -1117,6 +1117,38 @@
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
+        }
+      },
+
+      /* --- 렌더링 시 세로 폭 얇은 가로 네모 형태로 위에서부터 착착 붙이기 --- */
+      eventDidMount: function(info) {
+        const el = info.el;
+        const eventObj = info.event;
+        const allEvents = calendar.getEvents();
+
+        // 동일한 시작 시간과 날짜를 가진 이벤트들을 찾아 몇 번째인지 순서(index) 계산
+        const sameStartEvents = allEvents.filter(e => {
+          return e.start && eventObj.start && 
+                 e.start.getTime() === eventObj.start.getTime();
+        }).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+        const index = sameStartEvents.findIndex(e => e.id === eventObj.id);
+
+        if (index >= 0) {
+          const harness = el.closest('.fc-timegrid-event-harness');
+          if (harness) {
+            harness.style.left = '2px';
+            harness.style.right = '2px';
+            harness.style.width = 'calc(100% - 4px)';
+          }
+
+          const boxHeight = 28; // 각 네모 박스의 세로 높이 (px)
+          const gap = 4;        // 박스 사이 간격 (px)
+
+          el.style.top = `${index * (boxHeight + gap)}px`;
+          el.style.height = `${boxHeight}px`;
+          el.style.position = 'absolute';
+          el.style.width = '100%';
         }
       },
 
