@@ -177,7 +177,6 @@
       color: #f8fafc;
     }
 
-    /* === [수정] 카드 내부 시간 제거 및 쌓임 위치 최적화 === */
     .fc-timegrid-event-harness {
       position: absolute !important;
       left: 0 !important;
@@ -210,7 +209,6 @@
       text-overflow: ellipsis;
     }
 
-    /* 기본 시간 표시 완전히 숨김 */
     .fc-event-time {
       display: none !important;
     }
@@ -570,16 +568,20 @@
             </div>
           </div>
 
+          <!-- 반복 설정 ON/OFF 토글 구역 -->
           <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3">
-            <div class="form-check form-switch mb-2">
+            <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" id="repeatScheduleCheck" onchange="toggleRepeatOptions()">
               <label class="form-check-label fw-bold text-warning small" for="repeatScheduleCheck">
-                🔁 이후 주차 스케줄에도 자동 추가 (회차 유지)
+                🔁 주마다 일정 자동 갱신/반복 (ON/OFF)
               </label>
             </div>
-            <div id="repeatOptionsGroup" class="d-none mt-2">
+            <div id="repeatOptionsGroup" class="d-none mt-3 border-top border-secondary pt-2">
               <label class="form-label small text-secondary">등록할 연속 주차(총 회차 수):</label>
               <select id="repeatWeeksSelect" class="form-select form-select-sm">
+                <option value="1">1주 (단일)</option>
+                <option value="2">2주 (2회차)</option>
+                <option value="3">3주 (3회차)</option>
                 <option value="4" selected>4주 (4회차)</option>
                 <option value="8">8주 (8회차)</option>
                 <option value="12">12주 (12회차)</option>
@@ -588,7 +590,8 @@
                 <option value="24">24주 (24회차)</option>
               </select>
               <p class="text-secondary small mb-0 mt-1" style="font-size:0.75rem;">
-                * 지정된 시작 날짜부터 매주 같은 요일·시간에 일정이 자동으로 배치됩니다.
+                * ON 설정 시 지정된 요일/시간에 맞춰 설정한 주차만큼 자동으로 배치됩니다.<br>
+                * OFF 설정 시 위에서 지정한 단일 날짜에 1회만 등록됩니다.
               </p>
             </div>
           </div>
@@ -977,7 +980,7 @@
       repeatWeeks.value = remaining > 0 ? remaining : 4;
     }
 
-    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n원하시는 요일(날짜)과 시작 시간을 선택한 후 [스케줄 추가]를 클릭해 주세요.`);
+    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n\n주마다 갱신(반복) 옵션이 기본 ON으로 설정되어 있습니다. 1회만 등록하시려면 스위치를 끄세요.`);
   }
 
   function initCalendar() {
@@ -997,10 +1000,7 @@
       expandRows: true,
       height: 'auto',
 
-      /* 시간 텍스트 숨기기 추가 */
       displayEventTime: false,
-
-      /* 동일 시간대 허용 및 세로 포개짐 처리 */
       eventOverlap: true,
       slotEventOverlap: false,
 
@@ -1090,7 +1090,6 @@
         }
       },
 
-      /* 순서대로 아래로 쌓이도록 오프셋 계산 (시간 제거에 맞춰 22px 간격으로 최적화) */
       eventDidMount: function(info) {
         const harness = info.el.closest('.fc-timegrid-event-harness');
         if (harness && harness.parentElement) {
@@ -1276,6 +1275,8 @@
     calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
+    
+    /* 기본적으로 반복 옵션 OFF 상태로 초기화 */
     document.getElementById('repeatScheduleCheck').checked = false;
     toggleRepeatOptions();
 
@@ -1331,7 +1332,7 @@
     const endTime = document.getElementById('modalEndTime').value;
 
     const isRepeat = document.getElementById('repeatScheduleCheck').checked;
-    const repeatWeeks = parseInt(document.getElementById('repeatWeeksSelect').value, 10) || 4;
+    const repeatWeeks = parseInt(document.getElementById('repeatWeeksSelect').value, 10) || 1;
 
     if (!student_name || !coach_name || !selectedDate || !startTime || !endTime) {
       alert("학생 이름, 코치, 날짜 및 시간을 정확히 입력해 주세요.");
@@ -1355,6 +1356,7 @@
       }
     }
 
+    // 기존 스케줄 단일 수정일 경우
     if (id) {
       const start_time = `${selectedDate}T${startTime}:00+09:00`;
       const end_time = `${selectedDate}T${endTime}:00+09:00`;
@@ -1372,6 +1374,7 @@
       return;
     }
 
+    // 반복 옵션이 ON일 때는 선택 주차 수만큼, OFF일 때는 1회만 등록
     const weeksToCreate = isRepeat ? repeatWeeks : 1;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
@@ -1409,7 +1412,7 @@
         await loadUnassignedStudents();
       }
 
-      alert(`${schedulesToInsert.length}회차의 스케줄이 성공적으로 등록되었습니다.`);
+      alert(isRepeat ? `${schedulesToInsert.length}회차의 반복 스케줄이 성공적으로 등록되었습니다.` : '1회성 스케줄이 등록되었습니다.');
 
       const modalEl = document.getElementById('scheduleModal');
       const modalInstance = bootstrap.Modal.getInstance(modalEl);
