@@ -189,36 +189,28 @@
       color: #f8fafc;
     }
 
-    .fc-timegrid-event-harness {
-      position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-    }
+    /* 이벤트 네모 박스 스타일 수정 (가로 나란히 배치 대응) */
     .fc-timegrid-event {
       border-radius: 6px !important;
       padding: 2px 4px !important;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.25) !important;
-      width: 100% !important;
-      min-height: 24px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.2) !important;
       transition: transform 0.15s ease, z-index 0.15s ease;
     }
     
     .fc-timegrid-event:hover {
       z-index: 9999 !important;
-      transform: scale(1.02);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.8);
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
     }
     
     .fc-event-main {
-      padding: 1px 3px !important;
+      padding: 2px 3px !important;
       font-size: 0.75rem;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.25;
       overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      word-break: break-all;
     }
 
     .fc-event-time { display: none !important; }
@@ -458,7 +450,6 @@
   <div id="calendar"></div>
 </div>
 
-<!-- 일정 추가/수정 모달 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -671,7 +662,7 @@
   let calendar;
   let coachMap = {};
   let unassignedStudents = [];
-  let currentScheduleType = 'lesson'; // 'lesson' or 'consulting'
+  let currentScheduleType = 'lesson';
 
   const DURATION_MAP = {
     '스타일': 50,
@@ -1022,8 +1013,10 @@
       height: 'auto',
 
       displayEventTime: false,
+      
+      /* 동시 시간대 이벤트를 가로로 정돈하여 배치하기 위한 옵션 */
       eventOverlap: true,
-      slotEventOverlap: false,
+      slotEventOverlap: true,
 
       buttonText: { today: '오늘', month: '월', week: '주', day: '일' },
       headerToolbar: {
@@ -1124,19 +1117,6 @@
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
-        }
-      },
-
-      eventDidMount: function(info) {
-        const harness = info.el.closest('.fc-timegrid-event-harness');
-        if (harness && harness.parentElement) {
-          const siblings = Array.from(harness.parentElement.children);
-          const index = siblings.indexOf(harness);
-
-          if (index > 0) {
-            info.el.style.marginTop = `${index * 22}px`;
-            info.el.style.zIndex = index + 1;
-          }
         }
       },
 
