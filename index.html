@@ -17,9 +17,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    *:focus, *:active {
-      outline: none !important;
-    }
+    *:focus, *:active { outline: none !important; }
 
     body {
       padding: 20px 12px;
@@ -46,6 +44,37 @@
       border-radius: 20px;
       box-shadow: 0 12px 32px rgba(0,0,0,0.4);
       border: 1px solid #282a36;
+    }
+
+    /* 상단 스케줄 타입 탭 스타일 */
+    .schedule-type-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid #2e3140;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .schedule-type-btn {
+      background-color: #21232d;
+      color: #a0a5b5;
+      border: 1px solid #2e3140;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .schedule-type-btn.active {
+      background-color: #4f46e5;
+      color: #ffffff;
+      border-color: #4f46e5;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .schedule-type-btn.consulting-tab.active {
+      background-color: #ec4899;
+      border-color: #ec4899;
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
     }
 
     .filter-section {
@@ -95,33 +124,21 @@
       border-color: #4338ca;
     }
 
-    #calendar {
-      margin-top: 15px;
-    }
-    .fc {
-      color: #e2e8f0;
-    }
-    .fc-theme-standard td, .fc-theme-standard th {
-      border-color: #262836 !important;
-    }
+    #calendar { margin-top: 15px; }
+    .fc { color: #e2e8f0; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #262836 !important; }
     .fc-theme-standard .fc-scrollgrid {
       border: 1px solid #262836 !important;
       border-radius: 12px;
       overflow: hidden;
     }
     
-    .fc-timegrid-cols table,
-    .fc-col-header table {
+    .fc-timegrid-cols table, .fc-col-header table {
       width: 100% !important;
       table-layout: fixed !important;
     }
-    .fc-timegrid-axis {
-      width: 60px !important;
-    }
-    
-    .fc-timegrid-slot {
-      height: 48px !important;
-    }
+    .fc-timegrid-axis { width: 60px !important; }
+    .fc-timegrid-slot { height: 48px !important; }
 
     .fc-timegrid-slots tr:nth-child(even) td {
       border-top-style: dashed !important;
@@ -139,12 +156,8 @@
       text-decoration: none !important;
     }
     
-    .fc .fc-day-today {
-      background-color: rgba(79, 70, 229, 0.08) !important;
-    }
-    .fc-day-today .fc-col-header-cell-cushion {
-      color: #818cf8 !important;
-    }
+    .fc .fc-day-today { background-color: rgba(79, 70, 229, 0.08) !important; }
+    .fc-day-today .fc-col-header-cell-cushion { color: #818cf8 !important; }
 
     .fc-timegrid-slot-label-cushion {
       color: #a0a5b5;
@@ -209,9 +222,7 @@
       text-overflow: ellipsis;
     }
 
-    .fc-event-time {
-      display: none !important;
-    }
+    .fc-event-time { display: none !important; }
 
     .fc-event-unassigned {
       background-color: #374151 !important;
@@ -253,12 +264,8 @@
       border: 1px solid #2e3140;
       border-radius: 16px;
     }
-    .modal-header, .modal-footer {
-      border-color: #2e3140;
-    }
-    .btn-close {
-      filter: invert(1);
-    }
+    .modal-header, .modal-footer { border-color: #2e3140; }
+    .btn-close { filter: invert(1); }
     
     .branch-checkbox-group {
       display: flex;
@@ -277,63 +284,24 @@
       border-color: #2e3140;
       color: #94a3b8;
     }
-    .table-dark-custom td {
-      border-color: #2e3140;
-    }
+    .table-dark-custom td { border-color: #2e3140; }
 
     @media (max-width: 768px) {
-      body {
-        padding: 8px 4px;
-      }
-      .main-container {
-        padding: 12px 8px;
-        border-radius: 12px;
-      }
-      .fc-toolbar {
-        flex-direction: column;
-        gap: 8px;
-      }
-      .fc-toolbar-title {
-        font-size: 0.95rem !important;
-      }
-      .fc-header-toolbar {
-        margin-bottom: 0.6rem !important;
-      }
-      .fc-button-primary {
-        padding: 4px 8px !important;
-        font-size: 0.75rem !important;
-      }
-      .filter-section {
-        padding: 10px;
-        margin-bottom: 12px;
-      }
-      .modal-dialog {
-        margin: 10px;
-      }
-
-      #calendar {
-        max-height: 65vh;
-        min-height: 400px;
-      }
-      .fc-timegrid-slot {
-        height: 40px !important;
-      }
-      .fc-timegrid-axis {
-        width: 45px !important;
-      }
-      .fc-timegrid-slot-label-cushion {
-        font-size: 0.65rem !important;
-      }
-      .fc-col-header-cell {
-        padding: 4px 0 !important;
-      }
-      .fc-col-header-cell-cushion {
-        font-size: 0.75rem !important;
-      }
-      .fc-event-main {
-        font-size: 0.68rem !important;
-        padding: 1px 2px !important;
-      }
+      body { padding: 8px 4px; }
+      .main-container { padding: 12px 8px; border-radius: 12px; }
+      .fc-toolbar { flex-direction: column; gap: 8px; }
+      .fc-toolbar-title { font-size: 0.95rem !important; }
+      .fc-header-toolbar { margin-bottom: 0.6rem !important; }
+      .fc-button-primary { padding: 4px 8px !important; font-size: 0.75rem !important; }
+      .filter-section { padding: 10px; margin-bottom: 12px; }
+      .modal-dialog { margin: 10px; }
+      #calendar { max-height: 65vh; min-height: 400px; }
+      .fc-timegrid-slot { height: 40px !important; }
+      .fc-timegrid-axis { width: 45px !important; }
+      .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
+      .fc-col-header-cell { padding: 4px 0 !important; }
+      .fc-col-header-cell-cushion { font-size: 0.75rem !important; }
+      .fc-event-main { font-size: 0.68rem !important; padding: 1px 2px !important; }
     }
   </style>
 </head>
@@ -369,10 +337,20 @@
     </div>
   </div>
 
+  <!-- 레슨 / 상담 스케줄 구분 탭 -->
+  <div class="schedule-type-nav">
+    <button id="tabLesson" class="schedule-type-btn active" onclick="switchScheduleType('lesson')">
+      🎵 레슨 스케줄
+    </button>
+    <button id="tabConsulting" class="schedule-type-btn consulting-tab" onclick="switchScheduleType('consulting')">
+      📋 상담 스케줄
+    </button>
+  </div>
+
   <div class="unassigned-container">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <div class="d-flex align-items-center gap-3">
-        <h6 class="fw-bold text-warning m-0">⏳ 1단계: 레슨생 정보 등록 (미정 목록)</h6>
+        <h6 id="unassignedTitle" class="fw-bold text-warning m-0">⏳ 1단계: 레슨생 정보 등록 (미정 목록)</h6>
         <div class="d-flex align-items-center gap-1">
           <label class="text-secondary small mb-0 text-nowrap" style="font-size: 0.8rem;">코치 필터:</label>
           <select id="unassignedCoachFilter" class="form-select form-select-sm py-0 px-2" style="font-size:0.8rem; height:28px;" onchange="renderUnassignedList()">
@@ -380,7 +358,7 @@
           </select>
         </div>
       </div>
-      <button class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
+      <button id="unassignedAddBtn" class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
     </div>
 
     <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
@@ -394,35 +372,20 @@
           </select>
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label small">수강생 이름</label>
+          <label id="unNameLabel" class="form-label small">수강생 이름</label>
           <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="학생 성함">
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">총 회차</label>
           <select id="unSessions" class="form-select form-select-sm">
             <option value="1">1회 (원데이)</option>
             <option value="2">2회</option>
             <option value="3">3회</option>
             <option value="4" selected>4회 (1개월 기본)</option>
-            <option value="5">5회</option>
-            <option value="6">6회</option>
-            <option value="7">7회</option>
             <option value="8">8회 (2개월)</option>
-            <option value="9">9회</option>
-            <option value="10">10회</option>
-            <option value="11">11회</option>
             <option value="12">12회 (3개월)</option>
-            <option value="13">13회</option>
-            <option value="14">14회</option>
-            <option value="15">15회</option>
             <option value="16">16회 (4개월)</option>
-            <option value="17">17회</option>
-            <option value="18">18회</option>
-            <option value="19">19회</option>
             <option value="20">20회 (5개월)</option>
-            <option value="21">21회</option>
-            <option value="22">22회</option>
-            <option value="23">23회</option>
             <option value="24">24회 (6개월)</option>
           </select>
         </div>
@@ -431,12 +394,13 @@
           <select id="unCoachName" class="form-select form-select-sm"></select>
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label small">과목</label>
+          <label class="form-label small">과목 / 내용</label>
           <select id="unSubject" class="form-select form-select-sm">
             <option value="스타일" selected>스타일</option>
             <option value="보컬 메이킹">보컬 메이킹</option>
             <option value="2:1 그룹">2:1 그룹</option>
             <option value="3:1 그룹">3:1 그룹</option>
+            <option value="상담">방문 상담</option>
           </select>
         </div>
         <div class="col-6 col-md-2">
@@ -489,7 +453,7 @@
       </div>
       <div class="col-6 col-md-3 pt-md-3">
         <button id="addScheduleBtn" class="btn btn-primary w-100" onclick="openAddModal()">
-          + 직접 일정 추가
+          + 일정 직접 추가
         </button>
       </div>
     </div>
@@ -498,6 +462,7 @@
   <div id="calendar"></div>
 </div>
 
+<!-- 일정 추가/수정 모달 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -521,14 +486,19 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">학생 이름</label>
-            <input type="text" id="modalStudentName" class="form-control" placeholder="학생 성함 입력" required>
+            <label id="modalNameLabel" class="form-label">이름</label>
+            <input type="text" id="modalStudentName" class="form-control" placeholder="성함 입력" required>
+          </div>
+
+          <!-- 상담 전용 필드: 연락처 -->
+          <div id="consultPhoneGroup" class="mb-3 d-none">
+            <label class="form-label">연락처</label>
+            <input type="text" id="modalPhone" class="form-control" placeholder="010-0000-0000">
           </div>
 
           <div class="mb-3">
             <label class="form-label">담당 코치</label>
-            <select id="modalCoachName" class="form-select" required>
-            </select>
+            <select id="modalCoachName" class="form-select" required></select>
           </div>
 
           <div class="mb-3">
@@ -538,6 +508,18 @@
               <option value="보컬 메이킹">보컬 메이킹 (50분)</option>
               <option value="2:1 그룹">2:1 그룹 (55분)</option>
               <option value="3:1 그룹">3:1 그룹 (90분)</option>
+              <option value="상담">방문 상담 (30분)</option>
+            </select>
+          </div>
+
+          <!-- 상담 전용 필드: 상담 진행 상태 -->
+          <div id="consultStatusGroup" class="mb-3 d-none">
+            <label class="form-label">상담 진행 상태</label>
+            <select id="modalConsultStatus" class="form-select">
+              <option value="예약완료" selected>📅 예약완료</option>
+              <option value="상담완료(등록)">✅ 상담완료 (등록 완료)</option>
+              <option value="상담완료(미등록)">💬 상담완료 (미등록)</option>
+              <option value="취소">❌ 취소</option>
             </select>
           </div>
 
@@ -554,7 +536,7 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">시작 날짜 (1회차 기준 요일)</label>
+            <label class="form-label">날짜</label>
             <input type="date" id="modalDate" class="form-control" required>
           </div>
 
@@ -569,7 +551,13 @@
             </div>
           </div>
 
-          <!-- 반복 설정 ON/OFF 토글 구역 -->
+          <!-- 상담 전용 필드: 특이사항 및 유입경로 -->
+          <div id="consultMemoGroup" class="mb-3 d-none">
+            <label class="form-label">상담 특이사항 / 유입 경로</label>
+            <textarea id="modalMemo" class="form-control" rows="2" placeholder="인스타 문의, 지인 소개, 특정 문의사항 등"></textarea>
+          </div>
+
+          <!-- 레슨 전용: 반복 설정 ON/OFF 토글 구역 -->
           <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" id="repeatScheduleCheck" onchange="toggleRepeatOptions()">
@@ -590,10 +578,6 @@
                 <option value="20">20주 (20회차)</option>
                 <option value="24">24주 (24회차)</option>
               </select>
-              <p class="text-secondary small mb-0 mt-1" style="font-size:0.75rem;">
-                * ON 설정 시 지정된 요일/시간에 맞춰 설정한 주차만큼 자동으로 배치됩니다.<br>
-                * OFF 설정 시 위에서 지정한 단일 날짜에 1회만 등록됩니다.
-              </p>
             </div>
           </div>
         </form>
@@ -601,7 +585,7 @@
       <div class="modal-footer">
         <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
         <button type="button" class="btn btn-secondary" style="border-radius:8px;" data-bs-dismiss="modal">취소</button>
-        <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">스케줄 추가</button>
+        <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">스케줄 저장</button>
       </div>
     </div>
   </div>
@@ -680,8 +664,7 @@
                 <th>관리</th>
               </tr>
             </thead>
-            <tbody id="coachTableBody">
-            </tbody>
+            <tbody id="coachTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -702,13 +685,46 @@
   let calendar;
   let coachMap = {};
   let unassignedStudents = [];
+  let currentScheduleType = 'lesson'; // 'lesson' or 'consulting'
 
   const DURATION_MAP = {
     '스타일': 50,
     '보컬 메이킹': 50,
     '2:1 그룹': 55,
-    '3:1 그룹': 90
+    '3:1 그룹': 90,
+    '상담': 30
   };
+
+  function switchScheduleType(type) {
+    currentScheduleType = type;
+    
+    document.getElementById('tabLesson').classList.toggle('active', type === 'lesson');
+    document.getElementById('tabConsulting').classList.toggle('active', type === 'consulting');
+
+    const addBtn = document.getElementById('addScheduleBtn');
+    if (type === 'consulting') {
+      addBtn.className = "btn btn-danger w-100";
+      addBtn.innerText = "+ 상담 일정 추가";
+    } else {
+      addBtn.className = "btn btn-primary w-100";
+      addBtn.innerText = "+ 레슨 일정 추가";
+    }
+
+    // UI 문구 변경 및 동적 처리
+    document.getElementById('unassignedTitle').innerText = type === 'consulting' 
+      ? '📋 상담 대기 / 미정 목록' 
+      : '⏳ 1단계: 레슨생 정보 등록 (미정 목록)';
+    document.getElementById('unassignedAddBtn').innerText = type === 'consulting' 
+      ? '+ 상담 신청자 등록' 
+      : '+ 미정 레슨생 등록';
+
+    document.querySelectorAll('.lesson-only-field').forEach(el => {
+      el.style.display = (type === 'consulting') ? 'none' : 'block';
+    });
+
+    loadUnassignedStudents();
+    if (calendar) calendar.refetchEvents();
+  }
 
   function calculateEndTime() {
     const subject = document.getElementById('modalSubject').value;
@@ -716,7 +732,7 @@
     
     if (!startTimeStr) return;
 
-    const durationMinutes = DURATION_MAP[subject] || 50;
+    const durationMinutes = DURATION_MAP[subject] || (currentScheduleType === 'consulting' ? 30 : 50);
     const [hours, minutes] = startTimeStr.split(':').map(Number);
 
     const date = new Date();
@@ -777,13 +793,6 @@
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
     checkAuthStatus();
-
-    const modalEl = document.getElementById('scheduleModal');
-    if (modalEl) {
-      modalEl.addEventListener('shown.bs.modal', function () {
-        document.getElementById('modalDate').focus();
-      });
-    }
   });
 
   function checkAuthStatus() {
@@ -822,12 +831,22 @@
   }
 
   async function loadUnassignedStudents() {
-    const { data, error } = await sbClient.from('unassigned_students').select('*').order('created_at', { ascending: false });
+    const { data, error } = await sbClient
+      .from('unassigned_students')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     if (error) {
-      console.error('미정 레슨생 불러오기 오류:', error);
+      console.error('미정 목록 불러오기 오류:', error);
       return;
     }
-    unassignedStudents = data || [];
+
+    // 스케줄 타입 필터링 적용
+    unassignedStudents = (data || []).filter(item => {
+      const isConsult = item.schedule_type === 'consulting' || item.subject === '상담';
+      return currentScheduleType === 'consulting' ? isConsult : !isConsult;
+    });
+
     renderUnassignedList();
   }
 
@@ -842,10 +861,10 @@
     const room = document.getElementById('unRoomName').value;
 
     const sessionEl = document.getElementById('unSessions');
-    const total_sessions = sessionEl ? parseInt(sessionEl.value, 10) : 4;
+    const total_sessions = currentScheduleType === 'consulting' ? 1 : (sessionEl ? parseInt(sessionEl.value, 10) : 4);
 
     if (!name) {
-      alert('수강생 이름을 입력해주세요.');
+      alert('성함을 입력해주세요.');
       return;
     }
 
@@ -857,18 +876,18 @@
       room, 
       total_sessions,
       completed_sessions: 0,
-      remaining_sessions: total_sessions 
+      remaining_sessions: total_sessions,
+      schedule_type: currentScheduleType
     };
 
     const { error } = await sbClient.from('unassigned_students').insert([payload]);
 
     if (error) {
-      console.error('Supabase 오류:', error);
       alert('저장 실패: ' + error.message);
       return;
     }
 
-    alert(`${name} 레슨생이 총 ${total_sessions}회차로 등록되었습니다.`);
+    alert(`${name} 님이 미정 목록에 등록되었습니다.`);
     document.getElementById('unStudentName').value = '';
     toggleUnassignedForm();
     await loadUnassignedStudents();
@@ -880,7 +899,7 @@
     if (!container) return;
 
     if (unassignedStudents.length === 0) {
-      container.innerHTML = '<div class="small text-secondary py-1">대기 중인 미정 레슨생이 없습니다. 상단의 "+ 미정 레슨생 등록" 버튼을 눌러 등록해 주세요.</div>';
+      container.innerHTML = `<div class="small text-secondary py-1">대기 중인 미정 ${currentScheduleType === 'consulting' ? '상담' : '레슨'} 신청자가 없습니다.</div>`;
       return;
     }
 
@@ -890,7 +909,7 @@
     }
 
     if (filteredList.length === 0) {
-      container.innerHTML = `<div class="small text-secondary py-1">'${filterVal}' 코치에게 지정된 미정 레슨생이 없습니다.</div>`;
+      container.innerHTML = `<div class="small text-secondary py-1">'${filterVal}' 코치에게 지정된 미정 항목이 없습니다.</div>`;
       return;
     }
 
@@ -908,7 +927,7 @@
       let cardsHtml = '';
 
       grouped[coachName].forEach(s => {
-        const total = s.total_sessions || s.remaining_sessions || 0;
+        const total = s.total_sessions || s.remaining_sessions || 1;
         const current = (s.completed_sessions !== undefined) ? (s.completed_sessions + 1) : 1;
 
         cardsHtml += `
@@ -916,11 +935,11 @@
             <div class="small">
               <span class="badge bg-secondary me-1">${s.branch}</span>
               <strong class="text-white">${s.name}</strong> 
-              <span class="text-warning fw-bold">[현재 회차: ${current} / ${total}회]</span>
+              ${currentScheduleType === 'lesson' ? `<span class="text-warning fw-bold">[진행: ${current} / ${total}회]</span>` : '<span class="badge bg-info ms-1">상담신청</span>'}
               <span class="text-secondary">(${s.subject} | ${s.room})</span>
             </div>
             <div>
-              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 추가 (${current}/${total}회차)</button>
+              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>
               <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
             </div>
           </div>
@@ -931,7 +950,7 @@
         <div class="coach-unassigned-section mb-3">
           <div class="d-flex align-items-center gap-2 mb-1">
             <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${coachColor};"></span>
-            <h6 class="fw-bold m-0 text-white" style="font-size:0.9rem;">🎤 ${coachName} 코치 (${grouped[coachName].length}명)</h6>
+            <h6 class="fw-bold m-0 text-white" style="font-size:0.9rem;">🎤 ${coachName} 코치 (${grouped[coachName].length}건)</h6>
           </div>
           ${cardsHtml}
         </div>
@@ -940,7 +959,7 @@
   }
 
   async function removeUnassigned(dbId) {
-    if (!confirm('이 미정 레슨생을 목록에서 삭제하시겠습니까?')) return;
+    if (!confirm('이 목록을 삭제하시겠습니까?')) return;
     const { error } = await sbClient.from('unassigned_students').delete().eq('id', dbId);
     if (error) {
       alert('삭제 실패: ' + error.message);
@@ -953,36 +972,18 @@
     const data = unassignedStudents.find(item => item.id === dbId);
     if (!data) return;
 
-    const total = data.total_sessions || data.remaining_sessions || 0;
-    const completed = data.completed_sessions || 0;
-    const remaining = total - completed;
-
-    if (completed >= total) {
-      alert("해당 레슨생의 지정된 회차가 모두 완료되었습니다. 회차를 재충전해 주세요.");
-      return;
-    }
-
     openAddModal();
 
     document.getElementById('currentUnassignedDbId').value = data.id;
-    document.getElementById('modalTotalSessions').value = total;
+    document.getElementById('modalTotalSessions').value = data.total_sessions || 1;
     document.getElementById('modalBranch').value = data.branch;
     document.getElementById('modalStudentName').value = data.name;
     document.getElementById('modalCoachName').value = data.coach;
-    document.getElementById('modalSubject').value = data.subject;
+    document.getElementById('modalSubject').value = data.subject || (currentScheduleType === 'consulting' ? '상담' : '스타일');
     document.getElementById('modalRoomName').value = data.room;
     calculateEndTime();
 
-    const repeatCheck = document.getElementById('repeatScheduleCheck');
-    const repeatWeeks = document.getElementById('repeatWeeksSelect');
-    
-    repeatCheck.checked = true;
-    toggleRepeatOptions();
-    if (repeatWeeks) {
-      repeatWeeks.value = remaining > 0 ? remaining : 4;
-    }
-
-    alert(`'${data.name}' 레슨생이 선택되었습니다. (현재 ${completed + 1} / ${total}회차 진행 중)\n\n주마다 갱신(반복) 옵션이 기본 ON으로 설정되어 있습니다. 1회만 등록하시려면 스위치를 끄세요.`);
+    alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
   }
 
   function initCalendar() {
@@ -1006,12 +1007,7 @@
       eventOverlap: true,
       slotEventOverlap: false,
 
-      buttonText: {
-        today: '오늘',
-        month: '월',
-        week: '주',
-        day: '일'
-      },
+      buttonText: { today: '오늘', month: '월', week: '주', day: '일' },
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
@@ -1030,38 +1026,41 @@
 
           let query = sbClient.from('schedules').select('*').eq('branch', selectedBranch);
 
-          if (selectedRoom !== 'ALL') {
-            query = query.eq('room_name', selectedRoom);
-          }
-          if (selectedCoach !== 'ALL') {
-            query = query.eq('coach_name', selectedCoach);
-          }
+          if (selectedRoom !== 'ALL') query = query.eq('room_name', selectedRoom);
+          if (selectedCoach !== 'ALL') query = query.eq('coach_name', selectedCoach);
 
           const { data: schedulesData, error } = await query;
           if (error) throw error;
 
-          const studentSchedulesMap = {};
-          (schedulesData || []).forEach(item => {
-            if (item.student_name && !item.student_name.includes('미정')) {
-              const key = `${item.student_name}_${item.coach_name}`;
-              if (!studentSchedulesMap[key]) studentSchedulesMap[key] = [];
-              studentSchedulesMap[key].push(item);
-            }
+          // 스케줄 타입 필터링 ('lesson' or 'consulting')
+          const filteredData = (schedulesData || []).filter(item => {
+            const isConsulting = item.schedule_type === 'consulting' || item.subject === '상담';
+            return currentScheduleType === 'consulting' ? isConsulting : !isConsulting;
           });
 
-          Object.keys(studentSchedulesMap).forEach(key => {
-            studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-            
-            /* 수강생별 데이터 중 DB의 total_sessions 정보를 추적하여 총 회차 계산 */
-            const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
-
-            studentSchedulesMap[key].forEach((item, index) => {
-              item._session_no = index + 1;
-              item._total_sessions = item.total_sessions || total;
+          // 레슨인 경우 회차 자동 계산
+          if (currentScheduleType === 'lesson') {
+            const studentSchedulesMap = {};
+            filteredData.forEach(item => {
+              if (item.student_name && !item.student_name.includes('미정')) {
+                const key = `${item.student_name}_${item.coach_name}`;
+                if (!studentSchedulesMap[key]) studentSchedulesMap[key] = [];
+                studentSchedulesMap[key].push(item);
+              }
             });
-          });
 
-          const events = (schedulesData || []).map(item => {
+            Object.keys(studentSchedulesMap).forEach(key => {
+              studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+              const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
+
+              studentSchedulesMap[key].forEach((item, index) => {
+                item._session_no = index + 1;
+                item._total_sessions = item.total_sessions || total;
+              });
+            });
+          }
+
+          const events = filteredData.map(item => {
             const isUnassigned = !item.student_name || item.student_name.includes('미정');
             
             let roomNum = item.room_name || '';
@@ -1071,20 +1070,25 @@
               roomNum = roomNum + '.';
             }
 
-            /* 회차 표시를 "현재회차/총회차회" 형태로 변경 */
-            const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
-            const studentNameText = item.student_name || '미정';
-            const coachNameText = item.coach_name || '미정';
+            let displayTitle = '';
+            let eventBgColor = coachMap[item.coach_name] || '#4f46e5';
 
-            const displayTitle = `${roomNum} ${studentNameText}(${coachNameText}) ${sessionText}`;
+            if (currentScheduleType === 'consulting') {
+              const statusTag = item.consult_status ? `[${item.consult_status}]` : '[상담]';
+              displayTitle = `${roomNum} ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
+              eventBgColor = item.consult_status === '취소' ? '#6b7280' : '#ec4899'; // 상담 구분용 핑크 색상
+            } else {
+              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
+              displayTitle = `${roomNum} ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
+            }
 
             return {
               id: item.id,
               title: displayTitle,
               start: item.start_time,
               end: item.end_time,
-              backgroundColor: isUnassigned ? '#374151' : (coachMap[item.coach_name] || '#4f46e5'),
-              borderColor: isUnassigned ? '#f59e0b' : (coachMap[item.coach_name] || '#4f46e5'),
+              backgroundColor: isUnassigned ? '#374151' : eventBgColor,
+              borderColor: isUnassigned ? '#f59e0b' : eventBgColor,
               classNames: isUnassigned ? ['fc-event-unassigned'] : [],
               extendedProps: item
             };
@@ -1268,22 +1272,38 @@
     }
   }
 
+  function setupModalView(type) {
+    const isConsulting = (type === 'consulting');
+    
+    document.getElementById('modalNameLabel').innerText = isConsulting ? '상담 신청자 이름' : '학생 이름';
+    document.getElementById('consultPhoneGroup').classList.toggle('d-none', !isConsulting);
+    document.getElementById('consultStatusGroup').classList.toggle('d-none', !isConsulting);
+    document.getElementById('consultMemoGroup').classList.toggle('d-none', !isConsulting);
+    document.getElementById('repeatSection').classList.toggle('d-none', isConsulting);
+
+    if (isConsulting) {
+      document.getElementById('modalSubject').value = '상담';
+    }
+  }
+
   function openAddModal() {
-    document.getElementById('modalTitle').innerText = "일정 추가";
+    document.getElementById('modalTitle').innerText = currentScheduleType === 'consulting' ? "상담 일정 추가" : "레슨 일정 추가";
     document.getElementById('scheduleId').value = "";
     document.getElementById('currentUnassignedDbId').value = "";
-    document.getElementById('modalTotalSessions').value = "4";
+    document.getElementById('modalTotalSessions').value = currentScheduleType === 'consulting' ? "1" : "4";
     document.getElementById('modalStudentName').value = "";
-    document.getElementById('modalSubject').value = "스타일";
+    document.getElementById('modalPhone').value = "";
+    document.getElementById('modalMemo').value = "";
+    document.getElementById('modalSubject').value = currentScheduleType === 'consulting' ? "상담" : "스타일";
     
     const nowKST = formatKST(new Date());
     document.getElementById('modalDate').value = nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
     
+    setupModalView(currentScheduleType);
     calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
-    
     document.getElementById('repeatScheduleCheck').checked = false;
     toggleRepeatOptions();
 
@@ -1292,16 +1312,25 @@
   }
 
   function openEditModal(scheduleData) {
-    document.getElementById('modalTitle').innerText = "일정 수정";
+    const isConsulting = scheduleData.schedule_type === 'consulting' || scheduleData.subject === '상담';
+    setupModalView(isConsulting ? 'consulting' : 'lesson');
+
+    document.getElementById('modalTitle').innerText = isConsulting ? "상담 일정 수정" : "레슨 일정 수정";
     document.getElementById('scheduleId').value = scheduleData.id;
     document.getElementById('currentUnassignedDbId').value = "";
-    document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 4;
+    document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 1;
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     document.getElementById('modalStudentName').value = scheduleData.student_name;
     document.getElementById('modalCoachName').value = scheduleData.coach_name;
-    document.getElementById('modalSubject').value = scheduleData.subject || '스타일';
+    document.getElementById('modalSubject').value = scheduleData.subject || (isConsulting ? '상담' : '스타일');
     document.getElementById('modalRoomName').value = scheduleData.room_name;
     
+    if (isConsulting) {
+      document.getElementById('modalPhone').value = scheduleData.phone || '';
+      document.getElementById('modalConsultStatus').value = scheduleData.consult_status || '예약완료';
+      document.getElementById('modalMemo').value = scheduleData.memo || '';
+    }
+
     if (scheduleData.start_time) {
       const startKST = formatKST(scheduleData.start_time);
       document.getElementById('modalDate').value = startKST.date;
@@ -1326,7 +1355,7 @@
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
     const unassignedDbId = document.getElementById('currentUnassignedDbId').value;
-    const totalSessionsVal = parseInt(document.getElementById('modalTotalSessions').value, 10) || 4;
+    const totalSessionsVal = parseInt(document.getElementById('modalTotalSessions').value, 10) || 1;
     
     const branch = document.getElementById('modalBranch').value;
     const student_name = document.getElementById('modalStudentName').value.trim();
@@ -1341,11 +1370,15 @@
     const startTime = document.getElementById('modalStartTime').value;
     const endTime = document.getElementById('modalEndTime').value;
 
+    const phone = document.getElementById('modalPhone').value.trim();
+    const consult_status = document.getElementById('modalConsultStatus').value;
+    const memo = document.getElementById('modalMemo').value.trim();
+
     const isRepeat = document.getElementById('repeatScheduleCheck').checked;
     const repeatWeeks = parseInt(document.getElementById('repeatWeeksSelect').value, 10) || 1;
 
     if (!student_name || !coach_name || !selectedDate || !startTime || !endTime) {
-      alert("학생 이름, 코치, 날짜 및 시간을 정확히 입력해 주세요.");
+      alert("이름, 코치, 날짜 및 시간을 정확히 입력해 주세요.");
       return;
     }
 
@@ -1354,23 +1387,25 @@
       return;
     }
 
-    let targetUnassigned = null;
-    if (!id && unassignedDbId) {
-      targetUnassigned = unassignedStudents.find(s => s.id == unassignedDbId);
-      const total = targetUnassigned ? (targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0) : 0;
-      const completed = targetUnassigned ? (targetUnassigned.completed_sessions || 0) : 0;
+    const start_time = `${selectedDate}T${startTime}:00+09:00`;
+    const end_time = `${selectedDate}T${endTime}:00+09:00`;
 
-      if (targetUnassigned && completed >= total) {
-        alert("해당 레슨생의 지정된 회차가 모두 완료되었습니다. 회차를 재충전해 주세요.");
-        return;
-      }
-    }
+    const payload = { 
+      branch, 
+      student_name, 
+      coach_name, 
+      subject, 
+      room_name, 
+      start_time, 
+      end_time, 
+      total_sessions: totalSessionsVal,
+      schedule_type: currentScheduleType,
+      phone,
+      consult_status,
+      memo
+    };
 
     if (id) {
-      const start_time = `${selectedDate}T${startTime}:00+09:00`;
-      const end_time = `${selectedDate}T${endTime}:00+09:00`;
-      const payload = { branch, student_name, coach_name, subject, room_name, start_time, end_time, total_sessions: totalSessionsVal };
-
       const result = await sbClient.from('schedules').update(payload).eq('id', id);
       if (result.error) {
         alert("수정 실패: " + result.error.message);
@@ -1383,7 +1418,7 @@
       return;
     }
 
-    const weeksToCreate = isRepeat ? repeatWeeks : 1;
+    const weeksToCreate = (currentScheduleType === 'lesson' && isRepeat) ? repeatWeeks : 1;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
 
@@ -1392,18 +1427,10 @@
       currDateObj.setDate(baseDate.getDate() + (i * 7));
       const currDateStr = formatDateIso(currDateObj);
 
-      const start_time = `${currDateStr}T${startTime}:00+09:00`;
-      const end_time = `${currDateStr}T${endTime}:00+09:00`;
-
       schedulesToInsert.push({ 
-        branch, 
-        student_name, 
-        coach_name, 
-        subject, 
-        room_name, 
-        start_time, 
-        end_time,
-        total_sessions: totalSessionsVal
+        ...payload,
+        start_time: `${currDateStr}T${startTime}:00+09:00`,
+        end_time: `${currDateStr}T${endTime}:00+09:00`
       });
     }
 
@@ -1412,24 +1439,12 @@
     if (insertError) {
       alert("일정 저장 실패: " + insertError.message);
     } else {
-      if (targetUnassigned) {
-        const total = targetUnassigned.total_sessions || targetUnassigned.remaining_sessions || 0;
-        const countAdded = schedulesToInsert.length;
-        const nextCompleted = (targetUnassigned.completed_sessions || 0) + countAdded;
-        const nextRemaining = total - nextCompleted;
-
-        if (nextCompleted >= total) {
-          await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
-        } else {
-          await sbClient.from('unassigned_students').update({ 
-            completed_sessions: nextCompleted,
-            remaining_sessions: nextRemaining 
-          }).eq('id', unassignedDbId);
-        }
+      if (unassignedDbId) {
+        await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
         await loadUnassignedStudents();
       }
 
-      alert(isRepeat ? `${schedulesToInsert.length}회차의 반복 스케줄이 성공적으로 등록되었습니다.` : '1회성 스케줄이 등록되었습니다.');
+      alert('스케줄이 성공적으로 저장되었습니다.');
 
       const modalEl = document.getElementById('scheduleModal');
       const modalInstance = bootstrap.Modal.getInstance(modalEl);
@@ -1440,18 +1455,7 @@
 
   async function deleteSchedule() {
     const id = document.getElementById('scheduleId').value;
-    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까? (삭제 시 차감되었던 회차가 복구됩니다)")) return;
-
-    const { data: scheduleData, error: fetchError } = await sbClient
-      .from('schedules')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !scheduleData) {
-      alert("일정 정보를 불러오는데 실패했습니다.");
-      return;
-    }
+    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
 
     const { error: deleteError } = await sbClient.from('schedules').delete().eq('id', id);
     if (deleteError) {
@@ -1459,47 +1463,7 @@
       return;
     }
 
-    const studentName = scheduleData.student_name;
-    const coachName = scheduleData.coach_name;
-    const branch = scheduleData.branch;
-    const room = scheduleData.room_name;
-    const subject = scheduleData.subject;
-    const total = scheduleData.total_sessions || 4;
-
-    const { data: existingUnassigned } = await sbClient
-      .from('unassigned_students')
-      .select('*')
-      .eq('name', studentName)
-      .eq('coach', coachName)
-      .limit(1);
-
-    if (existingUnassigned && existingUnassigned.length > 0) {
-      const target = existingUnassigned[0];
-      const prevCompleted = target.completed_sessions || 0;
-
-      if (prevCompleted > 0) {
-        const nextCompleted = prevCompleted - 1;
-        const nextRemaining = total - nextCompleted;
-
-        await sbClient.from('unassigned_students').update({
-          completed_sessions: nextCompleted,
-          remaining_sessions: nextRemaining
-        }).eq('id', target.id);
-      }
-    } else {
-      await sbClient.from('unassigned_students').insert([{
-        branch: branch,
-        name: studentName,
-        coach: coachName,
-        subject: subject || '스타일',
-        room: room || 'ROOM 1',
-        total_sessions: total,
-        completed_sessions: total - 1,
-        remaining_sessions: 1
-      }]);
-    }
-
-    alert("일정이 삭제되었으며 차감되었던 회차가 원복되었습니다.");
+    alert("일정이 삭제되었습니다.");
 
     const modalEl = document.getElementById('scheduleModal');
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
