@@ -46,7 +46,6 @@
       border: 1px solid #282a36;
     }
 
-    /* 상단 스케줄 타입 탭 스타일 */
     .schedule-type-nav {
       display: flex;
       gap: 10px;
@@ -337,7 +336,6 @@
     </div>
   </div>
 
-  <!-- 레슨 / 상담 스케줄 구분 탭 -->
   <div class="schedule-type-nav">
     <button id="tabLesson" class="schedule-type-btn active" onclick="switchScheduleType('lesson')">
       🎵 레슨 스케줄
@@ -373,7 +371,11 @@
         </div>
         <div class="col-6 col-md-2">
           <label id="unNameLabel" class="form-label small">수강생 이름</label>
-          <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="학생 성함">
+          <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="성함 입력">
+        </div>
+        <div class="col-6 col-md-2 consulting-only-field d-none">
+          <label class="form-label small">연락처</label>
+          <input type="text" id="unPhone" class="form-control form-control-sm" placeholder="010-0000-0000">
         </div>
         <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">총 회차</label>
@@ -394,13 +396,9 @@
           <select id="unCoachName" class="form-select form-select-sm"></select>
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label small">과목 / 내용</label>
+          <label class="form-label small">과목 / 구분</label>
           <select id="unSubject" class="form-select form-select-sm">
-            <option value="스타일" selected>스타일</option>
-            <option value="보컬 메이킹">보컬 메이킹</option>
-            <option value="2:1 그룹">2:1 그룹</option>
-            <option value="3:1 그룹">3:1 그룹</option>
-            <option value="상담">방문 상담</option>
+            <!-- 동적 구성 -->
           </select>
         </div>
         <div class="col-6 col-md-2">
@@ -490,7 +488,6 @@
             <input type="text" id="modalStudentName" class="form-control" placeholder="성함 입력" required>
           </div>
 
-          <!-- 상담 전용 필드: 연락처 -->
           <div id="consultPhoneGroup" class="mb-3 d-none">
             <label class="form-label">연락처</label>
             <input type="text" id="modalPhone" class="form-control" placeholder="010-0000-0000">
@@ -502,17 +499,12 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">과목 / 레슨 내용</label>
+            <label class="form-label">과목 / 레슨 / 상담 구분</label>
             <select id="modalSubject" class="form-select" required onchange="calculateEndTime()">
-              <option value="스타일" selected>스타일 (50분)</option>
-              <option value="보컬 메이킹">보컬 메이킹 (50분)</option>
-              <option value="2:1 그룹">2:1 그룹 (55분)</option>
-              <option value="3:1 그룹">3:1 그룹 (90분)</option>
-              <option value="상담">방문 상담 (30분)</option>
+              <!-- 동적 생성 -->
             </select>
           </div>
 
-          <!-- 상담 전용 필드: 상담 진행 상태 -->
           <div id="consultStatusGroup" class="mb-3 d-none">
             <label class="form-label">상담 진행 상태</label>
             <select id="modalConsultStatus" class="form-select">
@@ -542,7 +534,7 @@
 
           <div class="row">
             <div class="col-6 mb-3">
-              <label class="form-label">시작 시간</label>
+              <label class="form-label">시작 시간 (10분 간격)</label>
               <select id="modalStartTime" class="form-select" required onchange="calculateEndTime()"></select>
             </div>
             <div class="col-6 mb-3">
@@ -551,13 +543,11 @@
             </div>
           </div>
 
-          <!-- 상담 전용 필드: 특이사항 및 유입경로 -->
           <div id="consultMemoGroup" class="mb-3 d-none">
             <label class="form-label">상담 특이사항 / 유입 경로</label>
             <textarea id="modalMemo" class="form-control" rows="2" placeholder="인스타 문의, 지인 소개, 특정 문의사항 등"></textarea>
           </div>
 
-          <!-- 레슨 전용: 반복 설정 ON/OFF 토글 구역 -->
           <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" id="repeatScheduleCheck" onchange="toggleRepeatOptions()">
@@ -687,12 +677,14 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson'; // 'lesson' or 'consulting'
 
+  // 과목/구분별 소요시간 매핑 (상담: 15분, 체험레슨: 30분)
   const DURATION_MAP = {
     '스타일': 50,
     '보컬 메이킹': 50,
     '2:1 그룹': 55,
     '3:1 그룹': 90,
-    '상담': 30
+    '상담': 15,
+    '체험': 30
   };
 
   function switchScheduleType(type) {
@@ -704,26 +696,52 @@
     const addBtn = document.getElementById('addScheduleBtn');
     if (type === 'consulting') {
       addBtn.className = "btn btn-danger w-100";
-      addBtn.innerText = "+ 상담 일정 추가";
+      addBtn.innerText = "+ 상담/체험 일정 추가";
     } else {
       addBtn.className = "btn btn-primary w-100";
       addBtn.innerText = "+ 레슨 일정 추가";
     }
 
-    // UI 문구 변경 및 동적 처리
     document.getElementById('unassignedTitle').innerText = type === 'consulting' 
-      ? '📋 상담 대기 / 미정 목록' 
+      ? '📋 상담/체험 대기 목록' 
       : '⏳ 1단계: 레슨생 정보 등록 (미정 목록)';
     document.getElementById('unassignedAddBtn').innerText = type === 'consulting' 
-      ? '+ 상담 신청자 등록' 
+      ? '+ 상담/체험 신청자 등록' 
       : '+ 미정 레슨생 등록';
 
     document.querySelectorAll('.lesson-only-field').forEach(el => {
       el.style.display = (type === 'consulting') ? 'none' : 'block';
     });
+    document.querySelectorAll('.consulting-only-field').forEach(el => {
+      el.classList.toggle('d-none', type !== 'consulting');
+    });
 
+    updateSubjectOptions();
     loadUnassignedStudents();
     if (calendar) calendar.refetchEvents();
+  }
+
+  function updateSubjectOptions() {
+    const unSub = document.getElementById('unSubject');
+    const modalSub = document.getElementById('modalSubject');
+    
+    if (currentScheduleType === 'consulting') {
+      const options = `
+        <option value="상담" selected>방문 상담 (15분)</option>
+        <option value="체험">체험 레슨 (30분)</option>
+      `;
+      if (unSub) unSub.innerHTML = options;
+      if (modalSub) modalSub.innerHTML = options;
+    } else {
+      const options = `
+        <option value="스타일" selected>스타일 (50분)</option>
+        <option value="보컬 메이킹">보컬 메이킹 (50분)</option>
+        <option value="2:1 그룹">2:1 그룹 (55분)</option>
+        <option value="3:1 그룹">3:1 그룹 (90분)</option>
+      `;
+      if (unSub) unSub.innerHTML = options;
+      if (modalSub) modalSub.innerHTML = options;
+    }
   }
 
   function calculateEndTime() {
@@ -732,7 +750,7 @@
     
     if (!startTimeStr) return;
 
-    const durationMinutes = DURATION_MAP[subject] || (currentScheduleType === 'consulting' ? 30 : 50);
+    const durationMinutes = DURATION_MAP[subject] || (currentScheduleType === 'consulting' ? 15 : 50);
     const [hours, minutes] = startTimeStr.split(':').map(Number);
 
     const date = new Date();
@@ -776,6 +794,7 @@
     }
   }
 
+  // 10분 간격 시간 선택 옵션 생성
   function populateTimeOptions() {
     const startSelect = document.getElementById('modalStartTime');
     if (!startSelect) return;
@@ -783,7 +802,7 @@
     startSelect.innerHTML = '';
 
     for (let h = 10; h <= 23; h++) {
-      ['00', '30'].forEach(m => {
+      ['00', '10', '20', '30', '40', '50'].forEach(m => {
         const timeStr = `${String(h).padStart(2, '0')}:${m}`;
         startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
       });
@@ -792,6 +811,7 @@
 
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
+    updateSubjectOptions();
     checkAuthStatus();
   });
 
@@ -841,9 +861,8 @@
       return;
     }
 
-    // 스케줄 타입 필터링 적용
     unassignedStudents = (data || []).filter(item => {
-      const isConsult = item.schedule_type === 'consulting' || item.subject === '상담';
+      const isConsult = item.schedule_type === 'consulting' || item.subject === '상담' || item.subject === '체험';
       return currentScheduleType === 'consulting' ? isConsult : !isConsult;
     });
 
@@ -853,6 +872,7 @@
   async function addUnassignedStudent() {
     const branch = document.getElementById('unBranch').value;
     const name = document.getElementById('unStudentName').value.trim();
+    const phone = document.getElementById('unPhone')?.value.trim() || '';
     
     const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     const coach = (currentUser && currentUser.role !== 'admin') ? currentUser.name : document.getElementById('unCoachName').value;
@@ -871,6 +891,7 @@
     const payload = { 
       branch, 
       name, 
+      phone,
       coach, 
       subject, 
       room, 
@@ -889,6 +910,7 @@
 
     alert(`${name} 님이 미정 목록에 등록되었습니다.`);
     document.getElementById('unStudentName').value = '';
+    if(document.getElementById('unPhone')) document.getElementById('unPhone').value = '';
     toggleUnassignedForm();
     await loadUnassignedStudents();
   }
@@ -899,7 +921,7 @@
     if (!container) return;
 
     if (unassignedStudents.length === 0) {
-      container.innerHTML = `<div class="small text-secondary py-1">대기 중인 미정 ${currentScheduleType === 'consulting' ? '상담' : '레슨'} 신청자가 없습니다.</div>`;
+      container.innerHTML = `<div class="small text-secondary py-1">대기 중인 미정 ${currentScheduleType === 'consulting' ? '상담/체험' : '레슨'} 신청자가 없습니다.</div>`;
       return;
     }
 
@@ -935,7 +957,8 @@
             <div class="small">
               <span class="badge bg-secondary me-1">${s.branch}</span>
               <strong class="text-white">${s.name}</strong> 
-              ${currentScheduleType === 'lesson' ? `<span class="text-warning fw-bold">[진행: ${current} / ${total}회]</span>` : '<span class="badge bg-info ms-1">상담신청</span>'}
+              ${s.phone ? `<span class="text-secondary">(${s.phone})</span>` : ''}
+              ${currentScheduleType === 'lesson' ? `<span class="text-warning fw-bold">[진행: ${current} / ${total}회]</span>` : `<span class="badge ${s.subject==='체험'?'bg-warning text-dark':'bg-info'} ms-1">${s.subject || '상담'}</span>`}
               <span class="text-secondary">(${s.subject} | ${s.room})</span>
             </div>
             <div>
@@ -978,6 +1001,7 @@
     document.getElementById('modalTotalSessions').value = data.total_sessions || 1;
     document.getElementById('modalBranch').value = data.branch;
     document.getElementById('modalStudentName').value = data.name;
+    if(data.phone) document.getElementById('modalPhone').value = data.phone;
     document.getElementById('modalCoachName').value = data.coach;
     document.getElementById('modalSubject').value = data.subject || (currentScheduleType === 'consulting' ? '상담' : '스타일');
     document.getElementById('modalRoomName').value = data.room;
@@ -1016,7 +1040,8 @@
       slotMinTime: '10:00:00',
       slotMaxTime: '24:00:00',
       allDaySlot: false,
-      slotDuration: '00:30:00',
+      slotDuration: '00:10:00', // 10분 단위 그리드
+      slotLabelInterval: '00:30:00', // 30분 간격으로 시간 라벨표시
       
       events: async function(fetchInfo, successCallback, failureCallback) {
         try {
@@ -1032,13 +1057,11 @@
           const { data: schedulesData, error } = await query;
           if (error) throw error;
 
-          // 스케줄 타입 필터링 ('lesson' or 'consulting')
           const filteredData = (schedulesData || []).filter(item => {
-            const isConsulting = item.schedule_type === 'consulting' || item.subject === '상담';
+            const isConsulting = item.schedule_type === 'consulting' || item.subject === '상담' || item.subject === '체험';
             return currentScheduleType === 'consulting' ? isConsulting : !isConsulting;
           });
 
-          // 레슨인 경우 회차 자동 계산
           if (currentScheduleType === 'lesson') {
             const studentSchedulesMap = {};
             filteredData.forEach(item => {
@@ -1074,9 +1097,14 @@
             let eventBgColor = coachMap[item.coach_name] || '#4f46e5';
 
             if (currentScheduleType === 'consulting') {
-              const statusTag = item.consult_status ? `[${item.consult_status}]` : '[상담]';
+              const statusTag = item.consult_status ? `[${item.consult_status}]` : `[${item.subject || '상담'}]`;
               displayTitle = `${roomNum} ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
-              eventBgColor = item.consult_status === '취소' ? '#6b7280' : '#ec4899'; // 상담 구분용 핑크 색상
+              
+              if (item.consult_status === '취소') {
+                eventBgColor = '#6b7280';
+              } else {
+                eventBgColor = item.subject === '체험' ? '#f59e0b' : '#ec4899'; // 체험 레슨 주황색, 상담 핑크색
+              }
             } else {
               const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
               displayTitle = `${roomNum} ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
@@ -1275,32 +1303,30 @@
   function setupModalView(type) {
     const isConsulting = (type === 'consulting');
     
-    document.getElementById('modalNameLabel').innerText = isConsulting ? '상담 신청자 이름' : '학생 이름';
+    document.getElementById('modalNameLabel').innerText = isConsulting ? '상담/체험 신청자 이름' : '학생 이름';
     document.getElementById('consultPhoneGroup').classList.toggle('d-none', !isConsulting);
     document.getElementById('consultStatusGroup').classList.toggle('d-none', !isConsulting);
     document.getElementById('consultMemoGroup').classList.toggle('d-none', !isConsulting);
     document.getElementById('repeatSection').classList.toggle('d-none', isConsulting);
 
-    if (isConsulting) {
-      document.getElementById('modalSubject').value = '상담';
-    }
+    updateSubjectOptions();
   }
 
   function openAddModal() {
-    document.getElementById('modalTitle').innerText = currentScheduleType === 'consulting' ? "상담 일정 추가" : "레슨 일정 추가";
+    document.getElementById('modalTitle').innerText = currentScheduleType === 'consulting' ? "상담/체험 일정 추가" : "레슨 일정 추가";
     document.getElementById('scheduleId').value = "";
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('modalTotalSessions').value = currentScheduleType === 'consulting' ? "1" : "4";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalPhone').value = "";
     document.getElementById('modalMemo').value = "";
-    document.getElementById('modalSubject').value = currentScheduleType === 'consulting' ? "상담" : "스타일";
     
+    setupModalView(currentScheduleType);
+
     const nowKST = formatKST(new Date());
     document.getElementById('modalDate').value = nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
     
-    setupModalView(currentScheduleType);
     calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
@@ -1312,10 +1338,10 @@
   }
 
   function openEditModal(scheduleData) {
-    const isConsulting = scheduleData.schedule_type === 'consulting' || scheduleData.subject === '상담';
+    const isConsulting = scheduleData.schedule_type === 'consulting' || scheduleData.subject === '상담' || scheduleData.subject === '체험';
     setupModalView(isConsulting ? 'consulting' : 'lesson');
 
-    document.getElementById('modalTitle').innerText = isConsulting ? "상담 일정 수정" : "레슨 일정 수정";
+    document.getElementById('modalTitle').innerText = isConsulting ? "상담/체험 일정 수정" : "레슨 일정 수정";
     document.getElementById('scheduleId').value = scheduleData.id;
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 1;
