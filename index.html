@@ -5,14 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>블랙번치 스튜디오 일정 관리 시스템</title>
 
-  <!-- 파비콘 404 에러 방지 구문 -->
   <link rel="shortcut icon" href="#">
-  
-  <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Google Fonts (Pretendard) -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
   <style>
@@ -124,7 +119,6 @@
       width: 60px !important;
     }
     
-    /* 기본 시간대 슬롯 높이 고정 */
     .fc-timegrid-slot {
       height: 48px !important;
     }
@@ -183,16 +177,26 @@
       color: #f8fafc;
     }
 
-    /* === 일정 수에 따라 가로 너비가 나뉘며 크기 자동 조절 === */
+    /* === [수정] 겹치는 일정 세로 쌓임 설정 === */
     .fc-timegrid-event-harness {
       position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
     }
     .fc-timegrid-event {
       border-radius: 6px !important;
       padding: 2px 4px !important;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.15) !important;
+      border: 1px solid rgba(255,255,255,0.2) !important;
       width: 100% !important;
+      opacity: 0.9;
+      transition: opacity 0.2s, z-index 0.2s;
+    }
+    
+    .fc-timegrid-event:hover {
+      opacity: 1;
+      z-index: 999 !important;
     }
     
     .fc-event-main {
@@ -366,7 +370,6 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <div class="d-flex align-items-center gap-3">
         <h6 class="fw-bold text-warning m-0">⏳ 1단계: 레슨생 정보 등록 (미정 목록)</h6>
-        <!-- 코치별 필터 드롭다운 -->
         <div class="d-flex align-items-center gap-1">
           <label class="text-secondary small mb-0 text-nowrap" style="font-size: 0.8rem;">코치 필터:</label>
           <select id="unassignedCoachFilter" class="form-select form-select-sm py-0 px-2" style="font-size:0.8rem; height:28px;" onchange="renderUnassignedList()">
@@ -567,7 +570,6 @@
             </div>
           </div>
 
-          <!-- 이후 주차 일정 자동 추가 옵션 -->
           <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3">
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" id="repeatScheduleCheck" onchange="toggleRepeatOptions()">
@@ -684,10 +686,8 @@
   </div>
 </div>
 
-<!-- FullCalendar & Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Supabase JS Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -998,9 +998,9 @@
       expandRows: true,
       height: 'auto',
 
-      /* === [설정] 일정 개수에 따라 가로 너비를 나눠 갖도록 오버랩 활성화 === */
+      /* === [수정] 동일 시간대 겹침 시 가로 나누기 방지 및 세로 포개짐 설정 === */
       eventOverlap: true,
-      slotEventOverlap: true,
+      slotEventOverlap: false,
 
       buttonText: {
         today: '오늘',
@@ -1056,7 +1056,6 @@
           const events = (schedulesData || []).map(item => {
             const isUnassigned = !item.student_name || item.student_name.includes('미정');
             
-            // 방 번호 정제 (예: "ROOM 1" -> "1.", "연습실" -> "연습실.")
             let roomNum = item.room_name || '';
             if (roomNum.includes('ROOM')) {
               roomNum = roomNum.replace('ROOM', '').trim() + '.';
@@ -1064,7 +1063,6 @@
               roomNum = roomNum + '.';
             }
 
-            // 요청된 예시 포맷: 1. 레슨생(코치) 1회
             const sessionText = item._session_no ? `${item._session_no}회` : '1회';
             const studentNameText = item.student_name || '미정';
             const coachNameText = item.coach_name || '미정';
