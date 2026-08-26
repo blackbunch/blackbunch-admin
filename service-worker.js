@@ -1,9 +1,11 @@
-const CACHE_NAME = 'blackbunch-schedule-v1';
+const CACHE_NAME = 'blackbunch-schedule-v2';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon.svg'
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {
