@@ -1,0 +1,18 @@
+{
+  "name": "블랙번치 스튜디오 스케줄",
+  "short_name": "블랙번치 스케줄",
+  "description": "블랙번치 스튜디오 레슨, 상담, 연습실 일정 관리",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1015",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
