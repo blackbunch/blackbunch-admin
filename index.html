@@ -142,7 +142,7 @@
       overflow: hidden;
     }
     
-    /* 셀 고정 높이 */
+    /* 셀 고정 높이 지정 */
     .fc-timegrid-slot {
       height: 110px !important;
     }
@@ -198,24 +198,36 @@
       color: #f8fafc;
     }
 
-    /* 각 이벤트 블록 스타일 */
+    /* 수직 쌓기 카드 레이아웃 스타일 */
     .custom-stack-card {
-      background-color: #4f46e5;
       color: #ffffff;
-      border: 1px solid #ffffff;
+      border: 1px solid rgba(255,255,255,0.6);
       border-radius: 6px;
-      padding: 3px 6px;
+      padding: 4px 8px;
       margin-bottom: 3px;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      width: 100%;
     }
     .custom-stack-card:hover {
-      filter: brightness(1.1);
+      filter: brightness(1.15);
+    }
+
+    /* FullCalendar 기본 하네스 오버라이드 (수직 쌓기용) */
+    .fc-timegrid-event-harness {
+      z-index: 5 !important;
+    }
+    .fc-timegrid-event {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
     .fc-list-day-cushion { background-color: #21232d !important; }
@@ -1075,33 +1087,37 @@
     alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
   }
 
-  // 커스텀 수직 쌓기 재배치 함수 (Vertical Stack)
+  // 커스텀 수직 쌓기 재배치 및 오버랩 계산 함수 (Vertical Stack)
   function reorganizeTimeGridEvents() {
+    if (!calendar) return;
     const view = calendar.view;
     if (view.type !== 'timeGridWeek' && view.type !== 'timeGridDay') return;
 
-    // 날짜 컬럼 추출
-    const dayCols = document.querySelectorAll('.fc-daygrid-day, .fc-timegrid-col');
+    // 날짜 컬럼별 이벤트 그룹화
+    const dayCols = document.querySelectorAll('.fc-timegrid-col');
     dayCols.forEach(col => {
       const harnesses = Array.from(col.querySelectorAll('.fc-timegrid-event-harness'));
       if (harnesses.length === 0) return;
 
-      // 같은 시작시간 기준 그룹화
-      const timeGroups = {};
+      // 1. top 기준 오름차순 정렬
+      harnesses.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
+
+      // 2. 시간 그룹(시작 위치 오차범위 4px 이내) 묶기
+      const timeGroups = [];
       harnesses.forEach(harness => {
         const topVal = parseFloat(harness.style.top) || 0;
-        const key = Math.round(topVal); // 픽셀 오차 보정
-        if (!timeGroups[key]) timeGroups[key] = [];
-        timeGroups[key].push(harness);
+        let group = timeGroups.find(g => Math.abs(g.baseTop - topVal) < 4);
+        if (!group) {
+          group = { baseTop: topVal, items: [] };
+          timeGroups.push(group);
+        }
+        group.items.push(harness);
       });
 
-      // 동일 시간대 이벤트 세로 나열 수동 계산
-      Object.keys(timeGroups).forEach(baseTopStr => {
-        const baseTop = parseFloat(baseTopStr);
-        const group = timeGroups[baseTopStr];
-
-        let accumulatedTop = baseTop;
-        group.forEach((harness, idx) => {
+      // 3. 같은 시간대에 위치한 이벤트를 위에서 아래로 순차 배치
+      timeGroups.forEach(group => {
+        let accumulatedTop = group.baseTop;
+        group.items.forEach(harness => {
           harness.style.left = '2px';
           harness.style.right = '2px';
           harness.style.width = 'calc(100% - 4px)';
@@ -1110,12 +1126,12 @@
           const eventEl = harness.querySelector('.fc-timegrid-event');
           if (eventEl) {
             eventEl.style.height = 'auto';
-            eventEl.style.minHeight = '24px';
+            eventEl.style.minHeight = '26px';
           }
           
-          // 다음 블록 위치 = 현재 위치 + 카드 높이 + 마진
-          const hHeight = harness.offsetHeight || 28;
-          accumulatedTop += hHeight + 2;
+          const cardEl = harness.querySelector('.custom-stack-card');
+          const itemHeight = cardEl ? (cardEl.offsetHeight + 3) : 29;
+          accumulatedTop += itemHeight;
         });
       });
     });
@@ -1239,7 +1255,7 @@
           });
 
           successCallback(events);
-          setTimeout(reorganizeTimeGridEvents, 50);
+          setTimeout(reorganizeTimeGridEvents, 60);
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
@@ -1247,7 +1263,7 @@
       },
 
       datesSet: function() {
-        setTimeout(reorganizeTimeGridEvents, 50);
+        setTimeout(reorganizeTimeGridEvents, 60);
       },
 
       eventContent: function(arg) {
