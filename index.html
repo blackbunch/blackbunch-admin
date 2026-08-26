@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>블랙번치 스튜디오 일정 관리 시스템</title>
+  <title>블랙번치 스튜디오 일정 관리 시스템 (개선본)</title>
 
   <link rel="shortcut icon" href="#">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
@@ -144,7 +144,7 @@
     
     /* 1시간 기본 슬롯 높이 */
     .fc-timegrid-slot {
-      height: 120px !important;
+      height: var(--schedule-slot-height, 120px) !important;
     }
     
     .fc-timegrid-cols table, .fc-col-header table {
@@ -365,6 +365,11 @@
       <button id="unassignedAddBtn" class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
     </div>
 
+    <div id="lessonStatusTabs" class="d-flex gap-2 mb-3">
+      <button id="pendingStatusBtn" class="btn btn-sm btn-warning" onclick="switchUnassignedStatus('pending')">미정 레슨생</button>
+      <button id="onHoldStatusBtn" class="btn btn-sm btn-outline-secondary" onclick="switchUnassignedStatus('on_hold')">장기거치</button>
+    </div>
+
     <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
       <div class="row g-2">
         <div class="col-6 col-md-2">
@@ -380,7 +385,7 @@
           <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="성함 입력">
         </div>
         <div class="col-6 col-md-2 consulting-only-field practice-field d-none">
-          <label class="form-label small">연락처</label>
+          <label id="unContactLabel" class="form-label small">연락처</label>
           <input type="text" id="unPhone" class="form-control form-control-sm" placeholder="010-0000-0000">
         </div>
         <div class="col-6 col-md-2 lesson-only-field">
@@ -396,6 +401,23 @@
             <option value="20">20회 (5개월)</option>
             <option value="24">24회 (6개월)</option>
           </select>
+        </div>
+        <div class="col-6 col-md-2 lesson-only-field">
+          <label class="form-label small">일정 상태</label>
+          <select id="unManagementStatus" class="form-select form-select-sm" onchange="toggleHoldFields()">
+            <option value="pending" selected>미정</option>
+            <option value="on_hold">장기거치</option>
+          </select>
+        </div>
+        <div id="holdDetails" class="row g-2 lesson-only-field d-none">
+          <div class="col-6 col-md-3">
+            <label class="form-label small">거치 사유</label>
+            <input type="text" id="unHoldReason" class="form-control form-control-sm" placeholder="예: 개인 사정">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small">재개 예정일</label>
+            <input type="date" id="unResumeDate" class="form-control form-control-sm">
+          </div>
         </div>
         <div class="col-6 col-md-2 coach-field">
           <label class="form-label small">담당 코치</label>
@@ -461,6 +483,7 @@
           <input type="hidden" id="scheduleId">
           <input type="hidden" id="currentUnassignedDbId">
           <input type="hidden" id="modalTotalSessions" value="4">
+          <input type="hidden" id="recurrenceGroupId">
           
           <div class="mb-3">
             <label class="form-label">지점</label>
@@ -477,7 +500,7 @@
           </div>
 
           <div id="consultPhoneGroup" class="mb-3 consulting-only-field practice-field d-none">
-            <label class="form-label">연락처</label>
+            <label id="modalContactLabel" class="form-label">연락처</label>
             <input type="text" id="modalPhone" class="form-control" placeholder="010-0000-0000">
           </div>
 
@@ -488,7 +511,7 @@
 
           <div class="mb-3">
             <label class="form-label" id="modalSubjectLabel">과목 / 레슨 구분</label>
-            <select id="modalSubject" class="form-select" required onchange="calculateEndTime()"></select>
+            <select id="modalSubject" class="form-select" required onchange="populateTimeOptions(); calculateEndTime()"></select>
           </div>
 
           <div id="consultStatusGroup" class="mb-3 d-none">
@@ -514,7 +537,7 @@
           <div class="row">
             <div class="col-6 mb-3">
               <label class="form-label">시작 시간</label>
-              <select id="modalStartTime" class="form-select" required onchange="calculateEndTime()"></select>
+              <input type="time" id="modalStartTime" class="form-control" required inputmode="numeric" min="10:00" max="22:50" step="1800" onchange="calculateEndTime()">
             </div>
             <div class="col-6 mb-3">
               <label class="form-label">종료 시간</label>
@@ -525,6 +548,18 @@
           <div id="consultMemoGroup" class="mb-3 consulting-only-field practice-field d-none">
             <label class="form-label">특이사항 / 메모</label>
             <textarea id="modalMemo" class="form-control" rows="2" placeholder="전화번호, 기타 특이사항 입력"></textarea>
+          </div>
+
+          <div id="lessonAttendanceGroup" class="mb-3 lesson-only-field">
+            <label class="form-label">수업 상태</label>
+            <select id="modalScheduleStatus" class="form-select">
+              <option value="scheduled" selected>📅 예정</option>
+              <option value="attended">✅ 출석</option>
+              <option value="absent">⚠️ 결석</option>
+              <option value="cancelled">❌ 취소</option>
+              <option value="makeup_scheduled">🔁 보강 예정</option>
+              <option value="makeup_completed">✅ 보강 완료</option>
+            </select>
           </div>
 
           <div id="repeatSection" class="p-3 bg-dark border border-secondary rounded mb-3 lesson-only-field">
@@ -627,7 +662,6 @@
                 <th>지점</th>
                 <th>이름</th>
                 <th>아이디</th>
-                <th>비밀번호</th>
                 <th>권한</th>
                 <th>색상</th>
                 <th>관리</th>
@@ -655,12 +689,25 @@
   let coachMap = {};
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
+  let currentUnassignedStatus = 'pending';
   let fetchedEventsStore = [];
+  let appliedSlotHeight = 120;
+
+  // DB에 저장된 이름·메모 등 사용자 입력값을 HTML로 해석하지 않도록 합니다.
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[char]);
+  }
+
+  function safeColor(value, fallback = '#4f46e5') {
+    return /^#[0-9a-fA-F]{6}$/.test(value || '') ? value : fallback;
+  }
 
   const BRANCH_ROOMS = {
     '위례점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
-    '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4'],
-    '다산점': ['ROOM 1', 'ROOM 2', 'ROOM 3']
+    '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
+    '다산점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5']
   };
 
   const DURATION_MAP = {
@@ -670,10 +717,18 @@
     '3:1 그룹': 90,
     '상담': 15,
     '체험': 30,
+    '30분 대여': 30,
     '1시간 대여': 60,
     '1.5시간 대여': 90,
     '2시간 대여': 120,
-    '3시간 대여': 180
+    '2.5시간 대여': 150,
+    '3시간 대여': 180,
+    '3.5시간 대여': 210,
+    '4시간 대여': 240,
+    '4.5시간 대여': 270,
+    '5시간 대여': 300,
+    '5.5시간 대여': 330,
+    '6시간 대여': 360
   };
 
   function getRoomsForBranch(branchName) {
@@ -787,6 +842,8 @@
 
     updateRoomOptions();
     updateSubjectOptions();
+    updateContactFieldLabels(type);
+    updateUnassignedStatusUI();
     loadUnassignedStudents();
     if (calendar) calendar.refetchEvents();
   }
@@ -803,10 +860,18 @@
       `;
     } else if (currentScheduleType === 'practice') {
       options = `
-        <option value="1시간 대여" selected>1시간 대여 (60분)</option>
+        <option value="30분 대여" selected>30분 대여</option>
+        <option value="1시간 대여">1시간 대여</option>
         <option value="1.5시간 대여">1.5시간 대여 (90분)</option>
         <option value="2시간 대여">2시간 대여 (120분)</option>
+        <option value="2.5시간 대여">2.5시간 대여</option>
         <option value="3시간 대여">3시간 대여 (180분)</option>
+        <option value="3.5시간 대여">3.5시간 대여</option>
+        <option value="4시간 대여">4시간 대여</option>
+        <option value="4.5시간 대여">4.5시간 대여</option>
+        <option value="5시간 대여">5시간 대여</option>
+        <option value="5.5시간 대여">5.5시간 대여</option>
+        <option value="6시간 대여">6시간 대여</option>
       `;
     } else {
       options = `
@@ -819,6 +884,52 @@
 
     if (unSub) unSub.innerHTML = options;
     if (modalSub) modalSub.innerHTML = options;
+    populateTimeOptions();
+  }
+
+  function updateContactFieldLabels(type) {
+    const isPractice = type === 'practice';
+    const label = isPractice ? '주차등록번호' : '연락처';
+    const placeholder = isPractice ? '예: 12가 3456' : '010-0000-0000';
+    ['unContactLabel', 'modalContactLabel'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.innerText = label;
+    });
+    ['unPhone', 'modalPhone'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.placeholder = placeholder;
+    });
+  }
+
+  function switchUnassignedStatus(status) {
+    currentUnassignedStatus = status;
+    const statusSelect = document.getElementById('unManagementStatus');
+    if (statusSelect) statusSelect.value = status;
+    toggleHoldFields();
+    updateUnassignedStatusUI();
+    renderUnassignedList();
+  }
+
+  function updateUnassignedStatusUI() {
+    const isLesson = currentScheduleType === 'lesson';
+    const statusTabs = document.getElementById('lessonStatusTabs');
+    const pendingButton = document.getElementById('pendingStatusBtn');
+    const onHoldButton = document.getElementById('onHoldStatusBtn');
+    const title = document.getElementById('unassignedTitle');
+    const addButton = document.getElementById('unassignedAddBtn');
+
+    if (statusTabs) statusTabs.classList.toggle('d-none', !isLesson);
+    if (!isLesson) return;
+
+    if (pendingButton) pendingButton.className = currentUnassignedStatus === 'pending' ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-outline-warning';
+    if (onHoldButton) onHoldButton.className = currentUnassignedStatus === 'on_hold' ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-outline-secondary';
+    if (title) title.innerText = currentUnassignedStatus === 'on_hold' ? '🗂️ 장기거치 레슨생 목록' : '⏳ 일정 미정 레슨생 목록';
+    if (addButton) addButton.innerText = currentUnassignedStatus === 'on_hold' ? '+ 장기거치 레슨생 등록' : '+ 미정 레슨생 등록';
+  }
+
+  function toggleHoldFields() {
+    const status = document.getElementById('unManagementStatus')?.value;
+    document.getElementById('holdDetails')?.classList.toggle('d-none', status !== 'on_hold');
   }
 
   function calculateEndTime() {
@@ -840,28 +951,22 @@
     document.getElementById('modalEndTime').value = `${endHours}:${endMinutes}`;
   }
 
-  function parseISOToLocalString(isoStr) {
-    if (!isoStr) return '';
-    const date = new Date(isoStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+  function formatKST(dateInput) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(dateInput));
+    const value = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+    return {
+      date: `${value.year}-${value.month}-${value.day}`,
+      time: `${value.hour}:${value.minute}`
+    };
   }
 
-  function formatKST(dateInput) {
-    const d = new Date(dateInput);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return {
-      date: `${year}-${month}-${day}`,
-      time: `${hours}:${minutes}`
-    };
+  function parseISOToLocalString(isoStr) {
+    if (!isoStr) return '';
+    const { date, time } = formatKST(isoStr);
+    return `${date}T${time}:00`;
   }
 
   function formatDateIso(dateObj) {
@@ -883,20 +988,22 @@
     const startSelect = document.getElementById('modalStartTime');
     if (!startSelect) return;
 
-    startSelect.innerHTML = '';
-
-    for (let h = 10; h <= 22; h++) {
-      ['00', '10', '20', '30', '40', '50'].forEach(m => {
-        const timeStr = `${String(h).padStart(2, '0')}:${m}`;
-        startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
-      });
-    }
+    const subject = document.getElementById('modalSubject')?.value;
+    const duration = DURATION_MAP[subject] || 60;
+    const latestStartMinute = currentScheduleType === 'practice' ? (23 * 60) - duration : (22 * 60) + 50;
+    const latestHour = String(Math.floor(latestStartMinute / 60)).padStart(2, '0');
+    const latestMinute = String(latestStartMinute % 60).padStart(2, '0');
+    startSelect.min = '10:00';
+    startSelect.max = `${latestHour}:${latestMinute}`;
+    // 상담은 10분, 레슨·연습실은 30분 단위를 브라우저 기본 입력에서도 안내합니다.
+    startSelect.step = currentScheduleType === 'consulting' ? '600' : '1800';
   }
 
   document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
     updateRoomOptions();
     updateSubjectOptions();
+    updateUnassignedStatusUI();
     checkAuthStatus();
   });
 
@@ -933,6 +1040,23 @@
   function toggleUnassignedForm() {
     const form = document.getElementById('unassignedForm');
     form.classList.toggle('d-none');
+    if (!form.classList.contains('d-none') && currentScheduleType === 'lesson') {
+      const statusSelect = document.getElementById('unManagementStatus');
+      if (statusSelect) statusSelect.value = currentUnassignedStatus;
+      toggleHoldFields();
+    }
+  }
+
+  function createRecurrenceGroupId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return `series-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function getScheduleStatusLabel(status) {
+    return ({
+      attended: '출석', absent: '결석', cancelled: '취소',
+      makeup_scheduled: '보강 예정', makeup_completed: '보강 완료'
+    })[status] || '';
   }
 
   async function loadUnassignedStudents() {
@@ -967,6 +1091,9 @@
 
     const sessionEl = document.getElementById('unSessions');
     const total_sessions = currentScheduleType === 'lesson' ? (sessionEl ? parseInt(sessionEl.value, 10) : 4) : 1;
+    const management_status = currentScheduleType === 'lesson' ? document.getElementById('unManagementStatus').value : 'pending';
+    const hold_reason = currentScheduleType === 'lesson' ? document.getElementById('unHoldReason').value.trim() : null;
+    const resume_date = currentScheduleType === 'lesson' ? (document.getElementById('unResumeDate').value || null) : null;
 
     if (!name) {
       alert('성함을 입력해주세요.');
@@ -983,7 +1110,10 @@
       total_sessions,
       completed_sessions: 0,
       remaining_sessions: total_sessions,
-      schedule_type: currentScheduleType
+      schedule_type: currentScheduleType,
+      management_status,
+      hold_reason: management_status === 'on_hold' ? hold_reason : null,
+      resume_date: management_status === 'on_hold' ? resume_date : null
     };
 
     const { error } = await sbClient.from('unassigned_students').insert([payload]);
@@ -993,9 +1123,13 @@
       return;
     }
 
-    alert(`${name} 님이 미정 목록에 등록되었습니다.`);
+    alert(`${name} 님이 ${management_status === 'on_hold' ? '장기거치' : '미정'} 목록에 등록되었습니다.`);
     document.getElementById('unStudentName').value = '';
     if(document.getElementById('unPhone')) document.getElementById('unPhone').value = '';
+    document.getElementById('unHoldReason').value = '';
+    document.getElementById('unResumeDate').value = '';
+    document.getElementById('unManagementStatus').value = 'pending';
+    toggleHoldFields();
     toggleUnassignedForm();
     await loadUnassignedStudents();
   }
@@ -1005,12 +1139,19 @@
     const filterVal = document.getElementById('unassignedCoachFilter').value;
     if (!container) return;
 
-    if (unassignedStudents.length === 0) {
-      container.innerHTML = `<div class="small text-secondary py-1">대기 중인 ${currentScheduleType === 'practice' ? '연습실' : (currentScheduleType === 'consulting' ? '상담/체험' : '레슨')} 미정 목록이 없습니다.</div>`;
+    const statusFilteredStudents = currentScheduleType === 'lesson'
+      ? unassignedStudents.filter(student => (student.management_status || 'pending') === currentUnassignedStatus)
+      : unassignedStudents;
+
+    if (statusFilteredStudents.length === 0) {
+      const label = currentScheduleType === 'lesson'
+        ? (currentUnassignedStatus === 'on_hold' ? '장기거치 레슨생' : '일정 미정 레슨생')
+        : (currentScheduleType === 'practice' ? '연습실' : '상담/체험');
+      container.innerHTML = `<div class="small text-secondary py-1">대기 중인 ${label}이 없습니다.</div>`;
       return;
     }
 
-    let filteredList = unassignedStudents;
+    let filteredList = statusFilteredStudents;
     if (currentScheduleType !== 'practice' && filterVal !== 'ALL') {
       filteredList = unassignedStudents.filter(s => s.coach === filterVal);
     }
@@ -1033,13 +1174,17 @@
           <div class="unassigned-card">
             <div class="small">
               <span class="badge bg-secondary me-1">${s.branch}</span>
-              <strong class="text-white">${s.name}</strong> 
-              ${s.phone ? `<span class="text-secondary">(${s.phone})</span>` : ''}
-              <span class="badge bg-success ms-1">${s.subject || '연습실'}</span>
-              <span class="text-secondary">(${s.room || '연습실'})</span>
+              <strong class="text-white">${escapeHtml(s.name)}</strong> 
+              ${s.phone ? `<span class="text-secondary">(${escapeHtml(s.phone)})</span>` : ''}
+              <span class="badge bg-success ms-1">${escapeHtml(s.subject || '연습실')}</span>
+              <span class="text-secondary">(${escapeHtml(s.room || '연습실')})</span>
+              ${currentScheduleType === 'lesson' && currentUnassignedStatus === 'on_hold' && s.hold_reason ? `<span class="text-warning ms-1">· ${escapeHtml(s.hold_reason)}</span>` : ''}
+              ${currentScheduleType === 'lesson' && currentUnassignedStatus === 'on_hold' && s.resume_date ? `<span class="text-info ms-1">재개 예정 ${escapeHtml(s.resume_date)}</span>` : ''}
             </div>
             <div>
-              <button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>
+              ${currentScheduleType === 'lesson' && currentUnassignedStatus === 'on_hold'
+                ? `<button class="btn btn-sm btn-outline-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="moveToPending(${s.id})">미정으로 전환</button>`
+                : `<button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>`}
               <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
             </div>
           </div>
@@ -1050,7 +1195,7 @@
         <div class="coach-unassigned-section mb-3">
           <div class="d-flex align-items-center gap-2 mb-1">
             <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:${groupColor};"></span>
-            <h6 class="fw-bold m-0 text-white" style="font-size:0.9rem;">🎹 ${groupKey} (${grouped[groupKey].length}건)</h6>
+            <h6 class="fw-bold m-0 text-white" style="font-size:0.9rem;">🎹 ${escapeHtml(groupKey)} (${grouped[groupKey].length}건)</h6>
           </div>
           ${cardsHtml}
         </div>
@@ -1068,9 +1213,26 @@
     }
   }
 
+  async function moveToPending(dbId) {
+    const { error } = await sbClient
+      .from('unassigned_students')
+      .update({ management_status: 'pending', hold_reason: null, resume_date: null })
+      .eq('id', dbId);
+
+    if (error) {
+      alert('상태 변경 실패: ' + error.message);
+      return;
+    }
+    await loadUnassignedStudents();
+  }
+
   function selectUnassignedStudent(dbId) {
     const data = unassignedStudents.find(item => item.id === dbId);
     if (!data) return;
+    if ((data.management_status || 'pending') === 'on_hold') {
+      alert('장기거치 레슨생은 먼저 미정으로 전환한 뒤 일정을 지정해 주세요.');
+      return;
+    }
 
     openAddModal();
 
@@ -1083,52 +1245,75 @@
     if (document.getElementById('modalCoachName')) document.getElementById('modalCoachName').value = data.coach || '연습실';
     document.getElementById('modalSubject').value = data.subject || '1시간 대여';
     if (document.getElementById('modalRoomName')) document.getElementById('modalRoomName').value = data.room || 'ROOM 1';
+    populateTimeOptions();
     calculateEndTime();
 
     alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
   }
 
-  // 시간대별 수직 정렬 완벽 보정 함수
+  // 같은 시작 시간의 일정을 세로 카드로 쌓고, 필요한 만큼 캘린더 행 높이를 늘립니다.
   function reorganizeTimeGridEvents() {
     if (!calendar) return;
     const view = calendar.view;
     if (view.type !== 'timeGridWeek' && view.type !== 'timeGridDay') return;
 
+    // 카드 자체에 기록한 시작 시각을 사용하므로 FullCalendar 내부 DOM 구조에 영향을 받지 않습니다.
+    const getSchedulePosition = harness => {
+      const card = harness.querySelector('.custom-stack-card');
+      const time = card?.dataset.startTime;
+      if (time) {
+        const [hour, minute] = time.split(':').map(Number);
+        const minutesFromOpen = (hour * 60) + minute - (10 * 60);
+        return { key: time, top: Math.max(0, (minutesFromOpen / 60) * appliedSlotHeight) };
+      }
+
+      const top = parseFloat(harness.style.top) || 0;
+      return { key: `fallback-${top}`, top };
+    };
+
+    const groupHarnesses = harnesses => {
+      const groups = new Map();
+      harnesses.forEach(harness => {
+        const position = getSchedulePosition(harness);
+        if (!groups.has(position.key)) groups.set(position.key, { top: position.top, harnesses: [] });
+        groups.get(position.key).harnesses.push(harness);
+      });
+      return Array.from(groups.values());
+    };
+
     const dayCols = document.querySelectorAll('.fc-timegrid-col');
+    let maxStackCount = 1;
+
     dayCols.forEach(col => {
       const harnesses = Array.from(col.querySelectorAll('.fc-timegrid-event-harness'));
-      if (harnesses.length === 0) return;
-
-      // top 오름차순 정렬
-      harnesses.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
-
-      const timeGroups = [];
-      harnesses.forEach(harness => {
-        const topVal = parseFloat(harness.style.top) || 0;
-        let group = timeGroups.find(g => Math.abs(g.baseTop - topVal) < 5);
-        if (!group) {
-          group = { baseTop: topVal, items: [] };
-          timeGroups.push(group);
-        }
-        group.items.push(harness);
+      const timeGroups = groupHarnesses(harnesses);
+      timeGroups.forEach(group => {
+        maxStackCount = Math.max(maxStackCount, group.harnesses.length);
       });
+    });
+
+    const requiredSlotHeight = Math.max(120, (maxStackCount * 35) + 10);
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl && requiredSlotHeight !== appliedSlotHeight) {
+      appliedSlotHeight = requiredSlotHeight;
+      calendarEl.style.setProperty('--schedule-slot-height', `${requiredSlotHeight}px`);
+      setTimeout(reorganizeTimeGridEvents, 0);
+      return;
+    }
+
+    dayCols.forEach(col => {
+      const harnesses = Array.from(col.querySelectorAll('.fc-timegrid-event-harness'));
+      const timeGroups = groupHarnesses(harnesses);
 
       timeGroups.forEach(group => {
-        let currentTop = group.baseTop;
-        group.items.forEach(harness => {
+        let cardTop = group.top;
+        group.harnesses.forEach(harness => {
           harness.style.left = '2px';
           harness.style.right = '2px';
           harness.style.width = 'calc(100% - 4px)';
-          harness.style.top = `${currentTop}px`;
-          
-          const eventEl = harness.querySelector('.fc-timegrid-event');
-          if (eventEl) {
-            eventEl.style.height = 'auto';
-          }
-          
-          const cardEl = harness.querySelector('.custom-stack-card');
-          const cardHeight = cardEl ? (cardEl.offsetHeight + 3) : 32;
-          currentTop += cardHeight;
+          harness.style.top = `${cardTop}px`;
+          const card = harness.querySelector('.custom-stack-card');
+          cardTop += (card?.offsetHeight || 32) + 3;
         });
       });
     });
@@ -1157,6 +1342,7 @@
       slotDuration: '01:00:00',
       slotLabelInterval: '01:00:00',
       eventOverlap: true,
+      slotEventOverlap: true,
 
       dayHeaderContent: function(arg) {
         const d = arg.date;
@@ -1180,7 +1366,8 @@
           const selectedRoom = document.getElementById('roomSelect').value;
           const selectedCoach = document.getElementById('coachFilter').value;
 
-          let query = sbClient.from('schedules').select('*').eq('branch', selectedBranch);
+          let query = sbClient.from('schedules').select('*').eq('branch', selectedBranch)
+            .lt('start_time', fetchInfo.endStr).gt('end_time', fetchInfo.startStr);
 
           if (currentScheduleType !== 'consulting' && selectedRoom !== 'ALL') {
             query = query.eq('room_name', selectedRoom);
@@ -1241,7 +1428,8 @@
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
               const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
-              displayTitle = `${roomNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
+              const statusLabel = getScheduleStatusLabel(item.schedule_status);
+              displayTitle = `${roomNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}${statusLabel ? ` [${statusLabel}]` : ''}`;
             }
 
             return {
@@ -1269,8 +1457,9 @@
       },
 
       eventContent: function(arg) {
+        const { time } = formatKST(arg.event.start);
         return {
-          html: `<div class="custom-stack-card" style="background-color: ${arg.event.backgroundColor};">${arg.event.title}</div>`
+          html: `<div class="custom-stack-card" data-start-time="${time}" style="background-color: ${safeColor(arg.event.backgroundColor)};">${escapeHtml(arg.event.title)}</div>`
         };
       },
 
@@ -1301,11 +1490,12 @@
     coachMap = {};
 
     (coaches || []).forEach(c => {
-      coachMap[c.name] = c.color || '#4f46e5';
-      if (coachFilter) coachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-      if (unassignedCoachFilter) unassignedCoachFilter.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-      if (modalCoachName) modalCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-      if (unCoachName) unCoachName.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+      coachMap[c.name] = safeColor(c.color);
+      const coachName = escapeHtml(c.name);
+      if (coachFilter) coachFilter.innerHTML += `<option value="${coachName}">${coachName}</option>`;
+      if (unassignedCoachFilter) unassignedCoachFilter.innerHTML += `<option value="${coachName}">${coachName}</option>`;
+      if (modalCoachName) modalCoachName.innerHTML += `<option value="${coachName}">${coachName}</option>`;
+      if (unCoachName) unCoachName.innerHTML += `<option value="${coachName}">${coachName}</option>`;
     });
 
     const coachTableBody = document.getElementById('coachTableBody');
@@ -1315,17 +1505,16 @@
       (coaches || []).forEach(c => {
         const branchBadges = (c.branch || '위례점')
           .split(',')
-          .map(b => `<span class="badge bg-secondary me-1">${b.trim()}</span>`)
+          .map(b => `<span class="badge bg-secondary me-1">${escapeHtml(b.trim())}</span>`)
           .join('');
 
         coachTableBody.innerHTML += `
           <tr>
             <td>${branchBadges}</td>
-            <td class="fw-bold">${c.name}</td>
-            <td>${c.email || c.username || '-'}</td>
-            <td><code>${c.password || '*****'}</code></td>
+            <td class="fw-bold">${escapeHtml(c.name)}</td>
+            <td>${escapeHtml(c.email || c.username || '-')}</td>
             <td>${c.role === 'admin' ? '<span class="badge bg-danger">관리자</span>' : '<span class="badge bg-primary">코치</span>'}</td>
-            <td><div style="width:20px; height:20px; background-color:${c.color || '#4f46e5'}; border-radius:4px;"></div></td>
+            <td><div style="width:20px; height:20px; background-color:${safeColor(c.color)}; border-radius:4px;"></div></td>
             <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="deleteCoach('${c.id}')">삭제</button></td>
           </tr>
         `;
@@ -1458,6 +1647,7 @@
 
     updateRoomOptions();
     updateSubjectOptions();
+    updateContactFieldLabels(type);
   }
 
   function openAddModal() {
@@ -1467,10 +1657,12 @@
 
     document.getElementById('scheduleId').value = "";
     document.getElementById('currentUnassignedDbId').value = "";
+    document.getElementById('recurrenceGroupId').value = "";
     document.getElementById('modalTotalSessions').value = currentScheduleType === 'lesson' ? "4" : "1";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalPhone').value = "";
     document.getElementById('modalMemo').value = "";
+    document.getElementById('modalScheduleStatus').value = 'scheduled';
     
     setupModalView(currentScheduleType);
 
@@ -1499,18 +1691,21 @@
 
     document.getElementById('scheduleId').value = scheduleData.id;
     document.getElementById('currentUnassignedDbId').value = "";
+    document.getElementById('recurrenceGroupId').value = scheduleData.recurrence_group_id || '';
     document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 1;
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     
     updateRoomOptionsForModal();
 
     document.getElementById('modalStudentName').value = scheduleData.student_name;
+    document.getElementById('modalScheduleStatus').value = scheduleData.schedule_status || 'scheduled';
     
     if (type !== 'practice' && document.getElementById('modalCoachName')) {
       document.getElementById('modalCoachName').value = scheduleData.coach_name;
     }
     
     document.getElementById('modalSubject').value = scheduleData.subject || (type === 'practice' ? '1시간 대여' : (type === 'consulting' ? '상담' : '스타일'));
+    populateTimeOptions();
     
     if (document.getElementById('modalRoomName')) {
       document.getElementById('modalRoomName').value = scheduleData.room_name || 'ROOM 1';
@@ -1547,6 +1742,32 @@
     new bootstrap.Modal(document.getElementById('scheduleModal')).show();
   }
 
+  async function assertNoScheduleConflict(candidates, excludeId = null) {
+    for (const candidate of candidates) {
+      const { data: overlaps, error } = await sbClient
+        .from('schedules')
+        .select('id, student_name, coach_name, room_name, start_time, end_time')
+        .eq('branch', candidate.branch)
+        .lt('start_time', candidate.end_time)
+        .gt('end_time', candidate.start_time);
+
+      if (error) throw error;
+
+      const conflict = (overlaps || []).find(existing => {
+        if (String(existing.id) === String(excludeId)) return false;
+        const sameRoom = existing.room_name === candidate.room_name;
+        const sameCoach = candidate.coach_name !== '연습실' && existing.coach_name === candidate.coach_name;
+        return sameRoom || sameCoach;
+      });
+
+      if (conflict) {
+        const reason = conflict.room_name === candidate.room_name ? `룸 ${candidate.room_name}` : `코치 ${candidate.coach_name}`;
+        const time = formatKST(conflict.start_time).time;
+        throw new Error(`${reason}에 ${time}부터 이미 ${conflict.student_name || '다른'} 일정이 있습니다.`);
+      }
+    }
+  }
+
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
     const unassignedDbId = document.getElementById('currentUnassignedDbId').value;
@@ -1568,6 +1789,8 @@
     const phone = document.getElementById('modalPhone')?.value.trim() || '';
     const consult_status = document.getElementById('modalConsultStatus')?.value || '';
     const memo = document.getElementById('modalMemo')?.value.trim() || '';
+    const schedule_status = currentScheduleType === 'lesson' ? document.getElementById('modalScheduleStatus').value : 'scheduled';
+    const recurrence_group_id = document.getElementById('recurrenceGroupId').value || null;
 
     const isRepeat = document.getElementById('repeatScheduleCheck')?.checked;
     const repeatWeeks = parseInt(document.getElementById('repeatWeeksSelect')?.value, 10) || 1;
@@ -1579,6 +1802,18 @@
 
     if (startTime >= endTime) {
       alert("종료 시간은 시작 시간보다 이후여야 합니다.");
+      return;
+    }
+
+    const duration = DURATION_MAP[subject] || 60;
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const timeUnit = currentScheduleType === 'consulting' ? 10 : 30;
+    if (startMinute % timeUnit !== 0) {
+      alert(`${currentScheduleType === 'consulting' ? '상담' : '레슨/연습실'} 시작 시간은 ${timeUnit}분 단위로 입력해 주세요.`);
+      return;
+    }
+    if (currentScheduleType === 'practice' && ((startHour * 60) + startMinute + duration > (23 * 60))) {
+      alert('연습실 이용은 운영 마감 시간인 23:00 이전에 끝나도록 시작 시간을 선택해 주세요.');
       return;
     }
 
@@ -1597,10 +1832,18 @@
       schedule_type: currentScheduleType,
       phone,
       consult_status,
-      memo
+      memo,
+      schedule_status,
+      recurrence_group_id
     };
 
     if (id) {
+      try {
+        await assertNoScheduleConflict([payload], id);
+      } catch (error) {
+        alert(`저장할 수 없습니다: ${error.message}`);
+        return;
+      }
       const result = await sbClient.from('schedules').update(payload).eq('id', id);
       if (result.error) {
         alert("수정 실패: " + result.error.message);
@@ -1614,6 +1857,7 @@
     }
 
     const weeksToCreate = (currentScheduleType === 'lesson' && isRepeat) ? repeatWeeks : 1;
+    const newRecurrenceGroupId = (currentScheduleType === 'lesson' && isRepeat) ? createRecurrenceGroupId() : null;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
 
@@ -1624,9 +1868,17 @@
 
       schedulesToInsert.push({ 
         ...payload,
+        recurrence_group_id: newRecurrenceGroupId,
         start_time: `${currDateStr}T${startTime}:00+09:00`,
         end_time: `${currDateStr}T${endTime}:00+09:00`
       });
+    }
+
+    try {
+      await assertNoScheduleConflict(schedulesToInsert);
+    } catch (error) {
+      alert(`저장할 수 없습니다: ${error.message}`);
+      return;
     }
 
     const { error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert);
