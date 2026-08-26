@@ -290,20 +290,39 @@
     }
     .table-dark-custom td { border-color: #2e3140; }
 
-    @media (max-width: 768px) {
+    .coach-mobile-schedule { display: none; }
+    .coach-mobile-date-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 14px; }
+    .coach-mobile-date-title { font-size: 1rem; font-weight: 800; color: #f8fafc; text-align: center; flex: 1; }
+    .coach-schedule-card { background: #21232d; border: 1px solid #34384a; border-left: 5px solid #4f46e5; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .coach-schedule-card.cancelled { opacity: 0.55; border-left-color: #6b7280; }
+    .coach-schedule-time { font-weight: 800; font-size: 1.05rem; color: #a5b4fc; }
+    .coach-schedule-name { font-weight: 800; color: #fff; font-size: 1rem; }
+    .coach-schedule-meta { color: #a0a5b5; font-size: 0.82rem; margin-top: 4px; }
+    .coach-status-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .coach-mobile-add { position: sticky; bottom: 12px; width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; font-weight: 800; z-index: 10; }
+
+    body.coach-mobile-mode .filter-section,
+    body.coach-mobile-mode .unassigned-container,
+    body.coach-mobile-mode #calendar { display: none; }
+    body.coach-mobile-mode .coach-mobile-schedule { display: block; }
+
+    @media (max-width: 900px) {
       body { padding: 8px 4px; }
       .main-container { padding: 12px 8px; border-radius: 12px; }
-      .fc-toolbar { flex-direction: column; gap: 8px; }
-      .fc-toolbar-title { font-size: 0.95rem !important; }
+      .fc-toolbar { flex-direction: column; gap: 6px; }
+      .fc-toolbar-title { font-size: 1rem !important; }
       .fc-header-toolbar { margin-bottom: 0.6rem !important; }
-      .fc-button-primary { padding: 4px 8px !important; font-size: 0.75rem !important; }
+      .fc-button-primary { padding: 7px 10px !important; font-size: 0.8rem !important; }
       .filter-section { padding: 10px; margin-bottom: 12px; }
       .modal-dialog { margin: 10px; }
-      #calendar { min-height: 550px; }
-      .fc-timegrid-axis { width: 45px !important; }
-      .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
+      #calendar { min-height: 0; --schedule-slot-height: 72px; }
+      .fc-timegrid-axis { width: 52px !important; }
+      .fc-timegrid-slot-label-cushion { font-size: 0.75rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
+      .custom-stack-card { white-space: normal; overflow: visible; text-overflow: clip; min-height: 30px; line-height: 1.25; padding: 6px 8px; }
+      .fc-list-event-title { white-space: normal; font-size: 0.88rem; }
+      .fc-list-event-time { font-size: 0.8rem; white-space: nowrap; }
     }
   </style>
 </head>
@@ -472,6 +491,15 @@
   </div>
 
   <div id="calendar"></div>
+  <div id="coachMobileSchedule" class="coach-mobile-schedule">
+    <div class="coach-mobile-date-nav">
+      <button class="btn btn-sm btn-outline-light" onclick="changeCoachMobileDate(-1)">‹</button>
+      <button id="coachMobileDateTitle" class="coach-mobile-date-title btn btn-sm btn-outline-light" onclick="goToCoachMobileToday()">오늘</button>
+      <button class="btn btn-sm btn-outline-light" onclick="changeCoachMobileDate(1)">›</button>
+    </div>
+    <div id="coachMobileScheduleList"></div>
+    <button class="btn btn-primary coach-mobile-add" onclick="openAddModal()">+ 일정 추가</button>
+  </div>
 </div>
 
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
@@ -713,9 +741,11 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
   let originalScheduleData = null;
+  let coachMobileDate = formatKST(new Date()).date;
+  let coachMobileSchedules = [];
   let currentUnassignedStatus = 'pending';
   let fetchedEventsStore = [];
-  let appliedSlotHeight = 120;
+  let appliedSlotHeight = window.matchMedia('(max-width: 900px)').matches ? 72 : 120;
 
   // DB에 저장된 이름·메모 등 사용자 입력값을 HTML로 해석하지 않도록 합니다.
   function escapeHtml(value) {
@@ -870,6 +900,7 @@
     updateUnassignedStatusUI();
     loadUnassignedStudents();
     if (calendar) calendar.refetchEvents();
+    renderCoachMobileSchedule();
   }
 
   function updateSubjectOptions() {
@@ -1029,7 +1060,18 @@
     updateSubjectOptions();
     updateUnassignedStatusUI();
     checkAuthStatus();
+    window.addEventListener('resize', updateCoachMobileMode);
   });
+
+  function isCoachMobileMode() {
+    const user = JSON.parse(sessionStorage.getItem('loginUser'));
+    return Boolean(user && user.role !== 'admin' && window.matchMedia('(max-width: 900px)').matches);
+  }
+
+  function updateCoachMobileMode() {
+    document.body.classList.toggle('coach-mobile-mode', isCoachMobileMode());
+    if (isCoachMobileMode()) renderCoachMobileSchedule();
+  }
 
   function checkAuthStatus() {
     const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
@@ -1057,6 +1099,7 @@
         applyCoachRestriction();
         initCalendar();
         loadUnassignedStudents();
+        updateCoachMobileMode();
       });
     } else {
       loginView.classList.remove('d-none');
@@ -1350,7 +1393,8 @@
       });
     });
 
-    const requiredSlotHeight = Math.max(120, (maxStackCount * 35) + 10);
+    const baseSlotHeight = window.matchMedia('(max-width: 900px)').matches ? 72 : 120;
+    const requiredSlotHeight = Math.max(baseSlotHeight, (maxStackCount * 35) + 10);
     const calendarEl = document.getElementById('calendar');
     if (calendarEl && requiredSlotHeight !== appliedSlotHeight) {
       appliedSlotHeight = requiredSlotHeight;
@@ -1386,7 +1430,10 @@
       return;
     }
 
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    const headerToolbar = isMobile
+      ? { left: 'prev,next today', center: 'title', right: 'timeGridDay,listWeek' }
+      : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' };
 
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
@@ -1412,10 +1459,12 @@
       },
 
       buttonText: { today: '오늘', month: '월', week: '주', day: '일', listWeek: '목록' },
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+      headerToolbar,
+      windowResize: function() {
+        const compactMobile = window.matchMedia('(max-width: 900px)').matches;
+        if (compactMobile && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
+          calendar.changeView('timeGridDay');
+        }
       },
       
       events: async function(fetchInfo, successCallback, failureCallback) {
@@ -1734,7 +1783,7 @@
     setupModalView(currentScheduleType);
 
     const nowKST = formatKST(new Date());
-    document.getElementById('modalDate').value = nowKST.date;
+    document.getElementById('modalDate').value = isCoachMobileMode() ? coachMobileDate : nowKST.date;
     document.getElementById('modalStartTime').value = "10:00";
     
     calculateEndTime();
@@ -1862,6 +1911,94 @@
       snapshot: scheduleData
     }]);
     if (error) console.error('일정 변경 이력 저장 실패:', error);
+  }
+
+  function changeCoachMobileDate(days) {
+    const date = new Date(`${coachMobileDate}T12:00:00+09:00`);
+    date.setDate(date.getDate() + days);
+    coachMobileDate = formatKST(date).date;
+    renderCoachMobileSchedule();
+  }
+
+  function goToCoachMobileToday() {
+    coachMobileDate = formatKST(new Date()).date;
+    renderCoachMobileSchedule();
+  }
+
+  async function renderCoachMobileSchedule() {
+    if (!isCoachMobileMode()) return;
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const title = document.getElementById('coachMobileDateTitle');
+    const list = document.getElementById('coachMobileScheduleList');
+    if (!currentUser || !title || !list) return;
+
+    const date = new Date(`${coachMobileDate}T12:00:00+09:00`);
+    const dayName = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    title.textContent = `${Number(coachMobileDate.slice(5, 7))}월 ${Number(coachMobileDate.slice(8, 10))}일 (${dayName})`;
+    list.innerHTML = '<div class="small text-secondary py-3 text-center">일정을 불러오는 중입니다.</div>';
+
+    const dayStart = `${coachMobileDate}T00:00:00+09:00`;
+    const nextDate = new Date(`${coachMobileDate}T12:00:00+09:00`);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const dayEnd = `${formatKST(nextDate).date}T00:00:00+09:00`;
+    const { data, error } = await sbClient.from('schedules').select('*')
+      .eq('coach_name', currentUser.name)
+      .gte('start_time', dayStart).lt('start_time', dayEnd)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      list.innerHTML = `<div class="small text-danger py-3 text-center">일정을 불러오지 못했습니다: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    const schedules = (data || []).filter(item => {
+      const type = item.schedule_type || (item.subject?.includes('대여') ? 'practice' : (item.subject === '상담' || item.subject === '체험' ? 'consulting' : 'lesson'));
+      return type === currentScheduleType;
+    });
+    coachMobileSchedules = schedules;
+    if (!schedules.length) {
+      list.innerHTML = '<div class="small text-secondary py-4 text-center">이 날은 등록된 일정이 없습니다.</div>';
+      return;
+    }
+
+    list.innerHTML = schedules.map(schedule => {
+      const start = formatKST(schedule.start_time).time;
+      const end = formatKST(schedule.end_time).time;
+      const cancelled = schedule.schedule_status === 'cancelled' ? ' cancelled' : '';
+      const status = getScheduleStatusLabel(schedule.schedule_status) || '예정';
+      return `<div class="coach-schedule-card${cancelled}" onclick="openCoachMobileSchedule('${schedule.id}')">
+        <div class="d-flex justify-content-between align-items-center gap-2"><span class="coach-schedule-time">${escapeHtml(start)}–${escapeHtml(end)}</span><span class="badge bg-secondary">${escapeHtml(status)}</span></div>
+        <div class="coach-schedule-name mt-1">${escapeHtml(schedule.student_name || '이름 없음')}</div>
+        <div class="coach-schedule-meta">${escapeHtml(schedule.subject || '')} · ${escapeHtml(schedule.room_name || '')}</div>
+        ${currentScheduleType === 'lesson' ? `<div class="coach-status-actions">
+          <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'attended')">출석</button>
+          <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'absent')">결석</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'cancelled')">취소</button>
+          <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'makeup_scheduled')">보강</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function openCoachMobileSchedule(id) {
+    const schedule = coachMobileSchedules.find(item => String(item.id) === String(id));
+    if (schedule) openEditModal(schedule);
+  }
+
+  async function updateMobileScheduleStatus(id, status) {
+    const { data: schedule, error: fetchError } = await sbClient.from('schedules').select('*').eq('id', id).single();
+    if (fetchError) {
+      alert('일정을 찾지 못했습니다: ' + fetchError.message);
+      return;
+    }
+    const { error } = await sbClient.from('schedules').update({ schedule_status: status }).eq('id', id);
+    if (error) {
+      alert('상태 변경 실패: ' + error.message);
+      return;
+    }
+    await writeScheduleHistory('updated', { ...schedule, schedule_status: status }, `${formatScheduleForHistory(schedule)} 수업 상태를 ${getScheduleStatusLabel(status) || '예정'}으로 변경`);
+    if (calendar) calendar.refetchEvents();
+    await renderCoachMobileSchedule();
   }
 
   async function openScheduleHistory() {
