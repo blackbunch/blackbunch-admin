@@ -197,8 +197,11 @@
       color: #f8fafc;
     }
 
-    /* 이벤트 세로 정렬(Stacked) 스타일 지정 */
+    /* 이벤트 세로 정렬(Stacked) 스타일 강제 적용 */
     .fc-timegrid-event-harness {
+      left: 0% !important;
+      right: 0% !important;
+      width: 100% !important;
       margin-bottom: 3px !important;
     }
 
@@ -211,6 +214,7 @@
       display: flex !important;
       flex-direction: column !important;
       justify-content: center !important;
+      position: relative !important;
     }
 
     .fc-event-main {
@@ -1107,6 +1111,8 @@
       slotMaxTime: '23:00:00',
       slotDuration: '00:30:00',
       slotLabelInterval: '01:00:00',
+      eventOverlap: false,
+      eventOrder: 'start,title',
 
       dayHeaderContent: function(arg) {
         const d = arg.date;
