@@ -142,8 +142,9 @@
       overflow: hidden;
     }
     
+    /* 세로 공간 확보를 위해 시간 슬롯 높이 확장 */
     .fc-timegrid-slot {
-      height: 48px !important;
+      height: 70px !important;
     }
     
     .fc-timegrid-cols table, .fc-col-header table {
@@ -197,37 +198,43 @@
       color: #f8fafc;
     }
 
-    /* 이벤트 세로 정렬(Stacked) 스타일 강제 적용 */
+    /* 이벤트 세로 정렬 및 풀 너비 조정 */
     .fc-timegrid-event-harness {
       left: 0% !important;
       right: 0% !important;
       width: 100% !important;
-      margin-bottom: 3px !important;
+      margin-bottom: 2px !important;
     }
 
     .fc-timegrid-event {
       border-radius: 6px !important;
-      padding: 4px 6px !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      padding: 2px 4px !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
       border: 1px solid #ffffff !important;
       cursor: pointer !important;
       display: flex !important;
       flex-direction: column !important;
       justify-content: center !important;
-      position: relative !important;
+      min-height: 22px !important;
     }
 
     .fc-event-main {
       padding: 0 !important;
-      font-size: 0.82rem !important;
+      font-size: 0.78rem !important;
       font-weight: 700 !important;
       color: #ffffff !important;
-      line-height: 1.3;
+      line-height: 1.2;
       white-space: normal !important;
       word-break: break-all !important;
       width: 100%;
-      display: flex !important;
-      flex-direction: column !important;
+    }
+
+    /* 리스트 뷰 커스텀 스타일 */
+    .fc-list-day-cushion {
+      background-color: #21232d !important;
+    }
+    .fc-list-event:hover td {
+      background-color: #2e3140 !important;
     }
 
     .fc-event-unassigned {
@@ -306,7 +313,7 @@
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
-      .fc-event-main { font-size: 0.75rem !important; }
+      .fc-event-main { font-size: 0.72rem !important; }
     }
   </style>
 </head>
@@ -1111,7 +1118,7 @@
       slotMaxTime: '23:00:00',
       slotDuration: '00:30:00',
       slotLabelInterval: '01:00:00',
-      eventOverlap: false,
+      eventOverlap: true, // 세로 배치 시 시각적 표시 문제 해결을 위해 overlap 허용
       eventOrder: 'start,title',
 
       dayHeaderContent: function(arg) {
@@ -1123,11 +1130,11 @@
         return `${month}. ${date}. (${dayName})`;
       },
 
-      buttonText: { today: '오늘', month: '월', week: '주', day: '일' },
+      buttonText: { today: '오늘', month: '월', week: '주', day: '일', listWeek: '목록' },
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
       },
       
       events: async function(fetchInfo, successCallback, failureCallback) {
@@ -1217,7 +1224,7 @@
 
       eventContent: function(arg) {
         return {
-          html: `<div style="font-weight: 700; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); word-break: break-all; font-size: 0.8rem; line-height: 1.2;">${arg.event.title}</div>`
+          html: `<div style="font-weight: 700; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); word-break: break-all; font-size: 0.78rem; line-height: 1.2;">${arg.event.title}</div>`
         };
       },
 
