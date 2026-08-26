@@ -6,9 +6,8 @@
   <title>블랙번치 스튜디오 일정 관리 시스템</title>
 
   <link rel="shortcut icon" href="#">
-  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
   <style>
@@ -27,7 +26,6 @@
       min-height: 100vh;
     }
 
-    /* 로그인 화면 제어 */
     .login-container {
       max-width: 400px;
       margin: 60px auto;
@@ -46,11 +44,6 @@
       border-radius: 20px;
       box-shadow: 0 12px 32px rgba(0,0,0,0.4);
       border: 1px solid #282a36;
-    }
-
-    /* 화면 전환용 클래스 */
-    .hide-view {
-      display: none !important;
     }
 
     .schedule-type-nav {
@@ -155,11 +148,10 @@
     }
     .fc-timegrid-axis { width: 60px !important; }
 
-    /* 헤더 및 그리드 라인 위치 정렬 */
     .fc-col-header-cell {
-      background-color: #ffffff !important;
-      padding: 8px 0 !important;
-      border-bottom: 1px solid #262836 !important;
+      background-color: #f0f0ff !important;
+      padding: 10px 0 !important;
+      border-bottom: 2px solid #dcdcfe !important;
     }
     .fc-col-header-cell-cushion {
       color: #6366f1 !important;
@@ -201,29 +193,25 @@
       color: #f8fafc;
     }
 
-    /* 이벤트 카드 상단 맞춤 정렬 및 레이아웃 수정 */
-    .fc-timegrid-event-harness {
-      margin-top: 0 !important;
-    }
-
     .fc-timegrid-event {
-      border-radius: 6px !important;
-      padding: 2px 4px !important;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-      border: 1px solid #ffffff !important;
+      border-radius: 8px !important;
+      padding: 4px 8px !important;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      border: 1.5px solid #ffffff !important;
       cursor: pointer !important;
       z-index: 5 !important;
-      margin: 0 1px !important;
-      display: flex !important;
-      align-items: center !important;
+      margin: 2px 3px !important;
     }
 
     .fc-event-main {
       padding: 0 !important;
-      font-size: 0.75rem !important;
-      font-weight: 700 !important;
+      font-size: 0.82rem !important;
+      font-weight: 800 !important;
       color: #ffffff !important;
-      line-height: 1.1;
+      line-height: 1.3;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
       width: 100%;
       letter-spacing: -0.3px;
     }
@@ -306,13 +294,12 @@
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
-      .fc-event-main { font-size: 0.7rem !important; }
+      .fc-event-main { font-size: 0.75rem !important; }
     }
   </style>
 </head>
 <body>
 
-<!-- 로그인 화면 -->
 <div id="loginView" class="login-container">
   <div class="text-center mb-4">
     <h3 class="fw-bold text-white mb-2">🎵 블랙번치 스튜디오</h3>
@@ -331,12 +318,11 @@
   </form>
 </div>
 
-<!-- 메인 앱 화면 -->
-<div id="mainApp" class="main-container hide-view">
+<div id="mainApp" class="main-container d-none">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h4 class="fw-bold m-0">🎵 블랙번치 스튜디오 스케줄</h4>
     <div id="authContainer" class="d-flex align-items-center gap-2">
-      <button id="manageCoachBtn" class="btn btn-outline-light btn-sm hide-view" style="border-radius:8px;" data-bs-toggle="modal" data-bs-target="#coachModal">
+      <button id="manageCoachBtn" class="btn btn-outline-light btn-sm d-none" style="border-radius:8px;" data-bs-toggle="modal" data-bs-target="#coachModal">
         ⚙️ 코치 관리
       </button>
       <span id="userInfo" class="fw-bold small text-secondary"></span>
@@ -370,7 +356,7 @@
       <button id="unassignedAddBtn" class="btn btn-sm btn-outline-warning" style="border-radius:6px; font-size:0.8rem;" onclick="toggleUnassignedForm()">+ 미정 레슨생 등록</button>
     </div>
 
-    <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 hide-view">
+    <div id="unassignedForm" class="p-3 bg-dark rounded border border-secondary mb-3 d-none">
       <div class="row g-2">
         <div class="col-6 col-md-2">
           <label class="form-label small">지점</label>
@@ -384,7 +370,7 @@
           <label id="unNameLabel" class="form-label small">수강생/이용자 이름</label>
           <input type="text" id="unStudentName" class="form-control form-control-sm" placeholder="성함 입력">
         </div>
-        <div class="col-6 col-md-2 consulting-only-field practice-field hide-view">
+        <div class="col-6 col-md-2 consulting-only-field practice-field d-none">
           <label class="form-label small">연락처</label>
           <input type="text" id="unPhone" class="form-control form-control-sm" placeholder="010-0000-0000">
         </div>
@@ -454,7 +440,6 @@
   <div id="calendar"></div>
 </div>
 
-<!-- 모달 창 요소들 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -482,7 +467,7 @@
             <input type="text" id="modalStudentName" class="form-control" placeholder="성함 입력" required>
           </div>
 
-          <div id="consultPhoneGroup" class="mb-3 consulting-only-field practice-field hide-view">
+          <div id="consultPhoneGroup" class="mb-3 consulting-only-field practice-field d-none">
             <label class="form-label">연락처</label>
             <input type="text" id="modalPhone" class="form-control" placeholder="010-0000-0000">
           </div>
@@ -497,7 +482,7 @@
             <select id="modalSubject" class="form-select" required onchange="calculateEndTime()"></select>
           </div>
 
-          <div id="consultStatusGroup" class="mb-3 hide-view">
+          <div id="consultStatusGroup" class="mb-3 d-none">
             <label class="form-label">상담 진행 상태</label>
             <select id="modalConsultStatus" class="form-select">
               <option value="예약완료" selected>📅 예약완료</option>
@@ -528,7 +513,7 @@
             </div>
           </div>
 
-          <div id="consultMemoGroup" class="mb-3 consulting-only-field practice-field hide-view">
+          <div id="consultMemoGroup" class="mb-3 consulting-only-field practice-field d-none">
             <label class="form-label">특이사항 / 메모</label>
             <textarea id="modalMemo" class="form-control" rows="2" placeholder="전화번호, 기타 특이사항 입력"></textarea>
           </div>
@@ -540,7 +525,7 @@
                 🔁 주마다 일정 자동 갱신/반복 (ON/OFF)
               </label>
             </div>
-            <div id="repeatOptionsGroup" class="hide-view mt-3 border-top border-secondary pt-2">
+            <div id="repeatOptionsGroup" class="d-none mt-3 border-top border-secondary pt-2">
               <label class="form-label small text-secondary">등록할 연속 주차(총 회차 수):</label>
               <select id="repeatWeeksSelect" class="form-select form-select-sm">
                 <option value="1">1주 (단일)</option>
@@ -558,7 +543,7 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto hide-view" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
+        <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
         <button type="button" class="btn btn-secondary" style="border-radius:8px;" data-bs-dismiss="modal">취소</button>
         <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">스케줄 저장</button>
       </div>
@@ -647,7 +632,6 @@
   </div>
 </div>
 
-<!-- FullCalendar 및 스크립트 라이브러리 -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -663,6 +647,7 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
 
+  // 지점별 기본 룸 데이터 구조 (필요 시 방 목록을 자유롭게 변경 가능)
   const BRANCH_ROOMS = {
     '위례점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
     '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4'],
@@ -780,7 +765,7 @@
     });
     
     document.querySelectorAll('.consulting-only-field').forEach(el => {
-      el.classList.toggle('hide-view', type !== 'consulting');
+      el.classList.toggle('d-none', type !== 'consulting');
     });
 
     document.querySelectorAll('.coach-field').forEach(el => {
@@ -871,7 +856,7 @@
     const chk = document.getElementById('repeatScheduleCheck');
     const group = document.getElementById('repeatOptionsGroup');
     if (chk && group) {
-      group.classList.toggle('hide-view', !chk.checked);
+      group.classList.toggle('d-none', !chk.checked);
     }
   }
 
@@ -889,7 +874,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
     populateTimeOptions();
     updateRoomOptions();
     updateSubjectOptions();
@@ -904,15 +889,15 @@
     const manageCoachBtn = document.getElementById('manageCoachBtn');
 
     if (currentUser) {
-      loginView.classList.add('hide-view');
-      mainApp.classList.remove('hide-view');
+      loginView.classList.add('d-none');
+      mainApp.classList.remove('d-none');
 
       userInfo.innerText = `${currentUser.name} (${currentUser.role === 'admin' ? '관리자' : '코치'})`;
 
       if (currentUser.role === 'admin') {
-        manageCoachBtn.classList.remove('hide-view');
+        manageCoachBtn.classList.remove('d-none');
       } else {
-        manageCoachBtn.classList.add('hide-view');
+        manageCoachBtn.classList.add('d-none');
       }
 
       loadCoachesData().then(() => {
@@ -921,14 +906,14 @@
         loadUnassignedStudents();
       });
     } else {
-      loginView.classList.remove('hide-view');
-      mainApp.classList.add('hide-view');
+      loginView.classList.remove('d-none');
+      mainApp.classList.add('d-none');
     }
   }
 
   function toggleUnassignedForm() {
     const form = document.getElementById('unassignedForm');
-    form.classList.toggle('hide-view');
+    form.classList.toggle('d-none');
   }
 
   async function loadUnassignedStudents() {
@@ -1174,17 +1159,17 @@
             let displayTitle = '';
             let eventBgColor = coachMap[item.coach_name] || '#5046e5';
             const seqNum = index + 1;
-            const roomLabel = item.room_name || 'ROOM';
 
             if (currentScheduleType === 'practice') {
-              displayTitle = `${seqNum}. ${item.student_name || '이용자'} (${roomLabel})`;
+              displayTitle = `${seqNum}. 연습실. ${item.student_name || '이용자'}(${item.coach_name || '코치'}) 1/1회`;
               eventBgColor = '#10b981';
             } else if (currentScheduleType === 'consulting') {
               const statusTag = item.consult_status ? `[${item.consult_status}]` : `[${item.subject || '상담'}]`;
-              displayTitle = `${seqNum}. ${item.student_name || '신청자'} ${statusTag}`;
+              displayTitle = `${seqNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
-              displayTitle = `${seqNum}. ${item.student_name || '미정'} (${roomLabel})`;
+              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
+              displayTitle = `${seqNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
             }
 
             return {
@@ -1208,7 +1193,7 @@
 
       eventContent: function(arg) {
         return {
-          html: `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size:0.75rem; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${arg.event.title}</div>`
+          html: `<div style="font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
         };
       },
 
@@ -1379,11 +1364,11 @@
       isConsulting ? '상담 / 체험 구분' : '과목 / 레슨 구분';
 
     document.querySelectorAll('.consulting-only-field').forEach(el => {
-      el.classList.toggle('hide-view', !isConsulting);
+      el.classList.toggle('d-none', !isConsulting);
     });
 
     document.querySelectorAll('.practice-field').forEach(el => {
-      if (isPractice) el.classList.remove('hide-view');
+      if (isPractice) el.classList.remove('d-none');
     });
 
     document.querySelectorAll('.coach-field').forEach(el => {
@@ -1418,7 +1403,7 @@
     
     calculateEndTime();
 
-    document.getElementById('deleteScheduleBtn').classList.add('hide-view');
+    document.getElementById('deleteScheduleBtn').classList.add('d-none');
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
@@ -1476,7 +1461,7 @@
       calculateEndTime();
     }
 
-    document.getElementById('deleteScheduleBtn').classList.remove('hide-view');
+    document.getElementById('deleteScheduleBtn').classList.remove('d-none');
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
