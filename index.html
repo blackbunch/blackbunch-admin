@@ -155,10 +155,11 @@
     }
     .fc-timegrid-axis { width: 60px !important; }
 
+    /* 헤더 및 그리드 라인 위치 정렬 */
     .fc-col-header-cell {
-      background-color: #f0f0ff !important;
-      padding: 10px 0 !important;
-      border-bottom: 2px solid #dcdcfe !important;
+      background-color: #ffffff !important;
+      padding: 8px 0 !important;
+      border-bottom: 1px solid #262836 !important;
     }
     .fc-col-header-cell-cushion {
       color: #6366f1 !important;
@@ -200,33 +201,31 @@
       color: #f8fafc;
     }
 
-    /* FullCalendar 이벤트 카드 스타일 (슬림 네모 + 세로 중앙 정렬) */
+    /* 이벤트 카드 상단 맞춤 정렬 및 레이아웃 수정 */
+    .fc-timegrid-event-harness {
+      margin-top: 0 !important;
+    }
+
     .fc-timegrid-event {
       border-radius: 6px !important;
-      padding: 2px 6px !important;
+      padding: 2px 4px !important;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
       border: 1px solid #ffffff !important;
       cursor: pointer !important;
       z-index: 5 !important;
-      margin: 1px 2px !important;
+      margin: 0 1px !important;
       display: flex !important;
-      flex-direction: column !important;
-      justify-content: center !important;
+      align-items: center !important;
     }
 
     .fc-event-main {
       padding: 0 !important;
-      font-size: 0.8rem !important;
+      font-size: 0.75rem !important;
       font-weight: 700 !important;
       color: #ffffff !important;
-      line-height: 1.2;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
+      line-height: 1.1;
       width: 100%;
       letter-spacing: -0.3px;
-      display: flex !important;
-      align-items: center !important;
     }
 
     .fc-event-time { display: none !important; }
@@ -307,7 +306,7 @@
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
-      .fc-event-main { font-size: 0.72rem !important; }
+      .fc-event-main { font-size: 0.7rem !important; }
     }
   </style>
 </head>
@@ -1175,17 +1174,17 @@
             let displayTitle = '';
             let eventBgColor = coachMap[item.coach_name] || '#5046e5';
             const seqNum = index + 1;
+            const roomLabel = item.room_name || 'ROOM';
 
             if (currentScheduleType === 'practice') {
-              displayTitle = `${seqNum}. 연습실. ${item.student_name || '이용자'}(${item.coach_name || '코치'}) 1/1회`;
+              displayTitle = `${seqNum}. ${item.student_name || '이용자'} (${roomLabel})`;
               eventBgColor = '#10b981';
             } else if (currentScheduleType === 'consulting') {
               const statusTag = item.consult_status ? `[${item.consult_status}]` : `[${item.subject || '상담'}]`;
-              displayTitle = `${seqNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
+              displayTitle = `${seqNum}. ${item.student_name || '신청자'} ${statusTag}`;
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
-              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
-              displayTitle = `${seqNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
+              displayTitle = `${seqNum}. ${item.student_name || '미정'} (${roomLabel})`;
             }
 
             return {
@@ -1209,7 +1208,7 @@
 
       eventContent: function(arg) {
         return {
-          html: `<div style="display: flex; align-items: center; width: 100%; height: 100%; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
+          html: `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size:0.75rem; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${arg.event.title}</div>`
         };
       },
 
