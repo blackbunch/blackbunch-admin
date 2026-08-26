@@ -1226,18 +1226,22 @@
             
             let displayTitle = '';
             let eventBgColor = coachMap[item.coach_name] || '#5046e5';
-            const seqNum = index + 1;
+            
+            // ROOM 1, ROOM 2 등의 텍스트에서 숫자만 추출 (예: 'ROOM 1' -> '1')
+            const rawRoom = item.room_name || '';
+            const numMatch = rawRoom.match(/\d+/);
+            const roomNum = numMatch ? numMatch[0] : rawRoom;
 
             if (currentScheduleType === 'practice') {
-              displayTitle = `${seqNum}. 연습실. ${item.student_name || '이용자'}(${item.coach_name || '코치'}) 1/1회`;
+              displayTitle = `${roomNum}. ${item.student_name || '이용자'}(${item.coach_name || '코치'}) 1/1회`;
               eventBgColor = '#10b981';
             } else if (currentScheduleType === 'consulting') {
               const statusTag = item.consult_status ? `[${item.consult_status}]` : `[${item.subject || '상담'}]`;
-              displayTitle = `${seqNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
+              displayTitle = `${roomNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
               const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
-              displayTitle = `${seqNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
+              displayTitle = `${roomNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}`;
             }
 
             return {
