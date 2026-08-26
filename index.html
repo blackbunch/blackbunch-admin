@@ -7,7 +7,7 @@
 
   <link rel="shortcut icon" href="#">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" rel="stylesheet" />
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
   <style>
@@ -193,27 +193,38 @@
       color: #f8fafc;
     }
 
+    /* -------------------------------------------------------------
+       수정된 이벤트 요소를 위한 스타일 (세로폭 좁은 네모 + 세로 정렬)
+    ------------------------------------------------------------- */
     .fc-timegrid-event {
-      border-radius: 8px !important;
-      padding: 4px 8px !important;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-      border: 1.5px solid #ffffff !important;
+      border-radius: 6px !important;
+      padding: 2px 6px !important;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      border: 1px solid #ffffff !important;
       cursor: pointer !important;
       z-index: 5 !important;
-      margin: 2px 3px !important;
+      margin: 1px 2px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: stretch !important;
+      height: auto !important;
+      min-height: 24px;
     }
 
     .fc-event-main {
       padding: 0 !important;
-      font-size: 0.82rem !important;
-      font-weight: 800 !important;
+      font-size: 0.8rem !important;
+      font-weight: 700 !important;
       color: #ffffff !important;
-      line-height: 1.3;
+      line-height: 1.2;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       width: 100%;
       letter-spacing: -0.3px;
+      display: flex !important;
+      align-items: center !important;
     }
 
     .fc-event-time { display: none !important; }
@@ -294,7 +305,7 @@
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
       .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
-      .fc-event-main { font-size: 0.75rem !important; }
+      .fc-event-main { font-size: 0.72rem !important; }
     }
   </style>
 </head>
@@ -647,7 +658,6 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
 
-  // 지점별 기본 룸 데이터 구조 (필요 시 방 목록을 자유롭게 변경 가능)
   const BRANCH_ROOMS = {
     '위례점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
     '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4'],
@@ -1191,9 +1201,12 @@
         }
       },
 
+      /* -------------------------------------------------------------
+         수정된 eventContent (이벤트 텍스트 수직 가운데 정렬)
+      ------------------------------------------------------------- */
       eventContent: function(arg) {
         return {
-          html: `<div style="font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
+          html: `<div style="display: flex; align-items: center; width: 100%; height: 100%; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
         };
       },
 
