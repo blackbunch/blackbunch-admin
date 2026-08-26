@@ -132,19 +132,19 @@
 
     #calendar { 
       margin-top: 15px; 
-      min-height: 750px;
+      height: auto !important;
     }
     .fc { color: #e2e8f0; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #262836 !important; }
     .fc-theme-standard .fc-scrollgrid {
       border: 1px solid #262836 !important;
       border-radius: 12px;
-      overflow: hidden;
+      overflow: visible !important;
     }
     
-    /* 기본 시간 슬롯의 최소 높이 (이벤트 개수에 맞춰 동적으로 늘어남) */
+    /* 1시간 기본 슬롯 높이 */
     .fc-timegrid-slot {
-      min-height: 80px !important;
+      height: 120px !important;
     }
     
     .fc-timegrid-cols table, .fc-col-header table {
@@ -198,14 +198,14 @@
       color: #f8fafc;
     }
 
-    /* 수직 쌓기 카드 레이아웃 스타일 */
+    /* 수직 카드 커스텀 디자인 */
     .custom-stack-card {
       color: #ffffff;
-      border: 1px solid rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.7);
       border-radius: 6px;
-      padding: 5px 8px;
-      margin-bottom: 4px;
-      font-size: 0.78rem;
+      padding: 4px 8px;
+      margin-bottom: 3px;
+      font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -213,12 +213,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       width: 100%;
+      box-sizing: border-box;
     }
     .custom-stack-card:hover {
-      filter: brightness(1.15);
+      filter: brightness(1.2);
     }
 
-    /* FullCalendar 기본 하네스 오버라이드 (수직 쌓기용) */
+    /* 수직 재배치를 위한 Harness 스타일 */
     .fc-timegrid-event-harness {
       z-index: 5 !important;
     }
@@ -1087,7 +1088,7 @@
     alert(`'${data.name}' 님이 선택되었습니다. 날짜와 시간을 설정해 스케줄을 확정하세요.`);
   }
 
-  // 동적 높이 늘림 적용 수직 재배치 함수 (Dynamic Vertical Stack)
+  // 시간대별 수직 정렬 완벽 보정 함수
   function reorganizeTimeGridEvents() {
     if (!calendar) return;
     const view = calendar.view;
@@ -1098,14 +1099,13 @@
       const harnesses = Array.from(col.querySelectorAll('.fc-timegrid-event-harness'));
       if (harnesses.length === 0) return;
 
-      // top 값 기준으로 오름차순 정렬
+      // top 오름차순 정렬
       harnesses.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
 
-      // 시간대별 그룹핑
       const timeGroups = [];
       harnesses.forEach(harness => {
         const topVal = parseFloat(harness.style.top) || 0;
-        let group = timeGroups.find(g => Math.abs(g.baseTop - topVal) < 4);
+        let group = timeGroups.find(g => Math.abs(g.baseTop - topVal) < 5);
         if (!group) {
           group = { baseTop: topVal, items: [] };
           timeGroups.push(group);
@@ -1114,32 +1114,21 @@
       });
 
       timeGroups.forEach(group => {
-        let accumulatedTop = group.baseTop;
-        let totalRequiredHeight = 0;
-
+        let currentTop = group.baseTop;
         group.items.forEach(harness => {
           harness.style.left = '2px';
           harness.style.right = '2px';
           harness.style.width = 'calc(100% - 4px)';
-          harness.style.top = `${accumulatedTop}px`;
+          harness.style.top = `${currentTop}px`;
           
           const eventEl = harness.querySelector('.fc-timegrid-event');
           if (eventEl) {
             eventEl.style.height = 'auto';
-            eventEl.style.minHeight = '32px';
           }
           
           const cardEl = harness.querySelector('.custom-stack-card');
-          const itemHeight = cardEl ? (cardEl.offsetHeight + 4) : 34;
-          accumulatedTop += itemHeight;
-          totalRequiredHeight += itemHeight;
-        });
-
-        // 일정 개수가 많아 최소 높이(80px)를 초과하면 타임 슬롯 칸 높이를 동적으로 다단 확장
-        const neededSlotHeight = Math.max(80, totalRequiredHeight + 12);
-        const slotLanes = col.querySelectorAll('.fc-timegrid-slot-lane');
-        slotLanes.forEach(lane => {
-          lane.style.minHeight = `${neededSlotHeight}px`;
+          const cardHeight = cardEl ? (cardEl.offsetHeight + 3) : 32;
+          currentTop += cardHeight;
         });
       });
     });
@@ -1160,6 +1149,7 @@
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
       height: 'auto',
+      contentHeight: 'auto',
       displayEventTime: false,
       allDaySlot: false,
       slotMinTime: '10:00:00',
@@ -1263,7 +1253,7 @@
           });
 
           successCallback(events);
-          setTimeout(reorganizeTimeGridEvents, 60);
+          setTimeout(reorganizeTimeGridEvents, 50);
         } catch (err) {
           console.error("스케줄 로딩 오류:", err);
           failureCallback(err);
@@ -1271,7 +1261,7 @@
       },
 
       datesSet: function() {
-        setTimeout(reorganizeTimeGridEvents, 60);
+        setTimeout(reorganizeTimeGridEvents, 50);
       },
 
       eventContent: function(arg) {
