@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
   <title>블랙번치 스튜디오 일정 관리 시스템 (개선본)</title>
 
   <link rel="shortcut icon" href="#">
@@ -293,6 +299,7 @@
     .coach-mobile-schedule { display: none; }
     .coach-mobile-date-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 14px; }
     .coach-mobile-date-title { font-size: 1rem; font-weight: 800; color: #f8fafc; text-align: center; flex: 1; }
+    .coach-mobile-branch-filter { margin: 0 0 12px; }
     .coach-schedule-card { background: #21232d; border: 1px solid #34384a; border-left: 5px solid #4f46e5; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
     .coach-schedule-card.cancelled { opacity: 0.55; border-left-color: #6b7280; }
     .coach-schedule-time { font-weight: 800; font-size: 1.05rem; color: #a5b4fc; }
@@ -300,6 +307,7 @@
     .coach-schedule-meta { color: #a0a5b5; font-size: 0.82rem; margin-top: 4px; }
     .coach-status-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .coach-mobile-add { position: sticky; bottom: 12px; width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; font-weight: 800; z-index: 10; }
+    #installAppBtn { display: none; border-radius: 8px; }
 
     body.coach-mobile-mode .filter-section,
     body.coach-mobile-mode .unassigned-container,
@@ -356,6 +364,7 @@
       <button id="scheduleHistoryBtn" class="btn btn-outline-info btn-sm d-none" style="border-radius:8px;" onclick="openScheduleHistory()">
         📝 변경 이력
       </button>
+      <button id="installAppBtn" class="btn btn-sm btn-outline-light" onclick="installPwaApp()">앱 설치</button>
       <span id="userInfo" class="fw-bold small text-secondary"></span>
       <button id="authBtn" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" onclick="handleLogout()">로그아웃</button>
     </div>
@@ -497,6 +506,7 @@
       <button id="coachMobileDateTitle" class="coach-mobile-date-title btn btn-sm btn-outline-light" onclick="goToCoachMobileToday()">오늘</button>
       <button class="btn btn-sm btn-outline-light" onclick="changeCoachMobileDate(1)">›</button>
     </div>
+    <select id="coachMobileBranchFilter" class="form-select form-select-sm coach-mobile-branch-filter" onchange="renderCoachMobileSchedule()"></select>
     <div id="coachMobileScheduleList"></div>
     <button class="btn btn-primary coach-mobile-add" onclick="openAddModal()">+ 일정 추가</button>
   </div>
@@ -1061,15 +1071,74 @@
     updateUnassignedStatusUI();
     checkAuthStatus();
     window.addEventListener('resize', updateCoachMobileMode);
+    registerPwa();
   });
+
+  let deferredInstallPrompt = null;
+
+  function registerPwa() {
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('PWA 준비 실패:', error));
+    }
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      document.getElementById('installAppBtn').style.display = 'inline-block';
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      document.getElementById('installAppBtn').style.display = 'none';
+    });
+  }
+
+  async function installPwaApp() {
+    if (!deferredInstallPrompt) {
+      alert('아이폰은 Safari의 공유 버튼에서 “홈 화면에 추가”를 선택해 설치할 수 있습니다.');
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    document.getElementById('installAppBtn').style.display = 'none';
+  }
 
   function isCoachMobileMode() {
     const user = JSON.parse(sessionStorage.getItem('loginUser'));
     return Boolean(user && user.role !== 'admin' && window.matchMedia('(max-width: 900px)').matches);
   }
 
+  function getAuthorizedBranches() {
+    const user = JSON.parse(sessionStorage.getItem('loginUser'));
+    if (!user || user.role === 'admin') return Object.keys(BRANCH_ROOMS);
+    return (user.branch || '위례점').split(',').map(branch => branch.trim()).filter(Boolean);
+  }
+
+  function restrictBranchSelectsForCoach() {
+    const user = JSON.parse(sessionStorage.getItem('loginUser'));
+    if (!user || user.role === 'admin') return;
+    const branches = getAuthorizedBranches();
+    ['branchSelect', 'unBranch', 'modalBranch'].forEach(id => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const previous = select.value;
+      select.innerHTML = branches.map(branch => `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`).join('');
+      select.value = branches.includes(previous) ? previous : branches[0];
+      select.disabled = branches.length === 1;
+      select.classList.toggle('readonly-select', branches.length === 1);
+    });
+
+    const mobileFilter = document.getElementById('coachMobileBranchFilter');
+    if (mobileFilter) {
+      const previous = mobileFilter.value || 'ALL';
+      mobileFilter.innerHTML = `<option value="ALL">전체 담당 지점</option>${branches.map(branch => `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`).join('')}`;
+      mobileFilter.value = previous === 'ALL' || branches.includes(previous) ? previous : 'ALL';
+    }
+    updateRoomOptions();
+  }
+
   function updateCoachMobileMode() {
     document.body.classList.toggle('coach-mobile-mode', isCoachMobileMode());
+    restrictBranchSelectsForCoach();
     if (isCoachMobileMode()) renderCoachMobileSchedule();
   }
 
@@ -1692,6 +1761,7 @@
     const unassignedCoachFilter = document.getElementById('unassignedCoachFilter');
 
     if (currentUser && currentUser.role !== 'admin') {
+      restrictBranchSelectsForCoach();
       if (modalCoachName) {
         modalCoachName.value = currentUser.name;
         modalCoachName.disabled = true;
@@ -1941,10 +2011,13 @@
     const nextDate = new Date(`${coachMobileDate}T12:00:00+09:00`);
     nextDate.setDate(nextDate.getDate() + 1);
     const dayEnd = `${formatKST(nextDate).date}T00:00:00+09:00`;
-    const { data, error } = await sbClient.from('schedules').select('*')
+    const branchFilter = document.getElementById('coachMobileBranchFilter')?.value || 'ALL';
+    let query = sbClient.from('schedules').select('*')
       .eq('coach_name', currentUser.name)
       .gte('start_time', dayStart).lt('start_time', dayEnd)
       .order('start_time', { ascending: true });
+    if (branchFilter !== 'ALL') query = query.eq('branch', branchFilter);
+    const { data, error } = await query;
 
     if (error) {
       list.innerHTML = `<div class="small text-danger py-3 text-center">일정을 불러오지 못했습니다: ${escapeHtml(error.message)}</div>`;
@@ -1969,7 +2042,7 @@
       return `<div class="coach-schedule-card${cancelled}" onclick="openCoachMobileSchedule('${schedule.id}')">
         <div class="d-flex justify-content-between align-items-center gap-2"><span class="coach-schedule-time">${escapeHtml(start)}–${escapeHtml(end)}</span><span class="badge bg-secondary">${escapeHtml(status)}</span></div>
         <div class="coach-schedule-name mt-1">${escapeHtml(schedule.student_name || '이름 없음')}</div>
-        <div class="coach-schedule-meta">${escapeHtml(schedule.subject || '')} · ${escapeHtml(schedule.room_name || '')}</div>
+        <div class="coach-schedule-meta"><span class="badge bg-primary">${escapeHtml(schedule.branch || '')}</span> ${escapeHtml(schedule.subject || '')} · ${escapeHtml(schedule.room_name || '')}</div>
         ${currentScheduleType === 'lesson' ? `<div class="coach-status-actions">
           <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'attended')">출석</button>
           <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'absent')">결석</button>
