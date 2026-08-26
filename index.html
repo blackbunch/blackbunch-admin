@@ -334,6 +334,9 @@
       <button id="manageCoachBtn" class="btn btn-outline-light btn-sm d-none" style="border-radius:8px;" data-bs-toggle="modal" data-bs-target="#coachModal">
         ⚙️ 코치 관리
       </button>
+      <button id="scheduleHistoryBtn" class="btn btn-outline-info btn-sm d-none" style="border-radius:8px;" onclick="openScheduleHistory()">
+        📝 변경 이력
+      </button>
       <span id="userInfo" class="fw-bold small text-secondary"></span>
       <button id="authBtn" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" onclick="handleLogout()">로그아웃</button>
     </div>
@@ -675,6 +678,26 @@
   </div>
 </div>
 
+<div class="modal fade" id="scheduleHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">📝 코치별 일정 변경 이력</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex gap-2 align-items-center mb-3">
+          <label class="form-label mb-0 text-nowrap">담당 코치</label>
+          <select id="historyCoachFilter" class="form-select form-select-sm" onchange="loadScheduleHistory()">
+            <option value="ALL">전체 코치</option>
+          </select>
+        </div>
+        <div id="scheduleHistoryList" class="small text-secondary">변경 이력을 불러오는 중입니다.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -689,6 +712,7 @@
   let coachMap = {};
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
+  let originalScheduleData = null;
   let currentUnassignedStatus = 'pending';
   let fetchedEventsStore = [];
   let appliedSlotHeight = 120;
@@ -1013,6 +1037,7 @@
     const mainApp = document.getElementById('mainApp');
     const userInfo = document.getElementById('userInfo');
     const manageCoachBtn = document.getElementById('manageCoachBtn');
+    const scheduleHistoryBtn = document.getElementById('scheduleHistoryBtn');
 
     if (currentUser) {
       loginView.classList.add('d-none');
@@ -1022,8 +1047,10 @@
 
       if (currentUser.role === 'admin') {
         manageCoachBtn.classList.remove('d-none');
+        scheduleHistoryBtn.classList.remove('d-none');
       } else {
         manageCoachBtn.classList.add('d-none');
+        scheduleHistoryBtn.classList.add('d-none');
       }
 
       loadCoachesData().then(() => {
@@ -1184,7 +1211,8 @@
             <div>
               ${currentScheduleType === 'lesson' && currentUnassignedStatus === 'on_hold'
                 ? `<button class="btn btn-sm btn-outline-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="moveToPending(${s.id})">미정으로 전환</button>`
-                : `<button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>`}
+                : `<button class="btn btn-sm btn-warning py-1 px-3" style="font-size:0.8rem; font-weight:600;" onclick="selectUnassignedStudent(${s.id})">👉 일정 지정</button>
+                   ${currentScheduleType === 'lesson' ? `<button class="btn btn-sm btn-outline-secondary py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="moveToOnHold(${s.id})">장기거치</button>` : ''}`}
               <button class="btn btn-sm btn-outline-danger py-1 px-2 ms-1" style="font-size:0.8rem;" onclick="removeUnassigned(${s.id})">삭제</button>
             </div>
           </div>
@@ -1221,6 +1249,36 @@
 
     if (error) {
       alert('상태 변경 실패: ' + error.message);
+      return;
+    }
+    await loadUnassignedStudents();
+  }
+
+  async function moveToOnHold(dbId) {
+    const student = unassignedStudents.find(item => item.id === dbId);
+    if (!student) return;
+
+    const holdReason = prompt(`${student.name} 님의 장기거치 사유를 입력해 주세요.`, student.hold_reason || '');
+    if (holdReason === null) return;
+
+    const resumeDate = prompt('재개 예정일을 입력해 주세요. (선택, 예: 2026-09-01)', student.resume_date || '');
+    if (resumeDate === null) return;
+    if (resumeDate && !/^\d{4}-\d{2}-\d{2}$/.test(resumeDate)) {
+      alert('재개 예정일은 YYYY-MM-DD 형식으로 입력해 주세요.');
+      return;
+    }
+
+    const { error } = await sbClient
+      .from('unassigned_students')
+      .update({
+        management_status: 'on_hold',
+        hold_reason: holdReason.trim() || null,
+        resume_date: resumeDate || null
+      })
+      .eq('id', dbId);
+
+    if (error) {
+      alert('장기거치 이동 실패: ' + error.message);
       return;
     }
     await loadUnassignedStudents();
@@ -1498,6 +1556,14 @@
       if (unCoachName) unCoachName.innerHTML += `<option value="${coachName}">${coachName}</option>`;
     });
 
+    const historyCoachFilter = document.getElementById('historyCoachFilter');
+    if (historyCoachFilter) {
+      historyCoachFilter.innerHTML = '<option value="ALL">전체 코치</option>';
+      (coaches || []).forEach(c => {
+        historyCoachFilter.innerHTML += `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`;
+      });
+    }
+
     const coachTableBody = document.getElementById('coachTableBody');
     if (coachTableBody) {
       coachTableBody.innerHTML = '';
@@ -1656,6 +1722,7 @@
       currentScheduleType === 'practice' ? "연습실 대여 추가" : "레슨 일정 추가";
 
     document.getElementById('scheduleId').value = "";
+    originalScheduleData = null;
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('recurrenceGroupId').value = "";
     document.getElementById('modalTotalSessions').value = currentScheduleType === 'lesson' ? "4" : "1";
@@ -1682,6 +1749,7 @@
   }
 
   function openEditModal(scheduleData) {
+    originalScheduleData = { ...scheduleData };
     const type = scheduleData.schedule_type || (scheduleData.subject?.includes('대여') ? 'practice' : (scheduleData.subject === '상담' || scheduleData.subject === '체험' ? 'consulting' : 'lesson'));
     setupModalView(type);
 
@@ -1768,6 +1836,65 @@
     }
   }
 
+  function formatScheduleForHistory(data) {
+    if (!data) return '';
+    const time = data.start_time ? `${formatKST(data.start_time).date} ${formatKST(data.start_time).time}` : '';
+    return `${data.student_name || '이름 없음'} · ${data.coach_name || '코치 미지정'} · ${data.room_name || ''} · ${time}`;
+  }
+
+  function getChangedFields(before, after) {
+    const labels = {
+      branch: '지점', student_name: '이름', coach_name: '담당 코치', subject: '과목',
+      room_name: '룸', start_time: '시작 시간', end_time: '종료 시간', schedule_status: '수업 상태'
+    };
+    return Object.keys(labels).filter(key => (before?.[key] || '') !== (after?.[key] || '')).map(key => labels[key]);
+  }
+
+  async function writeScheduleHistory(action, scheduleData, description) {
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const { error } = await sbClient.from('schedule_history').insert([{
+      schedule_id: scheduleData.id || null,
+      action,
+      actor_name: currentUser?.name || '알 수 없음',
+      target_coach_name: scheduleData.coach_name || '연습실',
+      student_name: scheduleData.student_name || '',
+      description,
+      snapshot: scheduleData
+    }]);
+    if (error) console.error('일정 변경 이력 저장 실패:', error);
+  }
+
+  async function openScheduleHistory() {
+    new bootstrap.Modal(document.getElementById('scheduleHistoryModal')).show();
+    await loadScheduleHistory();
+  }
+
+  async function loadScheduleHistory() {
+    const container = document.getElementById('scheduleHistoryList');
+    const coach = document.getElementById('historyCoachFilter').value;
+    container.innerHTML = '<span class="text-secondary">변경 이력을 불러오는 중입니다.</span>';
+    let query = sbClient.from('schedule_history').select('*').order('created_at', { ascending: false }).limit(200);
+    if (coach !== 'ALL') query = query.eq('target_coach_name', coach);
+    const { data, error } = await query;
+    if (error) {
+      container.innerHTML = `<span class="text-danger">이력을 불러오지 못했습니다: ${escapeHtml(error.message)}</span>`;
+      return;
+    }
+    if (!data?.length) {
+      container.innerHTML = '<span class="text-secondary">기록된 변경 이력이 없습니다.</span>';
+      return;
+    }
+    const actionLabel = { created: '추가', updated: '수정', deleted: '삭제' };
+    container.innerHTML = data.map(log => {
+      const time = formatKST(log.created_at);
+      return `<div class="border border-secondary rounded p-2 mb-2">
+        <div class="d-flex justify-content-between gap-2"><strong>${escapeHtml(log.student_name || '일정')}</strong><span class="badge bg-secondary">${escapeHtml(actionLabel[log.action] || log.action)}</span></div>
+        <div class="text-secondary mt-1">담당: ${escapeHtml(log.target_coach_name)} · 변경: ${escapeHtml(log.actor_name)} · ${escapeHtml(time.date)} ${escapeHtml(time.time)}</div>
+        <div class="mt-1">${escapeHtml(log.description || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
   async function saveSchedule() {
     const id = document.getElementById('scheduleId').value;
     const unassignedDbId = document.getElementById('currentUnassignedDbId').value;
@@ -1848,6 +1975,12 @@
       if (result.error) {
         alert("수정 실패: " + result.error.message);
       } else {
+        const changedFields = getChangedFields(originalScheduleData, payload);
+        await writeScheduleHistory(
+          'updated',
+          { ...payload, id },
+          `${formatScheduleForHistory(originalScheduleData)} → ${changedFields.length ? changedFields.join(', ') + ' 변경' : '일정 정보 수정'}`
+        );
         const modalEl = document.getElementById('scheduleModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
@@ -1881,11 +2014,14 @@
       return;
     }
 
-    const { error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert);
+    const { data: insertedSchedules, error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert).select();
 
     if (insertError) {
       alert("일정 저장 실패: " + insertError.message);
     } else {
+      for (const schedule of insertedSchedules || schedulesToInsert) {
+        await writeScheduleHistory('created', schedule, `${formatScheduleForHistory(schedule)} 일정 추가`);
+      }
       if (unassignedDbId) {
         await sbClient.from('unassigned_students').delete().eq('id', unassignedDbId);
         await loadUnassignedStudents();
@@ -1909,6 +2045,8 @@
       alert("삭제 실패: " + deleteError.message);
       return;
     }
+
+    await writeScheduleHistory('deleted', originalScheduleData || { id }, `${formatScheduleForHistory(originalScheduleData)} 일정 삭제`);
 
     alert("일정이 삭제되었습니다.");
 
