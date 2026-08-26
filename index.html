@@ -132,7 +132,7 @@
 
     #calendar { 
       margin-top: 15px; 
-      height: 700px;
+      min-height: 750px;
     }
     .fc { color: #e2e8f0; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #262836 !important; }
@@ -142,11 +142,15 @@
       overflow: hidden;
     }
     
+    .fc-timegrid-slot {
+      height: 48px !important;
+    }
+    
     .fc-timegrid-cols table, .fc-col-header table {
       width: 100% !important;
       table-layout: fixed !important;
     }
-    .fc-timegrid-axis { width: 60px !important; }
+    .fc-timegrid-axis { width: 65px !important; }
 
     .fc-col-header-cell {
       background-color: #f0f0ff !important;
@@ -164,7 +168,7 @@
 
     .fc-timegrid-slot-label-cushion {
       color: #a0a5b5;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 500;
     }
 
@@ -193,30 +197,34 @@
       color: #f8fafc;
     }
 
+    /* 이벤트 세로 정렬(Stacked) 스타일 지정 */
+    .fc-timegrid-event-harness {
+      margin-bottom: 3px !important;
+    }
+
     .fc-timegrid-event {
-      border-radius: 8px !important;
-      padding: 4px 8px !important;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-      border: 1.5px solid #ffffff !important;
+      border-radius: 6px !important;
+      padding: 4px 6px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border: 1px solid #ffffff !important;
       cursor: pointer !important;
-      z-index: 5 !important;
-      margin: 2px 3px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
     }
 
     .fc-event-main {
       padding: 0 !important;
       font-size: 0.82rem !important;
-      font-weight: 800 !important;
+      font-weight: 700 !important;
       color: #ffffff !important;
       line-height: 1.3;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
+      white-space: normal !important;
+      word-break: break-all !important;
       width: 100%;
-      letter-spacing: -0.3px;
+      display: flex !important;
+      flex-direction: column !important;
     }
-
-    .fc-event-time { display: none !important; }
 
     .fc-event-unassigned {
       background-color: #1c1d22 !important;
@@ -289,7 +297,7 @@
       .fc-button-primary { padding: 4px 8px !important; font-size: 0.75rem !important; }
       .filter-section { padding: 10px; margin-bottom: 12px; }
       .modal-dialog { margin: 10px; }
-      #calendar { height: 500px; }
+      #calendar { min-height: 550px; }
       .fc-timegrid-axis { width: 45px !important; }
       .fc-timegrid-slot-label-cushion { font-size: 0.65rem !important; }
       .fc-col-header-cell { padding: 6px 0 !important; }
@@ -647,7 +655,6 @@
   let unassignedStudents = [];
   let currentScheduleType = 'lesson';
 
-  // 지점별 기본 룸 데이터 구조 (필요 시 방 목록을 자유롭게 변경 가능)
   const BRANCH_ROOMS = {
     '위례점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4', 'ROOM 5'],
     '미사점': ['ROOM 1', 'ROOM 2', 'ROOM 3', 'ROOM 4'],
@@ -831,14 +838,24 @@
     document.getElementById('modalEndTime').value = `${endHours}:${endMinutes}`;
   }
 
+  function parseISOToLocalString(isoStr) {
+    if (!isoStr) return '';
+    const date = new Date(isoStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+  }
+
   function formatKST(dateInput) {
     const d = new Date(dateInput);
-    const kstTime = new Date(d.getTime() + (9 * 60 * 60 * 1000) + (d.getTimezoneOffset() * 60 * 1000));
-    const year = kstTime.getFullYear();
-    const month = String(kstTime.getMonth() + 1).padStart(2, '0');
-    const day = String(kstTime.getDate()).padStart(2, '0');
-    const hours = String(kstTime.getHours()).padStart(2, '0');
-    const minutes = String(kstTime.getMinutes()).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
     return {
       date: `${year}-${month}-${day}`,
       time: `${hours}:${minutes}`
@@ -866,7 +883,7 @@
 
     startSelect.innerHTML = '';
 
-    for (let h = 10; h <= 23; h++) {
+    for (let h = 10; h <= 22; h++) {
       ['00', '10', '20', '30', '40', '50'].forEach(m => {
         const timeStr = `${String(h).padStart(2, '0')}:${m}`;
         startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
@@ -1083,8 +1100,13 @@
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
       locale: 'ko',
-      height: '700px',
+      height: 'auto',
       displayEventTime: false,
+      allDaySlot: false,
+      slotMinTime: '10:00:00',
+      slotMaxTime: '23:00:00',
+      slotDuration: '00:30:00',
+      slotLabelInterval: '01:00:00',
 
       dayHeaderContent: function(arg) {
         const d = arg.date;
@@ -1101,11 +1123,6 @@
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
-      slotMinTime: '10:00:00',
-      slotMaxTime: '23:00:00',
-      allDaySlot: false,
-      slotDuration: '00:30:00',
-      slotLabelInterval: '01:00:00',
       
       events: async function(fetchInfo, successCallback, failureCallback) {
         try {
@@ -1175,8 +1192,9 @@
             return {
               id: item.id,
               title: displayTitle,
-              start: item.start_time,
-              end: item.end_time,
+              start: parseISOToLocalString(item.start_time),
+              end: parseISOToLocalString(item.end_time),
+              allDay: false,
               backgroundColor: isUnassigned ? '#1c1d22' : eventBgColor,
               borderColor: '#ffffff',
               classNames: isUnassigned ? ['fc-event-unassigned'] : [],
@@ -1193,7 +1211,7 @@
 
       eventContent: function(arg) {
         return {
-          html: `<div style="font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${arg.event.title}</div>`
+          html: `<div style="font-weight: 700; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); word-break: break-all; font-size: 0.8rem; line-height: 1.2;">${arg.event.title}</div>`
         };
       },
 
