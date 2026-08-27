@@ -2404,7 +2404,11 @@
     const { data: insertedSchedules, error: insertError } = await sbClient.from('schedules').insert(schedulesToInsert).select();
 
     if (insertError) {
-      alert("일정 저장 실패: " + insertError.message);
+      if (insertError.message?.includes('schedules_schedule_status_check')) {
+        alert('보강 상태를 저장하려면 Supabase SQL Editor에서 supabase-보강상태-단순화.sql을 한 번 실행해 주세요.');
+      } else {
+        alert("일정 저장 실패: " + insertError.message);
+      }
     } else {
       for (const schedule of insertedSchedules || schedulesToInsert) {
         await writeScheduleHistory('created', schedule, `${formatScheduleForHistory(schedule)} 일정 추가`);
