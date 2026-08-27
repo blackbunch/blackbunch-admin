@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icon-180.png">
-  <title>블랙번치 스튜디오 일정 관리 시스템 (개선본)</title>
+  <title>블랙번치 스튜디오 일정 관리 시스템</title>
 
   <link rel="shortcut icon" href="#">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
@@ -1757,7 +1757,7 @@
       return;
     }
 
-    if (idInput === 'admin' && pwInput === '1234') {
+    if (idInput === 'admin' && pwInput === 'qmffor@@@@') {
       const userData = { id: 'admin', name: '관리자', role: 'admin' };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
       checkAuthStatus();
