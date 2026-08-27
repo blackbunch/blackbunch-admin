@@ -421,7 +421,7 @@
         </div>
         <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">총 회차</label>
-          <select id="unSessions" class="form-select form-select-sm">
+          <select id="unSessions" class="form-select form-select-sm" onchange="updateStartSessionOptions()">
             <option value="1">1회 (원데이)</option>
             <option value="2">2회</option>
             <option value="3">3회</option>
@@ -432,6 +432,10 @@
             <option value="20">20회 (5개월)</option>
             <option value="24">24회 (6개월)</option>
           </select>
+        </div>
+        <div class="col-6 col-md-2 lesson-only-field">
+          <label class="form-label small">시작 회차</label>
+          <select id="unStartSession" class="form-select form-select-sm"></select>
         </div>
         <div class="col-6 col-md-2 lesson-only-field">
           <label class="form-label small">일정 상태</label>
@@ -491,6 +495,10 @@
           <option value="ALL" selected>전체 코치 보기</option>
         </select>
       </div>
+      <div class="col-6 col-md-3">
+        <label for="calendarDatePicker" class="form-label fw-bold">📅 날짜 이동</label>
+        <input type="date" id="calendarDatePicker" class="form-control" onchange="goToCalendarDate(this.value)">
+      </div>
       <div class="col-6 col-md-3 pt-md-3">
         <button id="addScheduleBtn" class="btn btn-primary w-100" onclick="openAddModal()">
           + 일정 직접 추가
@@ -524,6 +532,7 @@
           <input type="hidden" id="scheduleId">
           <input type="hidden" id="currentUnassignedDbId">
           <input type="hidden" id="modalTotalSessions" value="4">
+          <input type="hidden" id="modalSessionNo" value="1">
           <input type="hidden" id="recurrenceGroupId">
           
           <div class="mb-3">
@@ -952,6 +961,18 @@
     populateTimeOptions();
   }
 
+  function updateStartSessionOptions() {
+    const total = parseInt(document.getElementById('unSessions')?.value, 10) || 1;
+    const select = document.getElementById('unStartSession');
+    if (!select) return;
+    const previous = parseInt(select.value, 10) || 1;
+    select.innerHTML = Array.from({ length: total }, (_, index) => {
+      const session = index + 1;
+      return `<option value="${session}">${session}회차부터</option>`;
+    }).join('');
+    select.value = String(Math.min(previous, total));
+  }
+
   function updateContactFieldLabels(type) {
     const isPractice = type === 'practice';
     const label = isPractice ? '주차등록번호' : '연락처';
@@ -1068,6 +1089,7 @@
     populateTimeOptions();
     updateRoomOptions();
     updateSubjectOptions();
+    updateStartSessionOptions();
     updateUnassignedStatusUI();
     checkAuthStatus();
     window.addEventListener('resize', updateCoachMobileMode);
@@ -1103,8 +1125,7 @@
   }
 
   function isCoachMobileMode() {
-    const user = JSON.parse(sessionStorage.getItem('loginUser'));
-    return Boolean(user && user.role !== 'admin' && window.matchMedia('(max-width: 900px)').matches);
+    return false;
   }
 
   function getAuthorizedBranches() {
@@ -1137,9 +1158,17 @@
   }
 
   function updateCoachMobileMode() {
-    document.body.classList.toggle('coach-mobile-mode', isCoachMobileMode());
+    document.body.classList.remove('coach-mobile-mode');
     restrictBranchSelectsForCoach();
-    if (isCoachMobileMode()) renderCoachMobileSchedule();
+  }
+
+  function goToCalendarDate(dateValue) {
+    if (calendar && dateValue) calendar.gotoDate(dateValue);
+  }
+
+  function syncCalendarDatePicker(date) {
+    const picker = document.getElementById('calendarDatePicker');
+    if (picker && date) picker.value = formatKST(date).date;
   }
 
   function checkAuthStatus() {
@@ -1230,6 +1259,7 @@
 
     const sessionEl = document.getElementById('unSessions');
     const total_sessions = currentScheduleType === 'lesson' ? (sessionEl ? parseInt(sessionEl.value, 10) : 4) : 1;
+    const start_session_no = currentScheduleType === 'lesson' ? (parseInt(document.getElementById('unStartSession')?.value, 10) || 1) : 1;
     const management_status = currentScheduleType === 'lesson' ? document.getElementById('unManagementStatus').value : 'pending';
     const hold_reason = currentScheduleType === 'lesson' ? document.getElementById('unHoldReason').value.trim() : null;
     const resume_date = currentScheduleType === 'lesson' ? (document.getElementById('unResumeDate').value || null) : null;
@@ -1247,6 +1277,7 @@
       subject, 
       room, 
       total_sessions,
+      start_session_no,
       completed_sessions: 0,
       remaining_sessions: total_sessions,
       schedule_type: currentScheduleType,
@@ -1411,6 +1442,8 @@
     updateRoomOptionsForModal();
 
     document.getElementById('modalStudentName').value = data.name;
+    document.getElementById('modalTotalSessions').value = data.total_sessions || 1;
+    document.getElementById('modalSessionNo').value = data.start_session_no || 1;
     if(data.phone) document.getElementById('modalPhone').value = data.phone;
     if (document.getElementById('modalCoachName')) document.getElementById('modalCoachName').value = data.coach || '연습실';
     document.getElementById('modalSubject').value = data.subject || '1시간 대여';
@@ -1500,12 +1533,14 @@
     }
 
     const isMobile = window.matchMedia('(max-width: 900px)').matches;
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    const isCoachMobile = Boolean(isMobile && currentUser?.role !== 'admin');
     const headerToolbar = isMobile
-      ? { left: 'prev,next today', center: 'title', right: 'timeGridDay,listWeek' }
+      ? { left: 'prev,next today', center: 'title', right: isCoachMobile ? 'timeGridWeek,timeGridDay,listWeek' : 'timeGridDay,listWeek' }
       : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' };
 
     calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
+      initialView: isCoachMobile ? 'timeGridWeek' : (isMobile ? 'timeGridDay' : 'timeGridWeek'),
       locale: 'ko',
       height: 'auto',
       contentHeight: 'auto',
@@ -1531,8 +1566,9 @@
       headerToolbar,
       windowResize: function() {
         const compactMobile = window.matchMedia('(max-width: 900px)').matches;
-        if (compactMobile && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
-          calendar.changeView('timeGridDay');
+        const user = JSON.parse(sessionStorage.getItem('loginUser'));
+        if (compactMobile && user?.role !== 'admin' && calendar.view.type !== 'timeGridWeek' && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
+          calendar.changeView('timeGridWeek');
         }
       },
       
@@ -1575,7 +1611,7 @@
               const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
 
               studentSchedulesMap[key].forEach((item, index) => {
-                item._session_no = index + 1;
+                item._session_no = item.session_no || (index + 1);
                 item._total_sessions = item.total_sessions || total;
               });
             });
@@ -1629,6 +1665,7 @@
       },
 
       datesSet: function() {
+        syncCalendarDatePicker(calendar.getDate());
         setTimeout(reorganizeTimeGridEvents, 50);
       },
 
@@ -1640,6 +1677,11 @@
       },
 
       eventClick: function(info) {
+        const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+        if (currentUser?.role !== 'admin' && info.event.extendedProps.coach_name !== currentUser.name) {
+          alert('다른 코치의 일정은 확인만 가능하며 수정할 수 없습니다.');
+          return;
+        }
         openEditModal(info.event.extendedProps);
       }
     });
@@ -1773,9 +1815,9 @@
         unCoachName.classList.add('readonly-select');
       }
       if (coachFilter) {
-        coachFilter.value = currentUser.name;
-        coachFilter.disabled = true;
-        coachFilter.classList.add('readonly-select');
+        coachFilter.value = 'ALL';
+        coachFilter.disabled = false;
+        coachFilter.classList.remove('readonly-select');
       }
       if (unassignedCoachFilter) {
         unassignedCoachFilter.value = currentUser.name;
@@ -1845,6 +1887,7 @@
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('recurrenceGroupId').value = "";
     document.getElementById('modalTotalSessions').value = currentScheduleType === 'lesson' ? "4" : "1";
+    document.getElementById('modalSessionNo').value = "1";
     document.getElementById('modalStudentName').value = "";
     document.getElementById('modalPhone').value = "";
     document.getElementById('modalMemo').value = "";
@@ -1880,6 +1923,7 @@
     document.getElementById('currentUnassignedDbId').value = "";
     document.getElementById('recurrenceGroupId').value = scheduleData.recurrence_group_id || '';
     document.getElementById('modalTotalSessions').value = scheduleData.total_sessions || 1;
+    document.getElementById('modalSessionNo').value = scheduleData.session_no || 1;
     document.getElementById('modalBranch').value = scheduleData.branch || '위례점';
     
     updateRoomOptionsForModal();
@@ -2028,6 +2072,32 @@
       const type = item.schedule_type || (item.subject?.includes('대여') ? 'practice' : (item.subject === '상담' || item.subject === '체험' ? 'consulting' : 'lesson'));
       return type === currentScheduleType;
     });
+
+    // 모바일 카드에서도 전체 레슨 이력을 기준으로 현재 회차를 계산합니다.
+    let sessionInfoById = {};
+    if (currentScheduleType === 'lesson' && schedules.length) {
+      const { data: allCoachSchedules, error: allSchedulesError } = await sbClient
+        .from('schedules')
+        .select('id, student_name, coach_name, start_time, total_sessions, session_no, schedule_type, subject')
+        .eq('coach_name', currentUser.name);
+      if (!allSchedulesError) {
+        const lessonGroups = {};
+        (allCoachSchedules || []).forEach(item => {
+          const type = item.schedule_type || (item.subject?.includes('대여') ? 'practice' : (item.subject === '상담' || item.subject === '체험' ? 'consulting' : 'lesson'));
+          if (type !== 'lesson' || !item.student_name) return;
+          const key = `${item.student_name}_${item.coach_name}`;
+          if (!lessonGroups[key]) lessonGroups[key] = [];
+          lessonGroups[key].push(item);
+        });
+        Object.values(lessonGroups).forEach(group => {
+          group.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+          const total = group[0]?.total_sessions || group.length;
+          group.forEach((item, index) => {
+            sessionInfoById[item.id] = `${item.session_no || (index + 1)}/${item.total_sessions || total}회`;
+          });
+        });
+      }
+    }
     coachMobileSchedules = schedules;
     if (!schedules.length) {
       list.innerHTML = '<div class="small text-secondary py-4 text-center">이 날은 등록된 일정이 없습니다.</div>';
@@ -2041,12 +2111,9 @@
       const status = getScheduleStatusLabel(schedule.schedule_status) || '예정';
       return `<div class="coach-schedule-card${cancelled}" onclick="openCoachMobileSchedule('${schedule.id}')">
         <div class="d-flex justify-content-between align-items-center gap-2"><span class="coach-schedule-time">${escapeHtml(start)}–${escapeHtml(end)}</span><span class="badge bg-secondary">${escapeHtml(status)}</span></div>
-        <div class="coach-schedule-name mt-1">${escapeHtml(schedule.student_name || '이름 없음')}</div>
+        <div class="coach-schedule-name mt-1">${escapeHtml(schedule.student_name || '이름 없음')}${sessionInfoById[schedule.id] ? ` <span class="text-warning" style="font-size:0.85rem;">${escapeHtml(sessionInfoById[schedule.id])}</span>` : ''}</div>
         <div class="coach-schedule-meta"><span class="badge bg-primary">${escapeHtml(schedule.branch || '')}</span> ${escapeHtml(schedule.subject || '')} · ${escapeHtml(schedule.room_name || '')}</div>
         ${currentScheduleType === 'lesson' ? `<div class="coach-status-actions">
-          <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'attended')">출석</button>
-          <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'absent')">결석</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'cancelled')">취소</button>
           <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'makeup_scheduled')">보강</button>
         </div>` : ''}
       </div>`;
@@ -2109,6 +2176,7 @@
     const id = document.getElementById('scheduleId').value;
     const unassignedDbId = document.getElementById('currentUnassignedDbId').value;
     const totalSessionsVal = parseInt(document.getElementById('modalTotalSessions').value, 10) || 1;
+    const sessionNoVal = parseInt(document.getElementById('modalSessionNo').value, 10) || 1;
     
     const branch = document.getElementById('modalBranch').value;
     const student_name = document.getElementById('modalStudentName').value.trim();
@@ -2142,6 +2210,11 @@
       return;
     }
 
+    if (currentScheduleType === 'lesson' && (sessionNoVal < 1 || sessionNoVal > totalSessionsVal)) {
+      alert('시작 회차는 1회차부터 총 회차 이내로 설정해 주세요.');
+      return;
+    }
+
     const duration = DURATION_MAP[subject] || 60;
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const timeUnit = currentScheduleType === 'consulting' ? 10 : 30;
@@ -2166,6 +2239,7 @@
       start_time, 
       end_time, 
       total_sessions: totalSessionsVal,
+      session_no: currentScheduleType === 'lesson' ? sessionNoVal : 1,
       schedule_type: currentScheduleType,
       phone,
       consult_status,
@@ -2200,6 +2274,10 @@
     }
 
     const weeksToCreate = (currentScheduleType === 'lesson' && isRepeat) ? repeatWeeks : 1;
+    if (currentScheduleType === 'lesson' && sessionNoVal + weeksToCreate - 1 > totalSessionsVal) {
+      alert(`반복 생성 시 ${totalSessionsVal}회차를 넘습니다. 시작 회차 또는 생성 횟수를 조정해 주세요.`);
+      return;
+    }
     const newRecurrenceGroupId = (currentScheduleType === 'lesson' && isRepeat) ? createRecurrenceGroupId() : null;
     const schedulesToInsert = [];
     const baseDate = new Date(selectedDate);
@@ -2212,6 +2290,7 @@
       schedulesToInsert.push({ 
         ...payload,
         recurrence_group_id: newRecurrenceGroupId,
+        session_no: currentScheduleType === 'lesson' ? sessionNoVal + i : 1,
         start_time: `${currDateStr}T${startTime}:00+09:00`,
         end_time: `${currDateStr}T${endTime}:00+09:00`
       });
