@@ -603,11 +603,7 @@
           <div id="lessonAttendanceGroup" class="mb-3 lesson-only-field">
             <label class="form-label">수업 상태</label>
             <select id="modalScheduleStatus" class="form-select">
-              <option value="scheduled" selected>📅 예정</option>
-              <option value="attended">✅ 출석</option>
-              <option value="absent">⚠️ 결석</option>
-              <option value="cancelled">❌ 취소</option>
-              <option value="makeup">🔁 보강</option>
+              <option value="makeup" selected>🔁 보강</option>
             </select>
           </div>
 
@@ -1982,7 +1978,8 @@
     updateRoomOptionsForModal();
 
     document.getElementById('modalStudentName').value = scheduleData.student_name;
-    document.getElementById('modalScheduleStatus').value = scheduleData.schedule_status || 'scheduled';
+    // 수업 상태는 보강만 사용합니다. 기존에 등록된 다른 상태도 수정 화면에서는 보강으로 통일합니다.
+    document.getElementById('modalScheduleStatus').value = 'makeup';
     
     if (type !== 'practice' && document.getElementById('modalCoachName')) {
       document.getElementById('modalCoachName').value = scheduleData.coach_name;
