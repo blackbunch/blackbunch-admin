@@ -1,5 +1,5 @@
 const CACHE_NAME = 'blackbunch-schedule-v3';
-const CACHE_NAME = 'blackbunch-schedule-v4';
+const CACHE_NAME = 'blackbunch-schedule-v5';
 const APP_SHELL = [
   './',
   './index.html',
