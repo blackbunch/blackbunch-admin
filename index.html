@@ -1305,7 +1305,15 @@
       resume_date: management_status === 'on_hold' ? resume_date : null
     };
 
-    const { error } = await sbClient.from('unassigned_students').insert([payload]);
+    let { error } = await sbClient.from('unassigned_students').insert([payload]);
+
+    // 시작 회차 기능을 추가하기 전 DB에서도 기본 등록은 가능하게 합니다.
+    // SQL을 실행하면 위의 첫 저장으로 선택한 시작 회차가 그대로 저장됩니다.
+    if (error?.message?.includes('start_session_no')) {
+      const { start_session_no: _startSessionNo, ...legacyPayload } = payload;
+      ({ error } = await sbClient.from('unassigned_students').insert([legacyPayload]));
+      if (!error) alert('시작 회차 DB 설정 전이라 1회차 기준으로 등록되었습니다. 시작 회차를 적용하려면 제공된 SQL을 한 번 실행해 주세요.');
+    }
 
     if (error) {
       alert('저장 실패: ' + error.message);
