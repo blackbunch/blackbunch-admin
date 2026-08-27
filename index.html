@@ -615,18 +615,8 @@
               </label>
             </div>
             <div id="repeatOptionsGroup" class="d-none mt-3 border-top border-secondary pt-2">
-              <label class="form-label small text-secondary">등록할 연속 주차(총 회차 수):</label>
-              <select id="repeatWeeksSelect" class="form-select form-select-sm">
-                <option value="1">1주 (단일)</option>
-                <option value="2">2주 (2회차)</option>
-                <option value="3">3주 (3회차)</option>
-                <option value="4" selected>4주 (4회차)</option>
-                <option value="8">8주 (8회차)</option>
-                <option value="12">12주 (12회차)</option>
-                <option value="16">16주 (16회차)</option>
-                <option value="20">20주 (20회차)</option>
-                <option value="24">24주 (24회차)</option>
-              </select>
+              <label class="form-label small text-secondary">등록할 연속 주차(남은 회차 내에서 선택):</label>
+              <select id="repeatWeeksSelect" class="form-select form-select-sm"></select>
             </div>
             <div id="recurrenceEditGroup" class="d-none mt-3 border-top border-secondary pt-2">
               <div class="form-check">
@@ -1070,7 +1060,23 @@
     const group = document.getElementById('repeatOptionsGroup');
     if (chk && group) {
       group.classList.toggle('d-none', !chk.checked);
+      if (chk.checked) updateRepeatWeekOptions();
     }
+  }
+
+  // 시작 회차부터 마지막 회차까지, 남은 모든 수업을 한 번에 반복 등록할 수 있습니다.
+  function updateRepeatWeekOptions() {
+    const select = document.getElementById('repeatWeeksSelect');
+    if (!select) return;
+    const total = parseInt(document.getElementById('modalTotalSessions')?.value, 10) || 1;
+    const start = parseInt(document.getElementById('modalSessionNo')?.value, 10) || 1;
+    const remaining = Math.max(1, total - start + 1);
+    const previous = parseInt(select.value, 10);
+    select.innerHTML = Array.from({ length: remaining }, (_, index) => {
+      const count = index + 1;
+      return `<option value="${count}">${count}주 (${count}회차)</option>`;
+    }).join('');
+    select.value = String(previous && previous <= remaining ? previous : remaining);
   }
 
   function populateTimeOptions() {
@@ -1471,6 +1477,7 @@
     document.getElementById('modalStudentName').value = data.name;
     document.getElementById('modalTotalSessions').value = data.total_sessions || 1;
     document.getElementById('modalSessionNo').value = data.start_session_no || 1;
+    updateRepeatWeekOptions();
     if(data.phone) document.getElementById('modalPhone').value = data.phone;
     if (document.getElementById('modalCoachName')) document.getElementById('modalCoachName').value = data.coach || '연습실';
     document.getElementById('modalSubject').value = data.subject || '1시간 대여';
