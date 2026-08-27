@@ -607,8 +607,7 @@
               <option value="attended">✅ 출석</option>
               <option value="absent">⚠️ 결석</option>
               <option value="cancelled">❌ 취소</option>
-              <option value="makeup_scheduled">🔁 보강 예정</option>
-              <option value="makeup_completed">✅ 보강 완료</option>
+              <option value="makeup">🔁 보강</option>
             </select>
           </div>
 
@@ -633,11 +632,17 @@
                 <option value="24">24주 (24회차)</option>
               </select>
             </div>
+            <div id="recurrenceEditGroup" class="d-none mt-3 border-top border-secondary pt-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="applyToFutureSeriesCheck">
+                <label class="form-check-label small" for="applyToFutureSeriesCheck">이후 반복 회차에도 코치·룸·과목·시간 변경 적용</label>
+              </div>
+            </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">삭제</button>
+        <button type="button" id="deleteScheduleBtn" class="btn btn-danger me-auto d-none" style="border-radius:8px;" onclick="deleteSchedule()">취소 처리</button>
         <button type="button" class="btn btn-secondary" style="border-radius:8px;" data-bs-dismiss="modal">취소</button>
         <button type="button" id="saveScheduleBtn" class="btn btn-primary" onclick="saveSchedule()">스케줄 저장</button>
       </div>
@@ -752,6 +757,8 @@
 <script>
   const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_6oV8ES_Cz6BzemiBkDBCLA_wl_g_GQP';
+  // Supabase Auth 계정을 만든 뒤 true로 변경하세요. 전환 전에는 기존 로그인을 유지합니다.
+  const USE_SUPABASE_AUTH = false;
 
   const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1171,8 +1178,24 @@
     if (picker && date) picker.value = formatKST(date).date;
   }
 
-  function checkAuthStatus() {
-    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+  async function checkAuthStatus() {
+    let currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    if (USE_SUPABASE_AUTH) {
+      const { data: { session } } = await sbClient.auth.getSession();
+      if (!session) {
+        currentUser = null;
+      } else {
+        const { data: profile, error } = await sbClient.from('user_profiles').select('*').eq('auth_user_id', session.user.id).single();
+        if (error) {
+          alert('계정 권한 정보를 불러오지 못했습니다. 관리자에게 문의해 주세요.');
+          await sbClient.auth.signOut();
+          currentUser = null;
+        } else {
+          currentUser = { id: profile.coach_id, name: profile.name, role: profile.role, branch: profile.branches.join(', ') };
+          sessionStorage.setItem('loginUser', JSON.stringify(currentUser));
+        }
+      }
+    }
     const loginView = document.getElementById('loginView');
     const mainApp = document.getElementById('mainApp');
     const userInfo = document.getElementById('userInfo');
@@ -1223,7 +1246,7 @@
   function getScheduleStatusLabel(status) {
     return ({
       attended: '출석', absent: '결석', cancelled: '취소',
-      makeup_scheduled: '보강 예정', makeup_completed: '보강 완료'
+      makeup: '보강'
     })[status] || '';
   }
 
@@ -1596,6 +1619,20 @@
             return currentScheduleType === type;
           });
 
+          let lessonProgressByStudent = {};
+          if (currentScheduleType === 'lesson') {
+            const { data: progressData, error: progressError } = await sbClient
+              .from('lesson_progress')
+              .select('student_name, coach_name, total_sessions, remaining_sessions');
+            if (progressError) {
+              console.warn('잔여 회차 계산을 불러오지 못했습니다:', progressError.message);
+            } else {
+              (progressData || []).forEach(progress => {
+                lessonProgressByStudent[`${progress.student_name}_${progress.coach_name}`] = progress;
+              });
+            }
+          }
+
           if (currentScheduleType === 'lesson') {
             const studentSchedulesMap = {};
             filteredData.forEach(item => {
@@ -1609,10 +1646,13 @@
             Object.keys(studentSchedulesMap).forEach(key => {
               studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
               const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
+              const progress = lessonProgressByStudent[key];
+              const completed = studentSchedulesMap[key].filter(item => item.schedule_status === 'attended').length;
 
               studentSchedulesMap[key].forEach((item, index) => {
                 item._session_no = item.session_no || (index + 1);
-                item._total_sessions = item.total_sessions || total;
+                item._total_sessions = progress?.total_sessions || item.total_sessions || total;
+                item._remaining_sessions = progress?.remaining_sessions ?? Math.max(0, item._total_sessions - completed);
               });
             });
           }
@@ -1639,7 +1679,7 @@
               displayTitle = `${roomNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
-              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
+              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회 · 잔여 ${(item._remaining_sessions ?? item._total_sessions ?? 4)}회` : '1회';
               const statusLabel = getScheduleStatusLabel(item.schedule_status);
               displayTitle = `${roomNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}${statusLabel ? ` [${statusLabel}]` : ''}`;
             }
@@ -1690,7 +1730,7 @@
   }
 
   async function loadCoachesData() {
-    const { data: coaches, error } = await sbClient.from('coaches').select('*');
+    const { data: coaches, error } = await sbClient.from(USE_SUPABASE_AUTH ? 'coaches_public' : 'coaches').select('*');
     if (error) {
       console.error('코치 목록 불러오기 오류:', error);
       return;
@@ -1757,10 +1797,20 @@
       return;
     }
 
+    if (USE_SUPABASE_AUTH) {
+      const { error } = await sbClient.auth.signInWithPassword({ email: idInput, password: pwInput });
+      if (error) {
+        alert('아이디 또는 비밀번호가 올바르지 않습니다.');
+        return;
+      }
+      await checkAuthStatus();
+      return;
+    }
+
     if (idInput === 'admin' && pwInput === 'qmffor@@@@') {
       const userData = { id: 'admin', name: '관리자', role: 'admin' };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
-      checkAuthStatus();
+      await checkAuthStatus();
       return;
     }
 
@@ -1784,13 +1834,14 @@
         branch: matchedCoach.branch
       };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
-      checkAuthStatus();
+      await checkAuthStatus();
     } else {
       alert('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    if (USE_SUPABASE_AUTH) await sbClient.auth.signOut();
     sessionStorage.removeItem('loginUser');
     location.reload();
   }
@@ -1902,6 +1953,8 @@
     calculateEndTime();
 
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
+    document.getElementById('recurrenceEditGroup').classList.add('d-none');
+    document.getElementById('applyToFutureSeriesCheck').checked = false;
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
@@ -1965,6 +2018,9 @@
     }
 
     document.getElementById('deleteScheduleBtn').classList.remove('d-none');
+    const canApplyToSeries = type === 'lesson' && Boolean(scheduleData.recurrence_group_id);
+    document.getElementById('recurrenceEditGroup').classList.toggle('d-none', !canApplyToSeries);
+    document.getElementById('applyToFutureSeriesCheck').checked = false;
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
@@ -1974,10 +2030,11 @@
   }
 
   async function assertNoScheduleConflict(candidates, excludeId = null) {
+    const excludedIds = new Set((Array.isArray(excludeId) ? excludeId : [excludeId]).filter(Boolean).map(String));
     for (const candidate of candidates) {
       const { data: overlaps, error } = await sbClient
         .from('schedules')
-        .select('id, student_name, coach_name, room_name, start_time, end_time')
+        .select('id, student_name, coach_name, room_name, start_time, end_time, schedule_status')
         .eq('branch', candidate.branch)
         .lt('start_time', candidate.end_time)
         .gt('end_time', candidate.start_time);
@@ -1985,7 +2042,8 @@
       if (error) throw error;
 
       const conflict = (overlaps || []).find(existing => {
-        if (String(existing.id) === String(excludeId)) return false;
+        if (excludedIds.has(String(existing.id))) return false;
+        if (existing.schedule_status === 'cancelled') return false;
         const sameRoom = existing.room_name === candidate.room_name;
         const sameCoach = candidate.coach_name !== '연습실' && existing.coach_name === candidate.coach_name;
         return sameRoom || sameCoach;
@@ -2114,7 +2172,7 @@
         <div class="coach-schedule-name mt-1">${escapeHtml(schedule.student_name || '이름 없음')}${sessionInfoById[schedule.id] ? ` <span class="text-warning" style="font-size:0.85rem;">${escapeHtml(sessionInfoById[schedule.id])}</span>` : ''}</div>
         <div class="coach-schedule-meta"><span class="badge bg-primary">${escapeHtml(schedule.branch || '')}</span> ${escapeHtml(schedule.subject || '')} · ${escapeHtml(schedule.room_name || '')}</div>
         ${currentScheduleType === 'lesson' ? `<div class="coach-status-actions">
-          <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'makeup_scheduled')">보강</button>
+          <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); updateMobileScheduleStatus('${schedule.id}', 'makeup')">보강</button>
         </div>` : ''}
       </div>`;
     }).join('');
@@ -2249,27 +2307,61 @@
     };
 
     if (id) {
+      const applyToFuture = currentScheduleType === 'lesson'
+        && document.getElementById('applyToFutureSeriesCheck')?.checked
+        && recurrence_group_id;
+      let updates = [{ id, payload }];
+
+      if (applyToFuture) {
+        const { data: futureSchedules, error: futureError } = await sbClient
+          .from('schedules')
+          .select('*')
+          .eq('recurrence_group_id', recurrence_group_id)
+          .gt('start_time', originalScheduleData.start_time)
+          .order('start_time', { ascending: true });
+        if (futureError) {
+          alert('반복 일정 불러오기 실패: ' + futureError.message);
+          return;
+        }
+        updates = updates.concat((futureSchedules || []).map(existing => {
+          const date = formatKST(existing.start_time).date;
+          return {
+            id: existing.id,
+            payload: {
+              ...payload,
+              start_time: `${date}T${startTime}:00+09:00`,
+              end_time: `${date}T${endTime}:00+09:00`,
+              recurrence_group_id: existing.recurrence_group_id,
+              session_no: existing.session_no,
+              schedule_status: existing.schedule_status
+            }
+          };
+        }));
+      }
       try {
-        await assertNoScheduleConflict([payload], id);
+        await assertNoScheduleConflict(updates.map(item => item.payload), updates.map(item => item.id));
       } catch (error) {
         alert(`저장할 수 없습니다: ${error.message}`);
         return;
       }
-      const result = await sbClient.from('schedules').update(payload).eq('id', id);
-      if (result.error) {
-        alert("수정 실패: " + result.error.message);
-      } else {
+      for (const update of updates) {
+        const result = await sbClient.from('schedules').update(update.payload).eq('id', update.id);
+        if (result.error) {
+          alert("수정 실패: " + result.error.message);
+          return;
+        }
+      }
+      {
         const changedFields = getChangedFields(originalScheduleData, payload);
         await writeScheduleHistory(
           'updated',
           { ...payload, id },
-          `${formatScheduleForHistory(originalScheduleData)} → ${changedFields.length ? changedFields.join(', ') + ' 변경' : '일정 정보 수정'}`
+          `${formatScheduleForHistory(originalScheduleData)} → ${changedFields.length ? changedFields.join(', ') + ' 변경' : '일정 정보 수정'}${applyToFuture ? ` (이후 ${updates.length - 1}회차에도 적용)` : ''}`
         );
         const modalEl = document.getElementById('scheduleModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
         calendar.refetchEvents();
-      }
       return;
     }
 
@@ -2327,17 +2419,17 @@
 
   async function deleteSchedule() {
     const id = document.getElementById('scheduleId').value;
-    if (!id || !confirm("정말 이 일정을 삭제하시겠습니까?")) return;
+    if (!id || !confirm("이 일정을 취소 처리하시겠습니까? 취소 기록은 보존되며 나중에 상태를 다시 변경할 수 있습니다.")) return;
 
-    const { error: deleteError } = await sbClient.from('schedules').delete().eq('id', id);
-    if (deleteError) {
-      alert("삭제 실패: " + deleteError.message);
+    const { error: cancelError } = await sbClient.from('schedules').update({ schedule_status: 'cancelled' }).eq('id', id);
+    if (cancelError) {
+      alert("취소 처리 실패: " + cancelError.message);
       return;
     }
 
-    await writeScheduleHistory('deleted', originalScheduleData || { id }, `${formatScheduleForHistory(originalScheduleData)} 일정 삭제`);
+    await writeScheduleHistory('updated', { ...(originalScheduleData || { id }), schedule_status: 'cancelled' }, `${formatScheduleForHistory(originalScheduleData)} 일정 취소 처리`);
 
-    alert("일정이 삭제되었습니다.");
+    alert("일정이 취소 처리되었습니다.");
 
     const modalEl = document.getElementById('scheduleModal');
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
