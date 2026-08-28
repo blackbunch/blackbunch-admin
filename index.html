@@ -2295,15 +2295,76 @@
       container.innerHTML = '<span class="text-secondary">기록된 변경 이력이 없습니다.</span>';
       return;
     }
-    const actionLabel = { created: '추가', updated: '수정', deleted: '삭제' };
+    const actionLabel = { created: '추가', updated: '수정', deleted: '삭제', restored: '복원' };
     container.innerHTML = data.map(log => {
       const time = formatKST(log.created_at);
+      const canRestore = Boolean(log.schedule_id && log.snapshot?.start_time && log.snapshot?.end_time);
       return `<div class="border border-secondary rounded p-2 mb-2">
         <div class="d-flex justify-content-between gap-2"><strong>${escapeHtml(log.student_name || '일정')}</strong><span class="badge bg-secondary">${escapeHtml(actionLabel[log.action] || log.action)}</span></div>
         <div class="text-secondary mt-1">담당: ${escapeHtml(log.target_coach_name)} · 변경: ${escapeHtml(log.actor_name)} · ${escapeHtml(time.date)} ${escapeHtml(time.time)}</div>
         <div class="mt-1">${escapeHtml(log.description || '')}</div>
+        ${canRestore ? `<button class="btn btn-sm btn-outline-warning mt-2" onclick="restoreScheduleFromHistory('${log.id}')">이 상태로 복원</button>` : ''}
       </div>`;
     }).join('');
+  }
+
+  async function restoreScheduleFromHistory(historyId) {
+    const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    if (currentUser?.role !== 'admin') {
+      alert('일정 복원은 관리자만 할 수 있습니다.');
+      return;
+    }
+    if (!confirm('이 이력 시점의 일정 상태로 복원하시겠습니까? 현재 일정 정보는 새 변경 이력으로 보존됩니다.')) return;
+
+    const { data: log, error: historyError } = await sbClient
+      .from('schedule_history')
+      .select('*')
+      .eq('id', historyId)
+      .single();
+    if (historyError || !log?.snapshot || !log.schedule_id) {
+      alert('복원할 이력 정보를 찾지 못했습니다.');
+      return;
+    }
+
+    const fields = ['branch', 'student_name', 'coach_name', 'subject', 'room_name', 'start_time', 'end_time', 'total_sessions', 'session_no', 'schedule_type', 'phone', 'consult_status', 'memo', 'schedule_status', 'recurrence_group_id'];
+    const restoredPayload = Object.fromEntries(fields.filter(key => key in log.snapshot).map(key => [key, log.snapshot[key]]));
+    if (!restoredPayload.start_time || !restoredPayload.end_time) {
+      alert('이 이력에는 복원할 일정 시간이 없습니다.');
+      return;
+    }
+
+    const { data: currentSchedule, error: currentError } = await sbClient
+      .from('schedules')
+      .select('*')
+      .eq('id', log.schedule_id)
+      .maybeSingle();
+    if (currentError) {
+      alert('현재 일정을 확인하지 못했습니다: ' + currentError.message);
+      return;
+    }
+
+    try {
+      await assertNoScheduleConflict([restoredPayload], currentSchedule ? [log.schedule_id] : []);
+    } catch (error) {
+      alert(`복원할 수 없습니다: ${error.message}`);
+      return;
+    }
+
+    let saveError;
+    if (currentSchedule) {
+      ({ error: saveError } = await sbClient.from('schedules').update(restoredPayload).eq('id', log.schedule_id));
+    } else {
+      ({ error: saveError } = await sbClient.from('schedules').insert([{ ...restoredPayload, id: log.schedule_id }]));
+    }
+    if (saveError) {
+      alert('일정 복원 실패: ' + saveError.message);
+      return;
+    }
+
+    await writeScheduleHistory('restored', { ...restoredPayload, id: log.schedule_id }, `${formatScheduleForHistory(restoredPayload)} 이력 시점으로 복원`);
+    alert('일정이 선택한 이력 시점으로 복원되었습니다.');
+    await loadScheduleHistory();
+    if (calendar) calendar.refetchEvents();
   }
 
   async function saveSchedule() {
@@ -2548,7 +2609,7 @@
       return;
     }
 
-    await writeScheduleHistory('updated', { ...(originalScheduleData || { id }), schedule_status: 'cancelled' }, `${formatScheduleForHistory(originalScheduleData)}${cancelFuture ? ' 및 이후 반복 일정' : ''} 취소 처리`);
+    await writeScheduleHistory('updated', originalScheduleData || { id }, `${formatScheduleForHistory(originalScheduleData)}${cancelFuture ? ' 및 이후 반복 일정' : ''} 취소 처리`);
 
     alert(cancelFuture ? "선택한 일정과 이후 반복 일정이 취소되고 미정 목록으로 이동했습니다." : "일정이 취소되고 미정 목록으로 이동했습니다.");
 
