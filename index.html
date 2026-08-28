@@ -1593,7 +1593,11 @@
       slotEventOverlap: true,
 
       dayHeaderContent: function(arg) {
-        const d = arg.date;
+        // 월/주 화면에 실제 표시된 첫 날짜를 기준으로 헤더를 만듭니다.
+        // 일부 환경에서 arg.date가 1970년 기준으로 들어오는 표시 오류를 방지합니다.
+        const visibleStart = calendar?.view?.activeStart;
+        const d = visibleStart ? new Date(visibleStart) : new Date(arg.date);
+        if (visibleStart) d.setDate(d.getDate() + arg.date.getDay());
         const month = d.getMonth() + 1;
         const date = d.getDate();
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1637,6 +1641,7 @@
           });
 
           let lessonProgressByStudent = {};
+          let allLessonSchedules = schedulesData || [];
           if (currentScheduleType === 'lesson') {
             const { data: progressData, error: progressError } = await sbClient
               .from('lesson_progress')
@@ -1648,13 +1653,38 @@
                 lessonProgressByStudent[`${progress.student_name}_${progress.coach_name}`] = progress;
               });
             }
+
+            // 보이는 기간 밖의 취소된 회차도 시작 회차 판단에는 포함해야 합니다.
+            const { data: allLessons, error: allLessonsError } = await sbClient
+              .from('schedules')
+              .select('*')
+              .eq('branch', selectedBranch);
+            if (allLessonsError) {
+              console.warn('전체 회차 정보를 불러오지 못했습니다:', allLessonsError.message);
+            } else {
+              allLessonSchedules = (allLessons || []).filter(item => {
+                const type = item.schedule_type || (item.subject?.includes('대여') ? 'practice' : (item.subject === '상담' || item.subject === '체험' ? 'consulting' : 'lesson'));
+                return type === 'lesson';
+              });
+            }
           }
 
           if (currentScheduleType === 'lesson') {
             const studentSchedulesMap = {};
+            const allCourseSchedulesMap = {};
+            const courseKey = item => item.recurrence_group_id
+              ? `series_${item.recurrence_group_id}`
+              : `${item.student_name}_${item.coach_name}_${item.total_sessions || 1}`;
+
+            allLessonSchedules.forEach(item => {
+              if (!item.student_name || item.student_name.includes('미정')) return;
+              const key = courseKey(item);
+              if (!allCourseSchedulesMap[key]) allCourseSchedulesMap[key] = [];
+              allCourseSchedulesMap[key].push(item);
+            });
             filteredData.forEach(item => {
               if (item.student_name && !item.student_name.includes('미정')) {
-                const key = `${item.student_name}_${item.coach_name}`;
+                const key = courseKey(item);
                 if (!studentSchedulesMap[key]) studentSchedulesMap[key] = [];
                 studentSchedulesMap[key].push(item);
               }
@@ -1662,12 +1692,14 @@
 
             Object.keys(studentSchedulesMap).forEach(key => {
               studentSchedulesMap[key].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-              const total = studentSchedulesMap[key][0]?.total_sessions || studentSchedulesMap[key].length;
-              const progress = lessonProgressByStudent[key];
+              const courseSchedules = allCourseSchedulesMap[key] || studentSchedulesMap[key];
+              const total = courseSchedules[0]?.total_sessions || studentSchedulesMap[key].length;
+              const progressKey = `${studentSchedulesMap[key][0]?.student_name}_${studentSchedulesMap[key][0]?.coach_name}`;
+              const progress = lessonProgressByStudent[progressKey];
               const totalSessions = progress?.total_sessions || total;
               // 시작 회차 앞의 수업은 이미 진행된 수업입니다. 반면 미래에 예약한 일정은
               // 예약만으로 차감하면 안 되므로 잔여 회차를 줄이지 않습니다.
-              const firstSessionNo = Math.min(...studentSchedulesMap[key].map((item, index) => Number(item.session_no) || (index + 1)));
+              const firstSessionNo = Math.min(...courseSchedules.map((item, index) => Number(item.session_no) || (index + 1)));
               const carriedCompleted = Math.max(0, firstSessionNo - 1);
               const attendedAfterRegistration = Math.max(0, totalSessions - (progress?.remaining_sessions ?? totalSessions));
               const completed = Math.min(totalSessions, carriedCompleted + attendedAfterRegistration);
