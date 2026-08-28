@@ -1735,7 +1735,7 @@
               displayTitle = `${roomNum}. ${item.student_name || '신청자'}(${item.coach_name}) ${statusTag}`;
               eventBgColor = item.consult_status === '취소' ? '#4b5563' : (item.subject === '체험' ? '#f59e0b' : '#ec4899');
             } else {
-              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회 · 잔여 ${(item._remaining_sessions ?? item._total_sessions ?? 4)}회` : '1회';
+              const sessionText = item._session_no ? `${item._session_no}/${item._total_sessions || 4}회` : '1회';
               const statusLabel = getScheduleStatusLabel(item.schedule_status);
               displayTitle = `${roomNum}. ${item.student_name || '미정'}(${item.coach_name}) ${sessionText}${statusLabel ? ` [${statusLabel}]` : ''}`;
             }
