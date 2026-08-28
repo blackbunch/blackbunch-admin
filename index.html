@@ -2468,9 +2468,39 @@
       return;
     }
 
+    // 취소한 수업은 다시 날짜를 잡을 수 있도록 미정 목록으로 되돌립니다.
+    // 반복 일정을 함께 취소해도 기준이 되는 한 명만 미정으로 등록합니다.
+    const schedule = originalScheduleData || { id };
+    const unassignedPayload = {
+      branch: schedule.branch,
+      name: schedule.student_name || '미정',
+      phone: schedule.phone || '',
+      coach: schedule.coach_name || '',
+      subject: schedule.subject || '스타일',
+      room: schedule.room_name || 'ROOM 1',
+      total_sessions: schedule.total_sessions || 1,
+      start_session_no: schedule.session_no || 1,
+      completed_sessions: 0,
+      remaining_sessions: Math.max(1, (schedule.total_sessions || 1) - ((schedule.session_no || 1) - 1)),
+      schedule_type: schedule.schedule_type || 'lesson',
+      management_status: 'pending',
+      hold_reason: null,
+      resume_date: null
+    };
+    let { error: moveError } = await sbClient.from('unassigned_students').insert([unassignedPayload]);
+    if (moveError?.message?.includes('start_session_no')) {
+      const { start_session_no: _startSessionNo, ...legacyUnassignedPayload } = unassignedPayload;
+      ({ error: moveError } = await sbClient.from('unassigned_students').insert([legacyUnassignedPayload]));
+    }
+    if (moveError) {
+      alert('일정은 취소됐지만 미정 목록 이동에 실패했습니다: ' + moveError.message);
+      calendar.refetchEvents();
+      return;
+    }
+
     await writeScheduleHistory('updated', { ...(originalScheduleData || { id }), schedule_status: 'cancelled' }, `${formatScheduleForHistory(originalScheduleData)}${cancelFuture ? ' 및 이후 반복 일정' : ''} 취소 처리`);
 
-    alert(cancelFuture ? "선택한 일정과 이후 반복 일정이 취소 처리되었습니다." : "일정이 취소 처리되었습니다.");
+    alert(cancelFuture ? "선택한 일정과 이후 반복 일정이 취소되고 미정 목록으로 이동했습니다." : "일정이 취소되고 미정 목록으로 이동했습니다.");
 
     const modalEl = document.getElementById('scheduleModal');
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
