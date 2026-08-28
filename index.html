@@ -317,17 +317,31 @@
     @media (max-width: 900px) {
       body { padding: 8px 4px; }
       .main-container { padding: 12px 8px; border-radius: 12px; }
+      .schedule-type-nav { gap: 6px; padding-bottom: 9px; margin-bottom: 12px; }
+      .schedule-type-btn { flex: 1 1 0; min-width: 0; padding: 9px 4px; font-size: 0.76rem; }
+      .unassigned-container { padding: 12px 10px; margin-bottom: 14px; }
+      #unassignedTitle { font-size: 0.92rem; white-space: nowrap; letter-spacing: -0.04em; }
+      #coachFilterWrapper { gap: 0 !important; flex-shrink: 1; }
+      #coachFilterWrapper label { display: none; }
+      #unassignedCoachFilter { width: 104px; font-size: 0.75rem !important; }
+      #unassignedAddBtn { font-size: 0.76rem !important; padding: 5px 9px; white-space: nowrap; }
+      #lessonStatusTabs { gap: 6px !important; margin-bottom: 10px !important; }
+      #lessonStatusTabs .btn { font-size: 0.78rem; white-space: nowrap; }
       .fc-toolbar { flex-direction: column; gap: 6px; }
       .fc-toolbar-title { font-size: 1rem !important; }
       .fc-header-toolbar { margin-bottom: 0.6rem !important; }
       .fc-button-primary { padding: 7px 10px !important; font-size: 0.8rem !important; }
       .filter-section { padding: 10px; margin-bottom: 12px; }
+      .filter-section .form-label { font-size: 0.72rem; white-space: nowrap; margin-bottom: 4px; }
+      .filter-section .form-select, .filter-section .form-control { padding: 8px 9px; font-size: 0.82rem; }
+      #addScheduleBtn { font-size: 0.82rem; white-space: nowrap; }
       .modal-dialog { margin: 10px; }
       #calendar { min-height: 0; --schedule-slot-height: 72px; }
       .fc-timegrid-axis { width: 52px !important; }
       .fc-timegrid-slot-label-cushion { font-size: 0.75rem !important; }
-      .fc-col-header-cell { padding: 6px 0 !important; }
-      .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
+      .fc-col-header-cell { background-color: #25263a !important; padding: 7px 1px !important; border-bottom-color: #3b3d5a !important; }
+      .fc-col-header-cell.fc-timegrid-axis { background-color: #181920 !important; }
+      .fc-col-header-cell-cushion { color: #c7d2fe !important; font-size: 0.68rem !important; line-height: 1.1; white-space: nowrap; letter-spacing: -0.05em; }
       .custom-stack-card { white-space: normal; overflow: visible; text-overflow: clip; min-height: 30px; line-height: 1.25; padding: 6px 8px; }
       .fc-list-event-title { white-space: normal; font-size: 0.88rem; }
       .fc-list-event-time { font-size: 0.8rem; white-space: nowrap; }
@@ -1602,7 +1616,7 @@
         const date = d.getDate();
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
         const dayName = dayNames[d.getDay()];
-        return `${month}. ${date}. (${dayName})`;
+        return `${month}.${date}(${dayName})`;
       },
 
       buttonText: { today: '오늘', month: '월', week: '주', day: '일', listWeek: '목록' },
