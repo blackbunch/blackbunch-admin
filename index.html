@@ -1589,11 +1589,11 @@
     const currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     const isCoachMobile = Boolean(isMobile && currentUser?.role !== 'admin');
     const headerToolbar = isMobile
-      ? { left: 'prev,next today', center: 'title', right: isCoachMobile ? 'timeGridWeek,timeGridDay,listWeek' : 'timeGridDay,listWeek' }
+      ? { left: 'prev,next today', center: 'title', right: 'timeGridWeek,timeGridDay,listWeek' }
       : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' };
 
     calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: isCoachMobile ? 'timeGridWeek' : (isMobile ? 'timeGridDay' : 'timeGridWeek'),
+      initialView: isMobile ? 'timeGridWeek' : 'timeGridWeek',
       locale: 'ko',
       firstDay: 1,
       height: 'auto',
@@ -1628,7 +1628,7 @@
       windowResize: function() {
         const compactMobile = window.matchMedia('(max-width: 900px)').matches;
         const user = JSON.parse(sessionStorage.getItem('loginUser'));
-        if (compactMobile && user?.role !== 'admin' && calendar.view.type !== 'timeGridWeek' && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
+        if (compactMobile && calendar.view.type !== 'timeGridWeek' && calendar.view.type !== 'timeGridDay' && calendar.view.type !== 'listWeek') {
           calendar.changeView('timeGridWeek');
         }
       },
