@@ -624,6 +624,10 @@
                 <input class="form-check-input" type="checkbox" id="applyToFutureSeriesCheck">
                 <label class="form-check-label small" for="applyToFutureSeriesCheck">이후 반복 회차에도 코치·룸·과목·시간 변경 적용</label>
               </div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="cancelFutureSeriesCheck">
+                <label class="form-check-label small text-danger" for="cancelFutureSeriesCheck">취소 처리 시 이후 반복 회차도 함께 취소</label>
+              </div>
             </div>
           </div>
         </form>
@@ -1627,6 +1631,7 @@
           if (error) throw error;
 
           const filteredData = (schedulesData || []).filter(item => {
+            if (item.schedule_status === 'cancelled') return false;
             const type = item.schedule_type || (item.subject?.includes('대여') ? 'practice' : (item.subject === '상담' || item.subject === '체험' ? 'consulting' : 'lesson'));
             return currentScheduleType === type;
           });
@@ -1974,6 +1979,7 @@
     document.getElementById('deleteScheduleBtn').classList.add('d-none');
     document.getElementById('recurrenceEditGroup').classList.add('d-none');
     document.getElementById('applyToFutureSeriesCheck').checked = false;
+    document.getElementById('cancelFutureSeriesCheck').checked = false;
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
@@ -2040,6 +2046,7 @@
     const canApplyToSeries = type === 'lesson' && Boolean(scheduleData.recurrence_group_id);
     document.getElementById('recurrenceEditGroup').classList.toggle('d-none', !canApplyToSeries);
     document.getElementById('applyToFutureSeriesCheck').checked = false;
+    document.getElementById('cancelFutureSeriesCheck').checked = false;
     const repeatChk = document.getElementById('repeatScheduleCheck');
     if (repeatChk) repeatChk.checked = false;
     toggleRepeatOptions();
@@ -2445,15 +2452,25 @@
     const id = document.getElementById('scheduleId').value;
     if (!id || !confirm("이 일정을 취소 처리하시겠습니까? 취소 기록은 보존되며 나중에 상태를 다시 변경할 수 있습니다.")) return;
 
-    const { error: cancelError } = await sbClient.from('schedules').update({ schedule_status: 'cancelled' }).eq('id', id);
+    const cancelFuture = Boolean(originalScheduleData?.recurrence_group_id)
+      && document.getElementById('cancelFutureSeriesCheck')?.checked;
+    let cancelQuery = sbClient.from('schedules').update({ schedule_status: 'cancelled' });
+    if (cancelFuture) {
+      cancelQuery = cancelQuery
+        .eq('recurrence_group_id', originalScheduleData.recurrence_group_id)
+        .gte('start_time', originalScheduleData.start_time);
+    } else {
+      cancelQuery = cancelQuery.eq('id', id);
+    }
+    const { error: cancelError } = await cancelQuery;
     if (cancelError) {
       alert("취소 처리 실패: " + cancelError.message);
       return;
     }
 
-    await writeScheduleHistory('updated', { ...(originalScheduleData || { id }), schedule_status: 'cancelled' }, `${formatScheduleForHistory(originalScheduleData)} 일정 취소 처리`);
+    await writeScheduleHistory('updated', { ...(originalScheduleData || { id }), schedule_status: 'cancelled' }, `${formatScheduleForHistory(originalScheduleData)}${cancelFuture ? ' 및 이후 반복 일정' : ''} 취소 처리`);
 
-    alert("일정이 취소 처리되었습니다.");
+    alert(cancelFuture ? "선택한 일정과 이후 반복 일정이 취소 처리되었습니다." : "일정이 취소 처리되었습니다.");
 
     const modalEl = document.getElementById('scheduleModal');
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
