@@ -342,7 +342,8 @@
       .fc-col-header-cell { background-color: #25263a !important; padding: 7px 1px !important; border-bottom-color: #3b3d5a !important; }
       .fc-col-header-cell.fc-timegrid-axis { background-color: #181920 !important; }
       .fc-col-header-cell-cushion { color: #c7d2fe !important; font-size: 0.68rem !important; line-height: 1.1; white-space: nowrap; letter-spacing: -0.05em; }
-      .custom-stack-card { white-space: normal; overflow: visible; text-overflow: clip; min-height: 30px; line-height: 1.25; padding: 6px 8px; }
+      .custom-stack-card { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 0; line-height: 1.15; padding: 4px 5px; font-size: 0.64rem; }
+      .fc-timegrid-event .fc-event-main { height: auto !important; overflow: visible !important; }
       .fc-list-event-title { white-space: normal; font-size: 0.88rem; }
       .fc-list-event-time { font-size: 0.8rem; white-space: nowrap; }
     }
@@ -1785,8 +1786,18 @@
 
       eventContent: function(arg) {
         const { time } = formatKST(arg.event.start);
+        // 모바일 주간 화면에서는 긴 일정명을 한 줄로 압축해 세로 글자 현상을 방지합니다.
+        const compactTitle = window.matchMedia('(max-width: 900px)').matches
+          ? arg.event.title
+            .replace(/^\d+\.\s*/, '')
+            .replace(/\([^)]*\)/g, '')
+            .replace(/회(?=\s|$)/, '')
+            .replace(/\s*\[[^\]]+\]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+          : arg.event.title;
         return {
-          html: `<div class="custom-stack-card" data-start-time="${time}" style="background-color: ${safeColor(arg.event.backgroundColor)};">${escapeHtml(arg.event.title)}</div>`
+          html: `<div class="custom-stack-card" data-start-time="${time}" title="${escapeHtml(arg.event.title)}" style="background-color: ${safeColor(arg.event.backgroundColor)};">${escapeHtml(compactTitle)}</div>`
         };
       },
 
