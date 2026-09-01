@@ -439,6 +439,8 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
 
   async function checkAuthStatus() {
     let currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
+    // 모바일 앱을 닫았다 다시 열어도 로그인 상태를 유지합니다.
+    let currentUser = JSON.parse(localStorage.getItem('loginUser') || sessionStorage.getItem('loginUser') || 'null');
     if (USE_SUPABASE_AUTH) {
       const { data: { session } } = await sbClient.auth.getSession();
       if (!session) {
@@ -452,9 +454,13 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
         } else {
           currentUser = { id: profile.coach_id, name: profile.name, role: profile.role, branch: profile.branches.join(', ') };
           sessionStorage.setItem('loginUser', JSON.stringify(currentUser));
+          localStorage.setItem('loginUser', JSON.stringify(currentUser));
         }
       }
     }
+    // 기존 코드에서 현재 사용자 정보를 sessionStorage로도 참조하므로, 재실행 때 동기화합니다.
+    if (currentUser) sessionStorage.setItem('loginUser', JSON.stringify(currentUser));
+    const loginView = document.getElementById('loginView');
     const loginView = document.getElementById('loginView');
     const mainApp = document.getElementById('mainApp');
     const userInfo = document.getElementById('userInfo');
@@ -1132,6 +1138,9 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
     if (idInput === 'admin' && pwInput === 'qmffor@@@@') {
       const userData = { id: 'admin', name: '관리자', role: 'admin' };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      const userData = { id: 'admin', name: '관리자', role: 'admin' };
+      sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      localStorage.setItem('loginUser', JSON.stringify(userData));
       await checkAuthStatus();
       return;
     }
@@ -1156,6 +1165,9 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
         branch: matchedCoach.branch
       };
       sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      };
+      sessionStorage.setItem('loginUser', JSON.stringify(userData));
+      localStorage.setItem('loginUser', JSON.stringify(userData));
       await checkAuthStatus();
     } else {
       alert('아이디 또는 비밀번호가 올바르지 않습니다.');
@@ -1165,6 +1177,8 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
   async function handleLogout() {
     if (USE_SUPABASE_AUTH) await sbClient.auth.signOut();
     sessionStorage.removeItem('loginUser');
+    localStorage.removeItem('loginUser');
+    location.reload();
     location.reload();
   }
 
