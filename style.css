@@ -1,0 +1,330 @@
+* {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    *:focus, *:active { outline: none !important; }
+
+    body {
+      padding: 20px 12px;
+      background-color: #0f1015;
+      color: #f1f3f5;
+      min-height: 100vh;
+    }
+
+    .login-container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: #181920;
+      padding: 30px 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid #282a36;
+    }
+
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #181920;
+      padding: 20px 16px;
+      border-radius: 20px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      border: 1px solid #282a36;
+    }
+
+    .schedule-type-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid #2e3140;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .schedule-type-btn {
+      background-color: #21232d;
+      color: #a0a5b5;
+      border: 1px solid #2e3140;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .schedule-type-btn.active {
+      background-color: #4f46e5;
+      color: #ffffff;
+      border-color: #4f46e5;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .schedule-type-btn.consulting-tab.active {
+      background-color: #ec4899;
+      border-color: #ec4899;
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+    }
+    .schedule-type-btn.practice-tab.active {
+      background-color: #10b981;
+      border-color: #10b981;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .filter-section {
+      background-color: #21232d;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #2e3140;
+    }
+
+    .form-label {
+      color: #a0a5b5;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    .form-select, .form-control {
+      background-color: #14151b;
+      color: #ffffff;
+      border: 1px solid #2e3140;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.9rem;
+    }
+    .form-select:focus, .form-control:focus {
+      background-color: #14151b;
+      color: #ffffff;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+
+    .readonly-select {
+      pointer-events: none;
+      background-color: #1c1e28 !important;
+      color: #818cf8 !important;
+      border-color: #2e3140 !important;
+    }
+
+    .btn-primary {
+      background-color: #4f46e5;
+      border-color: #4f46e5;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background-color: #4338ca;
+      border-color: #4338ca;
+    }
+
+    #calendar { 
+      margin-top: 15px; 
+      height: auto !important;
+    }
+    .fc { color: #e2e8f0; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #262836 !important; }
+    .fc-theme-standard .fc-scrollgrid {
+      border: 1px solid #262836 !important;
+      border-radius: 12px;
+      overflow: visible !important;
+    }
+    
+    /* 1시간 기본 슬롯 높이 */
+    .fc-timegrid-slot {
+      height: var(--schedule-slot-height, 120px) !important;
+    }
+    
+    .fc-timegrid-cols table, .fc-col-header table {
+      width: 100% !important;
+      table-layout: fixed !important;
+    }
+    .fc-timegrid-axis { width: 65px !important; }
+
+    .fc-col-header-cell {
+      background-color: #f0f0ff !important;
+      padding: 10px 0 !important;
+      border-bottom: 2px solid #dcdcfe !important;
+    }
+    .fc-col-header-cell-cushion {
+      color: #6366f1 !important;
+      font-weight: 800 !important;
+      font-size: 0.95rem !important;
+      text-decoration: none !important;
+    }
+    
+    .fc .fc-day-today { background-color: rgba(99, 102, 241, 0.08) !important; }
+
+    .fc-timegrid-slot-label-cushion {
+      color: #a0a5b5;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .fc-button-primary {
+      background-color: #21232d !important;
+      border: 1px solid #2e3140 !important;
+      color: #cbd5e1 !important;
+      border-radius: 8px !important;
+      font-size: 0.8rem !important;
+      font-weight: 500 !important;
+      padding: 5px 10px !important;
+      box-shadow: none !important;
+    }
+    .fc-button-primary:hover {
+      background-color: #2e3140 !important;
+      color: #ffffff !important;
+    }
+    .fc-button-active {
+      background-color: #4f46e5 !important;
+      border-color: #4f46e5 !important;
+      color: #ffffff !important;
+    }
+    .fc-toolbar-title {
+      font-size: 1.1rem !important;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    /* 수직 카드 커스텀 디자인 */
+    .custom-stack-card {
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-bottom: 3px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .custom-stack-card:hover {
+      filter: brightness(1.2);
+    }
+
+    /* 수직 재배치를 위한 Harness 스타일 */
+    .fc-timegrid-event-harness {
+      z-index: 5 !important;
+    }
+    .fc-timegrid-event {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .fc-list-day-cushion { background-color: #21232d !important; }
+    .fc-list-event:hover td { background-color: #2e3140 !important; }
+
+    .unassigned-container {
+      background-color: #1e1b2e;
+      border: 1px solid #d97706;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .unassigned-card {
+      background-color: #14151b;
+      border: 1px solid #2e3140;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .coach-unassigned-section {
+      background: #14151b;
+      border: 1px solid #2e3140;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .modal-content {
+      background-color: #181920;
+      color: #e2e8f0;
+      border: 1px solid #2e3140;
+      border-radius: 16px;
+    }
+    .modal-header, .modal-footer { border-color: #2e3140; }
+    .btn-close { filter: invert(1); }
+    
+    .branch-checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding-top: 4px;
+    }
+
+    .table-dark-custom {
+      color: #e2e8f0;
+      border-color: #2e3140;
+    }
+    .table-dark-custom th {
+      background-color: #21232d;
+      border-color: #2e3140;
+      color: #94a3b8;
+    }
+    .table-dark-custom td { border-color: #2e3140; }
+
+    .coach-mobile-schedule { display: none; }
+    .coach-mobile-date-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 14px; }
+    .coach-mobile-date-title { font-size: 1rem; font-weight: 800; color: #f8fafc; text-align: center; flex: 1; }
+    .coach-mobile-branch-filter { margin: 0 0 12px; }
+    .coach-schedule-card { background: #21232d; border: 1px solid #34384a; border-left: 5px solid #4f46e5; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .coach-schedule-card.cancelled { opacity: 0.55; border-left-color: #6b7280; }
+    .coach-schedule-time { font-weight: 800; font-size: 1.05rem; color: #a5b4fc; }
+    .coach-schedule-name { font-weight: 800; color: #fff; font-size: 1rem; }
+    .coach-schedule-meta { color: #a0a5b5; font-size: 0.82rem; margin-top: 4px; }
+    .coach-status-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .coach-mobile-add { position: sticky; bottom: 12px; width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; font-weight: 800; z-index: 10; }
+    #installAppBtn { display: none; border-radius: 8px; }
+
+    body.coach-mobile-mode .filter-section,
+    body.coach-mobile-mode .unassigned-container,
+    body.coach-mobile-mode #calendar { display: none; }
+    body.coach-mobile-mode .coach-mobile-schedule { display: block; }
+
+    @media (max-width: 900px) {
+      body { padding: 8px 4px; }
+      .main-container { padding: 12px 8px; border-radius: 12px; }
+      .schedule-type-nav { gap: 6px; padding-bottom: 9px; margin-bottom: 12px; }
+      .schedule-type-btn { flex: 1 1 0; min-width: 0; padding: 9px 4px; font-size: 0.76rem; }
+      .unassigned-container { padding: 12px 10px; margin-bottom: 14px; }
+      #unassignedTitle { font-size: 0.92rem; white-space: nowrap; letter-spacing: -0.04em; }
+      #coachFilterWrapper { gap: 0 !important; flex-shrink: 1; }
+      #coachFilterWrapper label { display: none; }
+      #unassignedCoachFilter { width: 104px; font-size: 0.75rem !important; }
+      #unassignedAddBtn { font-size: 0.76rem !important; padding: 5px 9px; white-space: nowrap; }
+      #lessonStatusTabs { gap: 6px !important; margin-bottom: 10px !important; }
+      #lessonStatusTabs .btn { font-size: 0.78rem; white-space: nowrap; }
+      .fc-toolbar { flex-direction: column; gap: 6px; }
+      .fc-toolbar-title { font-size: 1rem !important; }
+      .fc-header-toolbar { margin-bottom: 0.6rem !important; }
+      .fc-button-primary { padding: 7px 10px !important; font-size: 0.8rem !important; }
+      .filter-section { padding: 10px; margin-bottom: 12px; }
+      .filter-section .form-label { font-size: 0.72rem; white-space: nowrap; margin-bottom: 4px; }
+      .filter-section .form-select, .filter-section .form-control { padding: 8px 9px; font-size: 0.82rem; }
+      #addScheduleBtn { font-size: 0.82rem; white-space: nowrap; }
+      .modal-dialog { margin: 10px; }
+      #calendar { min-height: 0; --schedule-slot-height: 72px; }
+      .fc-timegrid-axis { width: 52px !important; }
+      .fc-timegrid-slot-label-cushion { font-size: 0.75rem !important; }
+      .fc-col-header-cell { background-color: #25263a !important; padding: 7px 1px !important; border-bottom-color: #3b3d5a !important; }
+      .fc-col-header-cell.fc-timegrid-axis { background-color: #181920 !important; }
+      .fc-col-header-cell-cushion { color: #c7d2fe !important; font-size: 0.68rem !important; line-height: 1.1; white-space: nowrap; letter-spacing: -0.05em; }
+      .custom-stack-card { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 0; line-height: 1.15; padding: 4px 5px; font-size: 0.64rem; }
+      .fc-timegrid-event .fc-event-main { height: auto !important; overflow: visible !important; }
+      .fc-list-event-title { white-space: normal; font-size: 0.88rem; }
+      .fc-list-event-time { font-size: 0.8rem; white-space: nowrap; }
+    }
