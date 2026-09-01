@@ -440,26 +440,30 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
   async function checkAuthStatus() {
     let currentUser = JSON.parse(sessionStorage.getItem('loginUser'));
     // 모바일 앱을 닫았다 다시 열어도 로그인 상태를 유지합니다.
-    let currentUser = JSON.parse(localStorage.getItem('loginUser') || sessionStorage.getItem('loginUser') || 'null');
+    let storedUser = JSON.parse(localStorage.getItem('loginUser') || sessionStorage.getItem('loginUser') || 'null');
     if (USE_SUPABASE_AUTH) {
       const { data: { session } } = await sbClient.auth.getSession();
       if (!session) {
         currentUser = null;
+        storedUser = null;
       } else {
         const { data: profile, error } = await sbClient.from('user_profiles').select('*').eq('auth_user_id', session.user.id).single();
         if (error) {
           alert('계정 권한 정보를 불러오지 못했습니다. 관리자에게 문의해 주세요.');
           await sbClient.auth.signOut();
           currentUser = null;
+          storedUser = null;
         } else {
           currentUser = { id: profile.coach_id, name: profile.name, role: profile.role, branch: profile.branches.join(', ') };
           sessionStorage.setItem('loginUser', JSON.stringify(currentUser));
-          localStorage.setItem('loginUser', JSON.stringify(currentUser));
+          storedUser = { id: profile.coach_id, name: profile.name, role: profile.role, branch: profile.branches.join(', ') };
+          sessionStorage.setItem('loginUser', JSON.stringify(storedUser));
+          localStorage.setItem('loginUser', JSON.stringify(storedUser));
         }
       }
     }
     // 기존 코드에서 현재 사용자 정보를 sessionStorage로도 참조하므로, 재실행 때 동기화합니다.
-    if (currentUser) sessionStorage.setItem('loginUser', JSON.stringify(currentUser));
+    if (storedUser) sessionStorage.setItem('loginUser', JSON.stringify(storedUser));
     const loginView = document.getElementById('loginView');
     const loginView = document.getElementById('loginView');
     const mainApp = document.getElementById('mainApp');
@@ -474,6 +478,13 @@ const SUPABASE_URL = 'https://vokwkupqqvpkifnaulrn.supabase.co';
       userInfo.innerText = `${currentUser.name} (${currentUser.role === 'admin' ? '관리자' : '코치'})`;
 
       if (currentUser.role === 'admin') {
+    if (storedUser) {
+      loginView.classList.add('d-none');
+      mainApp.classList.remove('d-none');
+
+      userInfo.innerText = `${storedUser.name} (${storedUser.role === 'admin' ? '관리자' : '코치'})`;
+
+      if (storedUser.role === 'admin') {
         manageCoachBtn.classList.remove('d-none');
         scheduleHistoryBtn.classList.remove('d-none');
       } else {
